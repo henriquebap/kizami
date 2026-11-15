@@ -1,9 +1,16 @@
 /* Interface em inglês. A chave é o texto em português do código. */
 
+/* Barra de menus */
 "Kizami" = "Kizami";
+"Kizami está rodando" = "Kizami is running";
+"Nenhuma atividade na ilha" = "No activities on the island";
+"1 atividade na ilha" = "1 activity on the island";
+"%lld atividades na ilha" = "%lld activities on the island";
 "Mostrar exemplo" = "Show Example";
 "Limpar a ilha" = "Clear the Island";
 "Sair do Kizami" = "Quit Kizami";
+
+/* Ilha */
 "Exemplo do Kizami" = "Kizami example";
 "Passe o mouse para abrir" = "Hover to open";
 "mais %lld" = "%lld more";

@@ -71,6 +71,11 @@ final class Mural {
     /// para uma enxurrada de mensagens não acumular tarefas dormindo.
     @ObservationIgnored private var prazos: [String: Task<Void, Never>] = [:]
 
+    /// A que acabou de chegar: a ilha desce com o título dela por `tempoDeAviso` e depois volta a fechar.
+    private(set) var novidade: Atividade?
+    static let tempoDeAviso: Duration = .seconds(3.5)
+    @ObservationIgnored private var fimDoAviso: Task<Void, Never>?
+
     /// A que aparece na ilha fechada.
     var destaque: Atividade? { atividades.first }
 
@@ -83,6 +88,7 @@ final class Mural {
         prazos.removeValue(forKey: atividade.id)?.cancel()
         trocar(por: Array(([atividade] + atividades.filter { $0.id != atividade.id }).prefix(Self.maximo)))
         registro.info("atividade recebida (\(self.atividades.count) na ilha)")
+        avisar(atividade)
         if let segundos = atividade.expira, segundos > 0 {
             prazos[atividade.id] = Task { [weak self] in
                 try? await Task.sleep(for: .seconds(segundos))
@@ -100,11 +106,28 @@ final class Mural {
         trocar(por: [])
     }
 
-    /// Troca a lista e cancela o prazo de quem saiu dela.
+    /// Troca a lista e cancela o prazo (e o aviso) de quem saiu dela.
     private func trocar(por novas: [Atividade]) {
         atividades = novas
         let ficam = Set(novas.map(\.id))
         for (id, prazo) in prazos where !ficam.contains(id) { prazo.cancel() }
         prazos = prazos.filter { ficam.contains($0.key) }
+        if let novidade, !ficam.contains(novidade.id) { encerrarAviso() }
+    }
+
+    private func avisar(_ atividade: Atividade) {
+        fimDoAviso?.cancel()
+        novidade = atividade
+        fimDoAviso = Task { [weak self] in
+            try? await Task.sleep(for: Self.tempoDeAviso)
+            guard !Task.isCancelled else { return }
+            self?.encerrarAviso()
+        }
+    }
+
+    /// Também chamado quando o cursor abre a ilha: a lista já mostra tudo, o aviso não volta depois.
+    func encerrarAviso() {
+        fimDoAviso?.cancel()
+        novidade = nil
     }
 }

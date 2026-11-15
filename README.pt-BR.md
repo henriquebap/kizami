@@ -6,9 +6,9 @@ Uma pequena ilha em volta do notch do MacBook que mostra o que outros apps e scr
 
 *Kizami* (刻み) é "entalhe" em japonês, o nome do notch. Vem de *kizamu*, que é entalhar e também marcar o tempo que passa.
 
-| Fechada | Com o mouse em cima |
-|---|---|
-| ![fechada](docs/fechada.png) | ![aberta](docs/aberta.png) |
+| Fechada | Chegou uma atividade | Com o mouse em cima |
+|---|---|---|
+| ![fechada](docs/fechada.png) | ![aviso](docs/aviso.png) | ![aberta](docs/aberta.png) |
 
 Gratuito e open source (Apache 2.0). Não usa API privada nem pede permissão. Não tem dependências de terceiros.
 
@@ -46,7 +46,9 @@ De outro app, poste uma notificação distribuída com o nome `io.github.henriqu
 ## Comportamento
 
 - **Notch:** na tela com notch, a ilha abraça o notch e abre quando o cursor toca o próprio notch, nunca os menus ao lado. Em tela sem notch, a ilha é só as duas "asas", sob a barra de menus.
-- **Troca de monitor:** o Kizami se reposiciona quando os monitores mudam.
+- **Monitores:** uma ilha em cada monitor, para você ver na tela em que está trabalhando. Elas são recriadas quando os monitores mudam.
+- **Atividade nova:** a ilha desce uma linha abaixo do notch com o título por alguns segundos e depois volta a fechar.
+- **Ao abrir:** mostra "Kizami está rodando", e o item na barra de menus diz quantas atividades há na ilha.
 - **Tela cheia:** a ilha aparece por cima de apps em tela cheia.
 - **Sem atividade:** a ilha encolhe de volta para dentro do notch.
 - **Cliques:** fechada, ela deixa os cliques passarem para a barra de menus.

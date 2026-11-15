@@ -14,18 +14,22 @@ import Foundation
     let mac = Geometria(tela: CGRect(x: 0, y: 0, width: 1512, height: 982), esquerda: 663.5, direita: 663.5,
                         topoSeguro: 32, barraDeMenus: 24)
     conferir("notch do MacBook 14\"", mac.notch, CGSize(width: 185, height: 32))
-    conferir("compacta centrada no notch", mac.retangulo(mac.compacta), CGRect(x: 627.5, y: 950, width: 257, height: 32))
-    conferir("aberta presa ao topo", mac.retangulo(mac.aberta), CGRect(x: 566, y: 826, width: 380, height: 156))
+    conferir("compacta centrada no notch", mac.retangulo(mac.compacta), CGRect(x: 621.5, y: 950, width: 269, height: 32))
+    conferir("aviso: uma linha abaixo do notch", mac.retangulo(mac.aviso), CGRect(x: 606, y: 914, width: 300, height: 68))
+    conferir("aberta com 1 linha é baixa", mac.aberta(linhas: 1), CGSize(width: 340, height: 84))
+    conferir("aberta com 3 linhas", mac.aberta(linhas: 3), CGSize(width: 340, height: 152))
+    conferir("aberta não passa de 3 linhas", mac.aberta(linhas: 8), mac.aberta(linhas: 3))
+    conferir("janela cabe a maior forma e a sombra", mac.janela, CGRect(x: 568, y: 812, width: 376, height: 170))
     conferir("cursor encostado no topo do notch abre", mac.gatilho.contains(CGPoint(x: 756, y: 982)), true)
     conferir("cursor na asa (barra de menus) não abre", mac.gatilho.contains(CGPoint(x: 650, y: 970)), false)
-    conferir("aberta, a ilha inteira segura o hover", mac.zona(mac.aberta).contains(CGPoint(x: 600, y: 850)), true)
+    conferir("aberta, a ilha inteira segura o hover", mac.zona(mac.aberta(linhas: 3)).contains(CGPoint(x: 600, y: 850)), true)
 
     // Monitor externo à esquerda: x negativo, sem notch e com a barra de menus oculta.
     let externo = Geometria(tela: CGRect(x: -1920, y: 0, width: 1920, height: 1080), esquerda: nil, direita: nil,
                             topoSeguro: 0, barraDeMenus: 24)
     conferir("sem notch", externo.temNotch, false)
     conferir("sem notch: só as asas, com a altura da barra", externo.retangulo(externo.compacta),
-             CGRect(x: -996, y: 1056, width: 72, height: 24))
+             CGRect(x: -1002, y: 1056, width: 84, height: 24))
     conferir("sem notch: as asas abrem", externo.gatilho.contains(CGPoint(x: -960, y: 1070)), true)
     conferir("áreas auxiliares sem topo seguro não contam como notch",
              Geometria(tela: externo.tela, esquerda: 10, direita: 10, topoSeguro: 0, barraDeMenus: 24).temNotch, false)
@@ -76,6 +80,12 @@ import Foundation
     mural.receber(Atividade(id: "5", titulo: "de novo", expira: 0))
     conferir("mesmo id substitui e sobe", mural.atividades.map(\.id).prefix(2), ["5", "9"])
     conferir("sem duplicata", mural.atividades.filter { $0.id == "5" }.count, 1)
+    conferir("a que chegou vira aviso", mural.novidade?.id, "5")
+    mural.remover(id: "5")
+    conferir("removida, o aviso some junto", mural.novidade == nil, true)
+    mural.receber(Atividade(id: "z", titulo: "z", expira: 0))
+    mural.limpar()
+    conferir("limpar tira o aviso", mural.novidade == nil, true)
 }
 
 @main struct Teste {

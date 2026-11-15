@@ -17,12 +17,33 @@ struct KizamiApp: App {
 
     var body: some Scene {
         MenuBarExtra("Kizami", systemImage: "capsule.tophalf.filled") {
-            Button("Mostrar exemplo") { Kizami.shared.mostrarExemplo() }
-            // Qualquer processo pode deixar uma atividade sem prazo: tirar tudo não pode depender da linha de comando.
-            Button("Limpar a ilha") { Kizami.shared.mural.limpar() }
-            Divider()
-            Button("Sair do Kizami") { NSApp.terminate(nil) }
-                .keyboardShortcut("q")
+            MenuView(mural: Kizami.shared.mural)
+        }
+    }
+}
+
+/// O menu diz o que o Kizami é e o que está na ilha, para não ser um ícone mudo na barra.
+private struct MenuView: View {
+    let mural: Mural
+
+    var body: some View {
+        Text("Kizami está rodando")
+        Text(resumo)
+        Divider()
+        Button("Mostrar exemplo") { Kizami.shared.mostrarExemplo() }
+        // Qualquer processo pode deixar uma atividade sem prazo: tirar tudo não pode depender da linha de comando.
+        Button("Limpar a ilha") { mural.limpar() }
+            .disabled(mural.atividades.isEmpty)
+        Divider()
+        Button("Sair do Kizami") { NSApp.terminate(nil) }
+            .keyboardShortcut("q")
+    }
+
+    private var resumo: String {
+        switch mural.atividades.count {
+        case 0: String(localized: "Nenhuma atividade na ilha")
+        case 1: String(localized: "1 atividade na ilha")
+        case let n: String(localized: "\(n) atividades na ilha")
         }
     }
 }
@@ -40,22 +61,37 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 }
 
-/// Raiz de composição.
+/// Raiz de composição: o mural e uma ilha por monitor.
 @MainActor
 final class Kizami {
     static let shared = Kizami()
 
     let mural = Mural()
-    private var janela: Janela?
+    private var janelas: [Janela] = []
 
     func iniciar() {
-        janela = Janela(mural: mural)
+        montarIlhas()
+        NotificationCenter.default.addObserver(forName: NSApplication.didChangeScreenParametersNotification,
+                                               object: nil, queue: .main) { _ in
+            MainActor.assumeIsolated { Kizami.shared.montarIlhas() }
+        }
         Correio.ouvir(mural)
+        // Sinal de vida ao abrir: sem ele, o Kizami começa invisível, escondido atrás do notch.
+        mural.receber(Atividade(id: "kizami", titulo: String(localized: "Kizami está rodando"),
+                                detalhe: String(localized: "Passe o mouse para abrir"),
+                                simbolo: "capsule.tophalf.filled", cor: "laranja", expira: 6))
+    }
+
+    /// Uma ilha em cada monitor: a pessoa vê o aviso na tela em que está trabalhando, tenha ela notch ou não.
+    private func montarIlhas() {
+        janelas.forEach { $0.fechar() }
+        janelas = NSScreen.screens.map { Janela(mural: mural, tela: $0) }
+        registro.info("ilhas: \(self.janelas.count) monitor(es), \(NSScreen.screens.filter { $0.safeAreaInsets.top > 0 }.count) com notch")
     }
 
     func mostrarExemplo() {
         mural.receber(Atividade(id: "exemplo", titulo: String(localized: "Exemplo do Kizami"),
                                 detalhe: String(localized: "Passe o mouse para abrir"),
-                                simbolo: "sparkles", cor: "laranja", expira: 8))
+                                simbolo: "sparkles", cor: "azul", expira: 8))
     }
 }
