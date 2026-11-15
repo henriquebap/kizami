@@ -9,6 +9,8 @@ struct Metadados: Equatable, Sendable {
     var tocando: Bool
     /// Muda a cada faixa: é quando a capa é buscada de novo.
     var chave: String?
+    /// Em pausa (e não parado): dá para retomar, então o player continua na ilha com o botão de tocar.
+    var pausado = false
 }
 
 /// Regras puras para descobrir quem está tocando som.
@@ -55,8 +57,9 @@ enum Som {
         let titulo = (info["Name"] as? String).map { Atividade.limpo($0, ate: 80) }.flatMap { $0.isEmpty ? nil : $0 }
         let artista = (info["Artist"] as? String).map { Atividade.limpo($0, ate: 80) }.flatMap { $0.isEmpty ? nil : $0 }
         let id = info["PersistentID"].map { "\($0)" } ?? info["Track ID"] as? String
-        return Metadados(titulo: titulo, artista: artista, tocando: (info["Player State"] as? String) == "Playing",
-                         chave: id ?? titulo.map { "\($0)|\(artista ?? "")" })
+        let estado = info["Player State"] as? String
+        return Metadados(titulo: titulo, artista: artista, tocando: estado == "Playing",
+                         chave: id ?? titulo.map { "\($0)|\(artista ?? "")" }, pausado: estado == "Paused")
     }
 }
 
@@ -94,6 +97,12 @@ final class TocandoAgora {
     @ObservationIgnored private var estabilizador = Estabilizador()
     @ObservationIgnored private var ultimoApp: String?
     @ObservationIgnored private var capaPedida: String?
+    @ObservationIgnored private var pausadoDesde: Date?
+    /// Um player em pausa fica na ilha até este tempo, para dar play de novo pela ilha.
+    private static let pausaMaxima: TimeInterval = 15 * 60
+
+    /// O player anunciou pausa: a ilha mostra o botão de tocar e para as barras.
+    var pausado: Bool { metadados?.pausado == true }
 
     func iniciar() {
         let centro = DistributedNotificationCenter.default()
@@ -128,11 +137,18 @@ final class TocandoAgora {
         // Com dois tocando, vale o player que diz a faixa (um vídeo mudo no navegador não tira a música da ilha).
         let valendo = candidatos.first { dosPlayers[$0]?.tocando == true } ?? candidatos.first
         if let valendo { ultimoApp = valendo }
-        guard estabilizador.registrar(valendo != nil), let app = ultimoApp else {
-            if self.app != nil { limpar() }
-            return
+        if estabilizador.registrar(valendo != nil), let app = ultimoApp {
+            pausadoDesde = nil
+            atualizar(app)
+        } else if let app, dosPlayers[app]?.pausado == true, Controle.sabeControlar(app),
+                  NSRunningApplication.runningApplications(withBundleIdentifier: app).isEmpty == false {
+            // Pausado pela ilha (ou no player), continua à vista com o botão de tocar; senão, ao pausar,
+            // a linha sumiria em 3 s e não haveria onde dar play de novo.
+            pausadoDesde = pausadoDesde ?? .now
+            if Date.now.timeIntervalSince(pausadoDesde ?? .now) > Self.pausaMaxima { limpar() } else { atualizar(app) }
+        } else if self.app != nil {
+            limpar()
         }
-        atualizar(app)
     }
 
     private func atualizar(_ app: String) {
@@ -166,6 +182,7 @@ final class TocandoAgora {
 
     private func limpar() {
         registro.info("som: parou")
+        pausadoDesde = nil
         app = nil
         nomeDoApp = ""
         icone = nil

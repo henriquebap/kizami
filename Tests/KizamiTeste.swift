@@ -142,9 +142,17 @@ import Foundation
     conferir("Music: tocando", music.tocando, true)
     conferir("Music: chave pelo PersistentID", music.chave, "42")
     let spotify = Som.metadados(["Name": "Song", "Player State": "Paused", "Track ID": "spotify:track:abc"])
-    conferir("Spotify pausado", spotify.tocando, false)
+    conferir("Spotify pausado não está tocando", spotify.tocando, false)
+    conferir("Spotify pausado dá para retomar", spotify.pausado, true)
+    conferir("parado não é pausado", Som.metadados(["Player State": "Stopped"]).pausado, false)
     conferir("Spotify: chave pelo Track ID", spotify.chave, "spotify:track:abc")
     conferir("sem nada", Som.metadados([:]), Metadados(titulo: nil, artista: nil, tocando: false, chave: nil))
+
+    conferir("comando do Music", Controle.script(.alternar, app: Som.music),
+             #"if application "Music" is running then tell application "Music" to playpause"#)
+    conferir("comando do Spotify", Controle.script(.proxima, app: Som.spotify),
+             #"if application "Spotify" is running then tell application "Spotify" to next track"#)
+    conferir("navegador não tem comando", Controle.script(.alternar, app: "com.google.Chrome"), nil)
 
     var e = Estabilizador()
     conferir("um plim não liga", e.registrar(true), false)

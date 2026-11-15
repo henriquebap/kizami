@@ -61,8 +61,13 @@ struct IlhaView: View {
                     } else if tocando.app != nil {
                         Asas(altura: g.notch.height) {
                             Miniatura(tocando: tocando, lado: lado, raio: lado / 4)
+                                .opacity(tocando.pausado ? 0.55 : 1)
                         } direita: {
-                            Barras(altura: lado * 0.6)
+                            if tocando.pausado {
+                                Image(systemName: "pause.fill").font(.system(size: 10, weight: .bold)).foregroundStyle(.secondary)
+                            } else {
+                                Barras(altura: lado * 0.6)
+                            }
                         }
                     } else {
                         Asas(altura: g.notch.height) {
@@ -156,10 +161,40 @@ private struct LinhaTocando: View {
             .lineLimit(1)
             .contentTransition(.opacity)
             Spacer(minLength: 8)
-            Barras(altura: 16)
+            if let app = tocando.app, Controle.sabeControlar(app) {
+                Controles(app: app, pausado: tocando.pausado)
+            } else {
+                Barras(altura: 16)  // navegador: sem comando público, só o sinal de que há som
+            }
         }
         .padding(.horizontal, 14)
         .frame(height: Geometria.alturaTocando)
+    }
+}
+
+/// Anterior, tocar ou pausar, próxima. A ilha aberta aceita clique sem ativar o Kizami (painel que não vira key):
+/// o foco continua no app em que a pessoa está.
+private struct Controles: View {
+    let app: String
+    let pausado: Bool
+
+    var body: some View {
+        HStack(spacing: 2) {
+            botao("Anterior", "backward.fill", .anterior, tamanho: 13)
+            botao(pausado ? "Tocar" : "Pausar", pausado ? "play.fill" : "pause.fill", .alternar, tamanho: 18)
+                .contentTransition(.symbolEffect(.replace))
+            botao("Próxima", "forward.fill", .proxima, tamanho: 13)
+        }
+    }
+
+    private func botao(_ nome: LocalizedStringKey, _ simbolo: String, _ acao: Controle.Acao, tamanho: CGFloat) -> some View {
+        Button(nome, systemImage: simbolo) { Controle.enviar(acao, app: app) }
+            .labelStyle(.iconOnly)
+            .buttonStyle(.plain)
+            .font(.system(size: tamanho, weight: .semibold))
+            .frame(width: 30, height: 30)
+            .contentShape(.rect)
+            .help(Text(nome))
     }
 }
 

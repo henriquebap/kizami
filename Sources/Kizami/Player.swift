@@ -1,12 +1,36 @@
 import AppKit
 
+/// Comandos de mídia para o Music e o Spotify, pela mesma permissão de Automação da capa.
+/// Navegadores não têm comando público: lá a ilha mostra só as barras.
+// ponytail: para controlar também o navegador (YouTube), mandar as teclas de mídia do sistema, o que pede
+// a permissão de Acessibilidade.
+enum Controle {
+    enum Acao: String, CaseIterable {
+        case anterior = "previous track"
+        case alternar = "playpause"
+        case proxima = "next track"
+    }
+
+    private static let nomes = [Som.music: "Music", Som.spotify: "Spotify"]
+
+    static func sabeControlar(_ app: String) -> Bool { nomes[app] != nil }
+
+    /// O script de uma ação, ou nil para um app que não se controla assim. Tudo nele vem de listas fixas.
+    /// O `is running` vem antes do `tell`: falar com um app fechado abriria o app.
+    static func script(_ acao: Acao, app: String) -> String? {
+        nomes[app].map { "if application \"\($0)\" is running then tell application \"\($0)\" to \(acao.rawValue)" }
+    }
+
+    static func enviar(_ acao: Acao, app: String) {
+        guard let script = script(acao, app: app) else { return }
+        Task { _ = await AppleScript.rodar(script) }
+    }
+}
+
 /// A capa da faixa que está tocando, pedida ao próprio player por AppleScript. Na primeira vez, o macOS pergunta
 /// se o Kizami pode controlar o Music ou o Spotify (Automação); negado, a miniatura fica sendo o ícone do app.
 /// Nenhum texto de fora entra nos scripts: eles são fixos, só o caminho do arquivo temporário (um UUID nosso) muda.
 enum Capa {
-    /// Tempo máximo de um pedido ao player. Folgado: na primeira vez ele espera a pessoa responder à permissão.
-    private static let limite: Duration = .seconds(30)
-
     static func sabeBuscar(_ app: String) -> Bool {
         app == Som.music || app == Som.spotify
     }
@@ -49,7 +73,7 @@ enum Capa {
             close access destino
             return "ok"
             """
-        guard await osascript(script) == "ok", let dados = try? Data(contentsOf: arquivo) else { return nil }
+        guard await AppleScript.rodar(script) == "ok", let dados = try? Data(contentsOf: arquivo) else { return nil }
         return NSImage(data: dados)
     }
 
@@ -60,7 +84,7 @@ enum Capa {
             if application "Spotify" is not running then return ""
             tell application "Spotify" to return (id of current track) & linefeed & (artwork url of current track)
             """
-        guard let resposta = await osascript(script)?.split(separator: "\n").map(String.init), resposta.count == 2,
+        guard let resposta = await AppleScript.rodar(script)?.split(separator: "\n").map(String.init), resposta.count == 2,
               resposta[0] == faixa, let url = URL(string: resposta[1]), doCDN(url) else { return nil }
         var pedido = URLRequest(url: url)
         pedido.timeoutInterval = 10
@@ -75,9 +99,16 @@ enum Capa {
         guard url.scheme == "https", let host = url.host() else { return false }
         return host == "scdn.co" || host.hasSuffix(".scdn.co")
     }
+}
 
-    /// Roda fora da thread principal, com `limite`: um player travado não segura o pedido para sempre.
-    private static func osascript(_ script: String) async -> String? {
+/// Roda AppleScript pelo `osascript`, fora da thread principal: na primeira vez o macOS pergunta se o Kizami
+/// pode controlar o player e espera a resposta da pessoa.
+enum AppleScript {
+    /// Tempo máximo de um pedido ao player. Folgado: na primeira vez ele espera a pessoa responder à permissão.
+    private static let limite: Duration = .seconds(30)
+
+    /// Com `limite`: um player travado não segura o pedido para sempre.
+    static func rodar(_ script: String) async -> String? {
         let processo = Process()
         processo.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
         processo.arguments = ["-e", script]

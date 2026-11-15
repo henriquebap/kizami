@@ -17,11 +17,15 @@ Kizami stays on public APIs, so every feature below says what macOS allows and w
 - The island is always visible, resting around the notch.
 - Now playing: which media app is playing (Core Audio process list, no permission), title and artist from Music and Spotify notifications, artwork through AppleScript (Automation).
 
+## v0.4 (done)
+
+- Previous / play-pause / next for Music and Spotify on the open island; a paused player stays on the island for up to 15 minutes.
+
 ## Next candidates
 
 | Feature | How | Permission | Notes |
 |---|---|---|---|
-| **Play / pause / next** | Apple Events to Music and Spotify (the Automation permission is already asked for the artwork) | Automation | Browsers have no public control. |
+| **Media keys for browsers** (YouTube play/pause) | Post the system media-key events | Accessibility | Would also reach any app that handles media keys. |
 | **Title of a browser tab** (YouTube) | No public API; the browser's tab title through Accessibility | Accessibility | Fragile. |
 | **Mic / camera in use** | CoreAudio `kAudioDevicePropertyDeviceIsRunningSomewhere`, CoreMediaIO `kCMIODevicePropertyDeviceIsRunningSomewhere` | none | Says *that* they are in use, not *which app*. |
 | **Battery / charging** | IOKit `IOPSNotificationCreateRunLoopSource` | none | Plugged in, unplugged, low battery. |

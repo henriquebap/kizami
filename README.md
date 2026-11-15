@@ -47,6 +47,10 @@ From another app, post a distributed notification named `io.github.henriquebap.k
 
 When a player or browser is playing sound, the closed island shows its artwork (or the app's icon) and moving bars; hovered, it shows the title, the artist and the app. Title and artist come from the notifications Music and Spotify post on their own (no permission). The artwork is asked from the player through AppleScript: the first time, macOS asks whether Kizami may control Music or Spotify. Say no and the island shows the app's icon instead.
 
+Hovered, Music and Spotify get **previous, play/pause and next** buttons, through the same Automation permission. A paused player stays on the island (with the play button) until it stops, quits or has been paused for 15 minutes. Browsers have no public media commands, so they show only the bars.
+
+![controls](docs/controles.png)
+
 Only media apps count (players and browsers): Core Audio tells which apps have their audio output open, not whether anything audible is playing, and some apps keep it open in silence.
 
 ![now playing](docs/tocando.png)
