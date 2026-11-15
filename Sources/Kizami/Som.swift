@@ -9,8 +9,8 @@ struct Metadados: Equatable, Sendable {
     var tocando: Bool
     /// Muda a cada faixa: é quando a capa é buscada de novo.
     var chave: String?
-    /// Em pausa (e não parado): dá para retomar, então o player continua na ilha com o botão de tocar.
-    var pausado = false
+    /// O player parou de vez (Stopped), não só pausou: aí ele sai da ilha.
+    var parado = false
 }
 
 /// Regras puras para descobrir quem está tocando som.
@@ -59,7 +59,26 @@ enum Som {
         let id = info["PersistentID"].map { "\($0)" } ?? info["Track ID"] as? String
         let estado = info["Player State"] as? String
         return Metadados(titulo: titulo, artista: artista, tocando: estado == "Playing",
-                         chave: id ?? titulo.map { "\($0)|\(artista ?? "")" }, pausado: estado == "Paused")
+                         chave: id ?? titulo.map { "\($0)|\(artista ?? "")" }, parado: estado == "Stopped")
+    }
+
+    /// Quem a ilha mostra agora, e se está pausado.
+    /// - `comSom`: o estabilizador diz que o último app está mandando som (2 s seguidos).
+    /// - `ultimo`: o último app que tocou de verdade.
+    /// - `anuncioRecente`: o player falou há menos de 3 s (um play que acabou de ser dado).
+    /// Sem som, um player que dá para retomar pela ilha (Music, Spotify) continua nela, pausado, enquanto estiver
+    /// aberto e não tiver parado de vez, mesmo sem ter chegado o aviso de pausa (visto: a música sumia ao pausar).
+    static func mostrar(comSom: Bool, ultimo: String?, players: [String: Metadados], rodando: Bool,
+                        anuncioRecente: Bool) -> (app: String, pausado: Bool)? {
+        guard let ultimo else { return nil }
+        let anunciado = players[ultimo]
+        if comSom {
+            return (ultimo, anunciado?.tocando == false)  // acabou de pausar: o som ainda não fechou, o player já disse
+        }
+        guard Controle.sabeControlar(ultimo), rodando, anunciado?.parado != true else { return nil }
+        // Sem som, está pausado; a exceção é o play que acabou de ser dado (o som ainda não completou os 2 s).
+        // Um "tocando" antigo não vale: o aviso da pausa pode não ter chegado.
+        return (ultimo, !(anunciado?.tocando == true && anuncioRecente))
     }
 }
 
@@ -92,17 +111,17 @@ final class TocandoAgora {
     private(set) var icone: NSImage?
     private(set) var metadados: Metadados?
     private(set) var capa: NSImage?
+    /// Sem som, ou o player disse que pausou: a ilha mostra o botão de tocar e para as barras.
+    private(set) var pausado = false
 
     @ObservationIgnored private var dosPlayers: [String: Metadados] = [:]
+    @ObservationIgnored private var ultimoAnuncio: [String: Date] = [:]
     @ObservationIgnored private var estabilizador = Estabilizador()
     @ObservationIgnored private var ultimoApp: String?
     @ObservationIgnored private var capaPedida: String?
     @ObservationIgnored private var pausadoDesde: Date?
     /// Um player em pausa fica na ilha até este tempo, para dar play de novo pela ilha.
     private static let pausaMaxima: TimeInterval = 15 * 60
-
-    /// O player anunciou pausa: a ilha mostra o botão de tocar e para as barras.
-    var pausado: Bool { metadados?.pausado == true }
 
     func iniciar() {
         let centro = DistributedNotificationCenter.default()
@@ -127,7 +146,11 @@ final class TocandoAgora {
 
     private func receber(_ lidos: Metadados, de app: String) {
         dosPlayers[app] = lidos
-        if app == self.app { atualizar(app) }
+        ultimoAnuncio[app] = .now
+        registro.info("player: \(lidos.tocando ? "tocando" : lidos.parado ? "parado" : "pausado", privacy: .public)")
+        guard app == self.app else { return }
+        atualizar(app)
+        pausado = !lidos.tocando  // na hora: o botão troca sem esperar a próxima consulta
     }
 
     private func conferir(_ tocando: [String]) {
@@ -137,18 +160,21 @@ final class TocandoAgora {
         // Com dois tocando, vale o player que diz a faixa (um vídeo mudo no navegador não tira a música da ilha).
         let valendo = candidatos.first { dosPlayers[$0]?.tocando == true } ?? candidatos.first
         if let valendo { ultimoApp = valendo }
-        if estabilizador.registrar(valendo != nil), let app = ultimoApp {
-            pausadoDesde = nil
-            atualizar(app)
-        } else if let app, dosPlayers[app]?.pausado == true, Controle.sabeControlar(app),
-                  NSRunningApplication.runningApplications(withBundleIdentifier: app).isEmpty == false {
-            // Pausado pela ilha (ou no player), continua à vista com o botão de tocar; senão, ao pausar,
-            // a linha sumiria em 3 s e não haveria onde dar play de novo.
-            pausadoDesde = pausadoDesde ?? .now
-            if Date.now.timeIntervalSince(pausadoDesde ?? .now) > Self.pausaMaxima { limpar() } else { atualizar(app) }
-        } else if self.app != nil {
-            limpar()
+        let comSom = estabilizador.registrar(valendo != nil)
+        let rodando = ultimoApp.map { !NSRunningApplication.runningApplications(withBundleIdentifier: $0).isEmpty } ?? false
+        let recente = ultimoApp.flatMap { ultimoAnuncio[$0] }.map { Date.now.timeIntervalSince($0) < 3 } ?? false
+        guard let (app, pausado) = Som.mostrar(comSom: comSom, ultimo: ultimoApp, players: dosPlayers, rodando: rodando,
+                                               anuncioRecente: recente) else {
+            if self.app != nil { limpar() }
+            return
         }
+        pausadoDesde = pausado ? (pausadoDesde ?? .now) : nil
+        if Date.now.timeIntervalSince(pausadoDesde ?? .now) > Self.pausaMaxima {
+            limpar()
+            return
+        }
+        atualizar(app)
+        if pausado != self.pausado { self.pausado = pausado }
     }
 
     private func atualizar(_ app: String) {
@@ -183,6 +209,8 @@ final class TocandoAgora {
     private func limpar() {
         registro.info("som: parou")
         pausadoDesde = nil
+        ultimoApp = nil  // senão o player voltaria à ilha, pausado, só por ainda estar aberto
+        pausado = false
         app = nil
         nomeDoApp = ""
         icone = nil

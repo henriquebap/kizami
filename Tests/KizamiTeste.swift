@@ -143,8 +143,26 @@ import Foundation
     conferir("Music: chave pelo PersistentID", music.chave, "42")
     let spotify = Som.metadados(["Name": "Song", "Player State": "Paused", "Track ID": "spotify:track:abc"])
     conferir("Spotify pausado não está tocando", spotify.tocando, false)
-    conferir("Spotify pausado dá para retomar", spotify.pausado, true)
-    conferir("parado não é pausado", Som.metadados(["Player State": "Stopped"]).pausado, false)
+    conferir("pausado não é parado", spotify.parado, false)
+    conferir("Stopped é parado", Som.metadados(["Player State": "Stopped"]).parado, true)
+
+    // Quem a ilha mostra. O caso que sumia: pausou e o aviso de pausa não chegou.
+    let playerTocando = [Som.spotify: Metadados(titulo: "x", artista: nil, tocando: true, chave: "1")]
+    let playerPausado = [Som.spotify: Metadados(titulo: "x", artista: nil, tocando: false, chave: "1")]
+    let playerParado = [Som.spotify: Metadados(titulo: "x", artista: nil, tocando: false, chave: "1", parado: true)]
+    func mostrar(_ comSom: Bool, _ ultimo: String?, _ players: [String: Metadados], rodando: Bool = true, recente: Bool = false) -> String {
+        Som.mostrar(comSom: comSom, ultimo: ultimo, players: players, rodando: rodando, anuncioRecente: recente).map { "\($0.app) \($0.pausado ? "pausado" : "tocando")" } ?? "nada"
+    }
+    conferir("com som, tocando", mostrar(true, Som.spotify, playerTocando), "com.spotify.client tocando")
+    conferir("acabou de pausar, o som ainda não fechou", mostrar(true, Som.spotify, playerPausado), "com.spotify.client pausado")
+    conferir("pausado fica na ilha", mostrar(false, Som.spotify, playerPausado), "com.spotify.client pausado")
+    conferir("pausado sem aviso do player também fica", mostrar(false, Som.spotify, [:]), "com.spotify.client pausado")
+    conferir("sem som e com um tocando antigo (a pausa se perdeu): pausado", mostrar(false, Som.spotify, playerTocando), "com.spotify.client pausado")
+    conferir("acabou de dar play: tocando antes do som completar 2 s", mostrar(false, Som.spotify, playerTocando, recente: true), "com.spotify.client tocando")
+    conferir("parado de vez sai", mostrar(false, Som.spotify, playerParado), "nada")
+    conferir("player fechado sai", mostrar(false, Som.spotify, playerPausado, rodando: false), "nada")
+    conferir("navegador sem som sai (não dá para retomar pela ilha)", mostrar(false, "com.google.Chrome", [:]), "nada")
+    conferir("nada tocou ainda", mostrar(false, nil, [:]), "nada")
     conferir("Spotify: chave pelo Track ID", spotify.chave, "spotify:track:abc")
     conferir("sem nada", Som.metadados([:]), Metadados(titulo: nil, artista: nil, tocando: false, chave: nil))
 
