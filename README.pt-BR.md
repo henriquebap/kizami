@@ -10,7 +10,7 @@ Uma pequena ilha em volta do notch do MacBook que mostra o que outros apps e scr
 |---|---|---|
 | ![fechada](docs/fechada.png) | ![aviso](docs/aviso.png) | ![aberta](docs/aberta.png) |
 
-Gratuito e open source (Apache 2.0). Não usa API privada nem pede permissão. Não tem dependências de terceiros.
+Gratuito e open source (Apache 2.0). Não usa API privada nem tem dependências de terceiros. A única permissão é opcional: Automação, para mostrar a capa da música que está tocando.
 
 ## Compilar
 
@@ -43,6 +43,14 @@ De outro app, poste uma notificação distribuída com o nome `io.github.henriqu
 
 **O que chega é dado, nunca comando.** Qualquer processo do Mac pode enviar. O Kizami só exibe: tira os caracteres invisíveis e de direção, limita o tamanho e nunca interpreta Markdown. *Limpar a ilha*, no item do Kizami na barra de menus, tira tudo.
 
+## Tocando agora
+
+Quando um player ou navegador está tocando som, a ilha fechada mostra a capa (ou o ícone do app) e barras animadas; com o mouse em cima, mostra o título, o artista e o app. Título e artista vêm das notificações que o Music e o Spotify publicam sozinhos (sem permissão). A capa é pedida ao player por AppleScript: na primeira vez, o macOS pergunta se o Kizami pode controlar o Music ou o Spotify. Negando, a ilha mostra o ícone do app.
+
+Só apps de mídia contam (players e navegadores): o Core Audio diz quais apps estão com a saída de áudio aberta, não se algo audível está tocando, e alguns apps mantêm a saída aberta em silêncio.
+
+![tocando agora](docs/tocando.png)
+
 ## Bandeja de arquivos
 
 Arraste arquivos de qualquer app até o notch: a ilha abre com *Solte aqui para guardar*. Os arquivos ficam numa fileira na ilha para você arrastar depois para outro app, mandar por AirDrop ou esvaziar a bandeja. Clique duplo abre o arquivo; o botão direito mostra no Finder ou tira da bandeja. A bandeja guarda o endereço, não uma cópia: arrastar para fora funciona como arrastar do Finder, e a bandeja esvazia quando o Kizami fecha.
@@ -56,7 +64,7 @@ Arraste arquivos de qualquer app até o notch: a ilha abre com *Solte aqui para 
 - **Atividade nova:** a ilha desce uma linha abaixo do notch com o título por alguns segundos e depois volta a fechar.
 - **Ao abrir:** mostra "Kizami está rodando", e o item na barra de menus diz quantas atividades há na ilha.
 - **Tela cheia:** a ilha aparece por cima de apps em tela cheia.
-- **Sem atividade:** a ilha encolhe de volta para dentro do notch.
+- **Sempre lá:** sem nada para mostrar, a ilha fica em repouso, uma pílula pequena em volta do notch (ou no topo de uma tela sem notch). Com o mouse em cima, oferece a bandeja vazia.
 - **Cliques:** fechada, ela deixa os cliques passarem para a barra de menus.
 
 ## Licença

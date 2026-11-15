@@ -2,36 +2,44 @@ import SwiftUI
 
 /// Os estados da forma, do menor para o maior.
 private enum Forma: Equatable {
-    case escondida, compacta, aviso, aberta
+    case repouso, compacta, aviso, aberta
 
     var orelha: CGFloat { self == .aberta ? 10 : Geometria.orelha }
     var raio: CGFloat {
         switch self {
-        case .escondida, .compacta: 14
+        case .repouso: 12
+        case .compacta: 14
         case .aviso: 20
         case .aberta: 30
         }
     }
 }
 
-/// A forma preta presa ao topo. Sem atividade, encolhe para o tamanho do notch e some atrás dele
-/// (em tela sem notch, a largura vai a 0).
+/// As seções da ilha aberta agora. A janela mede a área do hover com a mesma conta.
+@MainActor func secoesAtuais(_ mural: Mural, _ bandeja: Bandeja, _ tocando: TocandoAgora) -> Secoes {
+    Secoes(tocando: tocando.app != nil, atividades: mural.atividades.count,
+           arquivos: bandeja.arquivos.count, arrastando: bandeja.arrastando)
+}
+
+/// A forma preta presa ao topo. Sempre à vista: sem nada, fica em repouso, só um pouco maior que o notch.
 struct IlhaView: View {
     let estado: EstadoIlha
     let mural: Mural
     let bandeja: Bandeja
+    let tocando: TocandoAgora
 
     var body: some View {
         let g = estado.geometria
+        let secoes = secoesAtuais(mural, bandeja, tocando)
         let forma: Forma = estado.aberta ? .aberta
             : mural.novidade != nil ? .aviso
-            : !mural.atividades.isEmpty || !bandeja.arquivos.isEmpty ? .compacta
-            : .escondida
+            : !mural.atividades.isEmpty || !bandeja.arquivos.isEmpty || tocando.app != nil ? .compacta
+            : .repouso
         let tamanho = switch forma {
-        case .escondida: g.notch
+        case .repouso: g.repouso
         case .compacta: g.compacta
         case .aviso: g.aviso
-        case .aberta: g.aberta(linhas: mural.atividades.count, bandeja: bandeja.visivel)
+        case .aberta: g.aberta(secoes)
         }
         let contorno = FormaIlha(orelha: forma.orelha, raio: forma.raio)
 
@@ -39,14 +47,21 @@ struct IlhaView: View {
             contorno.fill(.black)
             Group {
                 switch forma {
-                case .escondida:
+                case .repouso:
                     EmptyView()
                 case .compacta:
-                    // Atividade tem a vez; sem nenhuma, a ilha fechada mostra a bandeja.
+                    // Atividade tem a vez (foi pedida por alguém); depois o som; por fim a bandeja.
                     if let destaque = mural.destaque {
                         Compacta(simbolo: destaque.simbolo ?? "bell.fill", cor: cor(destaque),
                                  total: mural.atividades.count, chegada: destaque.chegada)
                             .frame(height: g.notch.height)
+                    } else if tocando.app != nil {
+                        HStack(spacing: 0) {
+                            Miniatura(tocando: tocando, lado: 20, raio: 5).frame(width: Geometria.asa)
+                            Spacer(minLength: 0)
+                            Barras(altura: 12).frame(width: Geometria.asa)
+                        }
+                        .frame(height: g.notch.height)
                     } else {
                         Compacta(simbolo: "tray.full.fill", cor: .white, total: bandeja.arquivos.count, chegada: nil)
                             .frame(height: g.notch.height)
@@ -59,8 +74,9 @@ struct IlhaView: View {
                     }
                 case .aberta:
                     VStack(spacing: Geometria.espacoSecao) {
-                        if !mural.atividades.isEmpty { Lista(atividades: mural.atividades) }
-                        if bandeja.visivel { FileiraDaBandeja(bandeja: bandeja, alvo: estado.alvo) }
+                        if secoes.tocando { LinhaTocando(tocando: tocando) }
+                        if secoes.linhas > 0 { Lista(atividades: mural.atividades) }
+                        if secoes.bandeja { FileiraDaBandeja(bandeja: bandeja, alvo: estado.alvo) }
                     }
                     .padding(.top, g.notch.height + 8)
                 }
@@ -79,12 +95,14 @@ struct IlhaView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .foregroundStyle(.white)
         // Abrir com um pouco de mola, fechar sem: a ilha "cai" do notch e volta para dentro dele sem quicar.
-        .animation(forma == .escondida || forma == .compacta
+        .animation(forma == .repouso || forma == .compacta
                    ? .spring(response: 0.34, dampingFraction: 0.92)
                    : .spring(response: 0.44, dampingFraction: 0.74), value: forma)
         .animation(.spring(response: 0.4, dampingFraction: 0.85), value: mural.atividades.count)
         .animation(.spring(response: 0.4, dampingFraction: 0.85), value: bandeja.arquivos.count)
         .animation(.smooth(duration: 0.2), value: estado.alvo)
+        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: tocando.app)
+        .animation(.smooth(duration: 0.3), value: tocando.metadados)
     }
 }
 
@@ -111,6 +129,75 @@ struct FormaIlha: Shape {
         p.addQuadCurve(to: CGPoint(x: r.maxX, y: r.minY), control: CGPoint(x: r.maxX - o, y: r.minY))
         p.closeSubpath()
         return p
+    }
+}
+
+/// O que está tocando: a miniatura, o título e o artista (ou o nome do app, quando o player não conta a faixa).
+private struct LinhaTocando: View {
+    let tocando: TocandoAgora
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Miniatura(tocando: tocando, lado: 40, raio: 9)
+            VStack(alignment: .leading, spacing: 1) {
+                // verbatim: título e artista vêm do player e não podem virar Markdown nem chave de tradução.
+                Text(verbatim: tocando.metadados?.titulo ?? tocando.nomeDoApp)
+                    .font(.callout.weight(.semibold))
+                Text(verbatim: tocando.metadados?.titulo == nil
+                     ? String(localized: "Tocando agora")
+                     : [tocando.metadados?.artista, tocando.nomeDoApp].compactMap { $0 }.joined(separator: " · "))
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            .lineLimit(1)
+            .contentTransition(.opacity)
+            Spacer(minLength: 8)
+            Barras(altura: 16)
+        }
+        .padding(.horizontal, 14)
+        .frame(height: Geometria.alturaTocando)
+    }
+}
+
+/// A capa, quando o player dá; senão o ícone do app que está tocando.
+private struct Miniatura: View {
+    let tocando: TocandoAgora
+    let lado: CGFloat
+    let raio: CGFloat
+
+    var body: some View {
+        Group {
+            if let capa = tocando.capa {
+                Image(nsImage: capa).resizable().aspectRatio(contentMode: .fill)
+                    .transition(.blurReplace)
+            } else if let icone = tocando.icone {
+                Image(nsImage: icone).resizable().aspectRatio(contentMode: .fit)
+            } else {
+                Image(systemName: "music.note").foregroundStyle(.secondary)
+            }
+        }
+        .frame(width: lado, height: lado)
+        .clipShape(.rect(cornerRadius: raio))
+        .animation(.smooth(duration: 0.35), value: tocando.capa)
+    }
+}
+
+/// Equalizador de enfeite: as barras não leem o som (isso pediria gravar a saída), só mostram que há som.
+private struct Barras: View {
+    let altura: CGFloat
+
+    var body: some View {
+        // Enfeite: 15 quadros por segundo bastam e custam metade de 30, em cada monitor.
+        TimelineView(.animation(minimumInterval: 1 / 15)) { contexto in
+            let t = contexto.date.timeIntervalSinceReferenceDate
+            HStack(alignment: .center, spacing: 2) {
+                ForEach(0..<4, id: \.self) { i in
+                    Capsule()
+                        .frame(width: 3, height: altura * (0.3 + 0.7 * abs(sin(t * (2.6 + Double(i) * 0.7) + Double(i) * 1.3))))
+                }
+            }
+            .frame(height: altura)
+        }
+        .foregroundStyle(.white.opacity(0.85))
     }
 }
 

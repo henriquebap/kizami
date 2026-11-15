@@ -12,11 +12,17 @@ Kizami stays on public APIs, so every feature below says what macOS allows and w
 
 - File tray: drop files on the notch, drag them out, AirDrop them. In memory only.
 
+## v0.3 (done)
+
+- The island is always visible, resting around the notch.
+- Now playing: which media app is playing (Core Audio process list, no permission), title and artist from Music and Spotify notifications, artwork through AppleScript (Automation).
+
 ## Next candidates
 
 | Feature | How | Permission | Notes |
 |---|---|---|---|
-| **Now playing** (Music, Spotify) | Distributed notifications the players post themselves: `com.apple.Music.playerInfo`, `com.spotify.client.PlaybackStateChanged` | none | *To validate.* Covers Music and Spotify only. System-wide "now playing" (MediaRemote) is a private framework, blocked for third-party apps since macOS 15.4. Play/pause would need Apple Events (Automation permission per player). |
+| **Play / pause / next** | Apple Events to Music and Spotify (the Automation permission is already asked for the artwork) | Automation | Browsers have no public control. |
+| **Title of a browser tab** (YouTube) | No public API; the browser's tab title through Accessibility | Accessibility | Fragile. |
 | **Mic / camera in use** | CoreAudio `kAudioDevicePropertyDeviceIsRunningSomewhere`, CoreMediaIO `kCMIODevicePropertyDeviceIsRunningSomewhere` | none | Says *that* they are in use, not *which app*. |
 | **Battery / charging** | IOKit `IOPSNotificationCreateRunLoopSource` | none | Plugged in, unplugged, low battery. |
 | **Next calendar event** | EventKit | Calendar | |

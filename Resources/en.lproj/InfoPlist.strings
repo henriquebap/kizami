@@ -1,0 +1,2 @@
+/* Info.plist em inglês. */
+"NSAppleEventsUsageDescription" = "Kizami asks Music and Spotify for the artwork of the song that is playing, to show it at the notch.";

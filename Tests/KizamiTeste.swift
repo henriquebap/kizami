@@ -16,16 +16,21 @@ import Foundation
     conferir("notch do MacBook 14\"", mac.notch, CGSize(width: 185, height: 32))
     conferir("compacta centrada no notch", mac.retangulo(mac.compacta), CGRect(x: 621.5, y: 950, width: 269, height: 32))
     conferir("aviso: uma linha abaixo do notch", mac.retangulo(mac.aviso), CGRect(x: 606, y: 914, width: 300, height: 68))
-    conferir("aberta com 1 linha é baixa", mac.aberta(linhas: 1), CGSize(width: 340, height: 84))
-    conferir("aberta com 3 linhas", mac.aberta(linhas: 3), CGSize(width: 340, height: 152))
-    conferir("aberta não passa de 3 linhas", mac.aberta(linhas: 8), mac.aberta(linhas: 3))
-    conferir("só a bandeja, sem linhas", mac.aberta(linhas: 0, bandeja: true), CGSize(width: 340, height: 118))
-    conferir("lista de 2 e bandeja", mac.aberta(linhas: 2, bandeja: true), CGSize(width: 340, height: 192))
-    conferir("sem bandeja, 0 linhas vira 1", mac.aberta(linhas: 0), mac.aberta(linhas: 1))
-    conferir("janela cabe a maior forma e a sombra", mac.janela, CGRect(x: 568, y: 738, width: 376, height: 244))
+    conferir("repouso: um pouco maior que o notch", mac.repouso, CGSize(width: 225, height: 32))
+    func secoes(_ tocando: Bool, _ atividades: Int, _ arquivos: Int, _ arrastando: Bool = false) -> Secoes {
+        Secoes(tocando: tocando, atividades: atividades, arquivos: arquivos, arrastando: arrastando)
+    }
+    conferir("aberta com 1 linha é baixa", mac.aberta(secoes(false, 1, 0)), CGSize(width: 340, height: 84))
+    conferir("aberta com 3 linhas", mac.aberta(secoes(false, 3, 0)), CGSize(width: 340, height: 152))
+    conferir("aberta não passa de 3 linhas", mac.aberta(secoes(false, 8, 0)), mac.aberta(secoes(false, 3, 0)))
+    conferir("vazia, aberta oferece a bandeja", mac.aberta(secoes(false, 0, 0)), CGSize(width: 340, height: 118))
+    conferir("lista de 2 e bandeja", mac.aberta(secoes(false, 2, 1)), CGSize(width: 340, height: 192))
+    conferir("só tocando, sem bandeja vazia", mac.aberta(secoes(true, 0, 0)), CGSize(width: 340, height: 106))
+    conferir("arrastando, a bandeja aparece mesmo tocando", secoes(true, 0, 0, true).bandeja, true)
+    conferir("janela cabe tudo junto e a sombra", mac.janela, CGRect(x: 568, y: 676, width: 376, height: 306))
     conferir("cursor encostado no topo do notch abre", mac.gatilho.contains(CGPoint(x: 756, y: 982)), true)
     conferir("cursor na asa (barra de menus) não abre", mac.gatilho.contains(CGPoint(x: 650, y: 970)), false)
-    conferir("aberta, a ilha inteira segura o hover", mac.zona(mac.aberta(linhas: 3)).contains(CGPoint(x: 600, y: 850)), true)
+    conferir("aberta, a ilha inteira segura o hover", mac.zona(mac.aberta(secoes(false, 3, 0))).contains(CGPoint(x: 600, y: 850)), true)
 
     // Monitor externo à esquerda: x negativo, sem notch e com a barra de menus oculta.
     let externo = Geometria(tela: CGRect(x: -1920, y: 0, width: 1920, height: 1080), esquerda: nil, direita: nil,
@@ -33,7 +38,7 @@ import Foundation
     conferir("sem notch", externo.temNotch, false)
     conferir("sem notch: só as asas, com a altura da barra", externo.retangulo(externo.compacta),
              CGRect(x: -1002, y: 1056, width: 84, height: 24))
-    conferir("sem notch: as asas abrem", externo.gatilho.contains(CGPoint(x: -960, y: 1070)), true)
+    conferir("sem notch: a pílula em repouso abre", externo.gatilho.contains(CGPoint(x: -1010, y: 1070)), true)
     conferir("áreas auxiliares sem topo seguro não contam como notch",
              Geometria(tela: externo.tela, esquerda: 10, direita: 10, topoSeguro: 0, barraDeMenus: 24).temNotch, false)
 }
@@ -113,9 +118,38 @@ import Foundation
     bandeja.adicionar([b])
     bandeja.remover(b)
     conferir("remover", bandeja.arquivos.isEmpty, true)
-    conferir("vazia e sem arraste, invisível", bandeja.visivel, false)
-    bandeja.arrastando = true
-    conferir("arrastando, aparece para receber", bandeja.visivel, true)
+}
+
+@MainActor func testarSom() {
+    conferir("app de fora de um processo auxiliar",
+             Som.caminhoDoApp("/Applications/Google Chrome.app/Contents/Frameworks/Google Chrome Framework.framework/Helpers/Google Chrome Helper.app/Contents/MacOS/Google Chrome Helper"),
+             "/Applications/Google Chrome.app")
+    conferir("app comum", Som.caminhoDoApp("/Applications/Spotify.app/Contents/MacOS/Spotify"), "/Applications/Spotify.app")
+    conferir("linha de comando não tem app", Som.caminhoDoApp("/usr/bin/afplay"), nil)
+    conferir("som do WebKit é o Safari", Som.appPorBundle("com.apple.WebKit.GPU"), "com.apple.Safari")
+    conferir("outro bundle sem app", Som.appPorBundle("com.apple.audio.SystemSoundServer"), nil)
+    conferir("player conta", Som.tocadores.contains("com.spotify.client"), true)
+    conferir("navegador conta", Som.tocadores.contains("com.google.Chrome"), true)
+    conferir("app que segura a saída em silêncio não conta", Som.tocadores.contains("com.anthropic.claudefordesktop"), false)
+    conferir("o Kanji não conta", Som.tocadores.contains("io.github.henriquebap.kanji"), false)
+
+    let music = Som.metadados(["Name": "Águas de Março", "Artist": "Elis\u{202E} Regina", "Player State": "Playing", "PersistentID": 42])
+    conferir("Music: título", music.titulo, "Águas de Março")
+    conferir("Music: artista limpo como texto de fora", music.artista, "Elis Regina")
+    conferir("Music: tocando", music.tocando, true)
+    conferir("Music: chave pelo PersistentID", music.chave, "42")
+    let spotify = Som.metadados(["Name": "Song", "Player State": "Paused", "Track ID": "spotify:track:abc"])
+    conferir("Spotify pausado", spotify.tocando, false)
+    conferir("Spotify: chave pelo Track ID", spotify.chave, "spotify:track:abc")
+    conferir("sem nada", Som.metadados([:]), Metadados(titulo: nil, artista: nil, tocando: false, chave: nil))
+
+    var e = Estabilizador()
+    conferir("um plim não liga", e.registrar(true), false)
+    conferir("dois segundos de som ligam", e.registrar(true), true)
+    conferir("um segundo de silêncio não desliga", e.registrar(false), true)
+    _ = e.registrar(true)
+    _ = e.registrar(false); _ = e.registrar(false)
+    conferir("três de silêncio desligam", e.registrar(false), false)
 }
 
 @main struct Teste {
@@ -124,6 +158,7 @@ import Foundation
         testarComando()
         testarValidacao()
         testarBandeja()
+        testarSom()
         if falhas > 0 { exit(1) }
     }
 }

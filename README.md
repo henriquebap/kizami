@@ -10,7 +10,7 @@ A small island around the MacBook notch that shows what other apps and scripts a
 |---|---|---|
 | ![closed](docs/fechada.png) | ![arrived](docs/aviso.png) | ![open](docs/aberta.png) |
 
-Free and open source (Apache 2.0). No private APIs and no permissions. No third-party dependencies.
+Free and open source (Apache 2.0). No private APIs and no third-party dependencies. The only permission is optional: Automation, to show the artwork of the song that is playing.
 
 ## Build
 
@@ -43,6 +43,14 @@ From another app, post a distributed notification named `io.github.henriquebap.k
 
 **What arrives is data, never a command.** Any process on the Mac can post one. Kizami only displays it: cleaned of invisible and direction characters, length-limited and never parsed as Markdown. *Clear the Island*, in Kizami's menu bar item, removes everything.
 
+## Now playing
+
+When a player or browser is playing sound, the closed island shows its artwork (or the app's icon) and moving bars; hovered, it shows the title, the artist and the app. Title and artist come from the notifications Music and Spotify post on their own (no permission). The artwork is asked from the player through AppleScript: the first time, macOS asks whether Kizami may control Music or Spotify. Say no and the island shows the app's icon instead.
+
+Only media apps count (players and browsers): Core Audio tells which apps have their audio output open, not whether anything audible is playing, and some apps keep it open in silence.
+
+![now playing](docs/tocando.png)
+
 ## File tray
 
 Drag files from any app to the notch: the island opens with *Drop here to keep*. The files stay in a row on the island so you can drag them into another app later, AirDrop them, or empty the tray. Double-click opens a file; right-click shows it in Finder or removes it. The tray keeps a reference, not a copy: dragging a file out works like dragging it from Finder, and the tray is emptied when Kizami quits.
@@ -56,7 +64,7 @@ Drag files from any app to the notch: the island opens with *Drop here to keep*.
 - **New activity:** the island drops a line below the notch with the title for a few seconds, then closes again.
 - **On launch:** it shows "Kizami is running", and the menu bar item says how many activities are on the island.
 - **Full screen:** it shows on top of full-screen apps.
-- **No activity:** the island shrinks back into the notch.
+- **Always there:** with nothing to show, the island rests as a small pill around the notch (or at the top of a display without one). Hovered, it offers the empty tray.
 - **Clicks:** while closed, clicks pass through to the menu bar.
 
 ## License

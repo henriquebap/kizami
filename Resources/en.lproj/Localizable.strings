@@ -25,3 +25,6 @@
 "Abrir" = "Open";
 "Mostrar no Finder" = "Show in Finder";
 "Tirar da bandeja" = "Remove from Tray";
+
+/* Tocando agora */
+"Tocando agora" = "Now Playing";

@@ -14,6 +14,8 @@ struct Geometria: Equatable {
     static let maximoLinhas = 3
     /// A fileira de arquivos da bandeja, abaixo da lista.
     static let alturaBandeja: CGFloat = 64
+    /// A linha do que está tocando: miniatura, título e artista.
+    static let alturaTocando: CGFloat = 52
     static let espacoSecao: CGFloat = 10
     /// Margem transparente da janela para a sombra da ilha aberta não ser cortada.
     static let sombra: CGFloat = 18
@@ -34,24 +36,31 @@ struct Geometria: Equatable {
 
     var temNotch: Bool { notch.width > 0 }
 
+    /// Em repouso, sem nada para mostrar: só um pouco maior que o notch, para a ilha estar sempre à vista.
+    /// Sem notch, uma pílula pequena no topo da tela.
+    var repouso: CGSize { CGSize(width: max(notch.width + 2 * (Self.orelha + 12), 110), height: notch.height) }
+
     /// Fechada: o notch com uma asa de cada lado.
     var compacta: CGSize { CGSize(width: notch.width + 2 * (Self.asa + Self.orelha), height: notch.height) }
 
     /// Por alguns segundos depois que uma atividade chega: uma linha com o título abaixo do notch.
     var aviso: CGSize { CGSize(width: max(Self.larguraAviso, compacta.width), height: notch.height + Self.alturaLinha + 6) }
 
-    /// Com o cursor em cima: a lista, com a altura das linhas que existem (até 3), e a bandeja embaixo.
-    /// Sem bandeja, sempre ao menos uma linha; só a bandeja, nenhuma.
-    func aberta(linhas: Int, bandeja: Bool = false) -> CGSize {
-        let n = CGFloat(min(max(linhas, bandeja ? 0 : 1), Self.maximoLinhas))
-        let lista = n > 0 ? n * Self.alturaLinha + (n - 1) * Self.espacoLinha : 0
-        let fileira = bandeja ? Self.alturaBandeja + (n > 0 ? Self.espacoSecao : 0) : 0
-        return CGSize(width: max(Self.larguraAberta, compacta.width), height: notch.height + 8 + lista + fileira + 14)
+    /// Com o cursor em cima: as seções que existem, uma embaixo da outra.
+    func aberta(_ secoes: Secoes) -> CGSize {
+        let n = CGFloat(secoes.linhas)
+        let blocos = [
+            secoes.tocando ? Self.alturaTocando : 0,
+            n > 0 ? n * Self.alturaLinha + (n - 1) * Self.espacoLinha : 0,
+            secoes.bandeja ? Self.alturaBandeja : 0,
+        ].filter { $0 > 0 }
+        let conteudo = blocos.reduce(0, +) + CGFloat(max(blocos.count - 1, 0)) * Self.espacoSecao
+        return CGSize(width: max(Self.larguraAberta, compacta.width), height: notch.height + 8 + conteudo + 14)
     }
 
     /// A janela tem o tamanho do maior estado mais a margem da sombra; a forma anima dentro dela.
     var janela: CGRect {
-        let maior = aberta(linhas: Self.maximoLinhas, bandeja: true)
+        let maior = aberta(Secoes(tocando: true, atividades: Self.maximoLinhas, arquivos: 1, arrastando: false))
         return retangulo(CGSize(width: maior.width + 2 * Self.sombra, height: maior.height + Self.sombra))
     }
 
@@ -67,8 +76,22 @@ struct Geometria: Equatable {
 
     /// Onde o cursor abre a ilha fechada: só o notch, que é área morta. As asas ficam sobre a barra de menus,
     /// e abrir por elas cobriria os menus ao lado do notch a cada passada do cursor.
-    /// Sem notch, as asas: o meio do topo da tela costuma ficar vazio.
+    /// Sem notch, a pílula em repouso: o meio do topo da tela costuma ficar vazio.
     var gatilho: CGRect {
-        temNotch ? retangulo(notch).insetBy(dx: 0, dy: -4) : zona(compacta)
+        temNotch ? retangulo(notch).insetBy(dx: 0, dy: -4) : zona(repouso)
+    }
+}
+
+/// O que a ilha aberta mostra, de cima para baixo. A janela (área do hover) e a view medem com a mesma regra.
+struct Secoes: Equatable {
+    let tocando: Bool
+    let linhas: Int
+    let bandeja: Bool
+
+    init(tocando: Bool, atividades: Int, arquivos: Int, arrastando: Bool) {
+        self.tocando = tocando
+        linhas = min(atividades, Geometria.maximoLinhas)
+        // Sem nada para mostrar, a ilha aberta oferece a bandeja vazia: é o que dá para fazer com ela.
+        bandeja = arquivos > 0 || arrastando || (atividades == 0 && !tocando)
     }
 }

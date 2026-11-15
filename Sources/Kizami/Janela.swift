@@ -24,11 +24,17 @@ final class Janela {
     private let estado: EstadoIlha
     private let mural: Mural
     private let bandeja: Bandeja
+    private let tocando: TocandoAgora
     private var vigia: Task<Void, Never>?
+    /// Quando o cursor entrou na área que abre a ilha fechada.
+    private var entrada: Date?
+    /// O cursor precisa parar no notch este tempo: passar por ele a caminho dos menus da direita não abre a ilha.
+    private static let permanencia: TimeInterval = 0.15
 
-    init(mural: Mural, bandeja: Bandeja, tela: NSScreen) {
+    init(mural: Mural, bandeja: Bandeja, tocando: TocandoAgora, tela: NSScreen) {
         self.mural = mural
         self.bandeja = bandeja
+        self.tocando = tocando
         let geometria = Geometria(tela: tela.frame, esquerda: tela.auxiliaryTopLeftArea?.width,
                                   direita: tela.auxiliaryTopRightArea?.width, topoSeguro: tela.safeAreaInsets.top,
                                   barraDeMenus: NSStatusBar.system.thickness)
@@ -44,7 +50,7 @@ final class Janela {
         painel.isMovable = false
         painel.ignoresMouseEvents = true
         painel.appearance = NSAppearance(named: .darkAqua)  // texto claro sobre o preto, com o Mac em modo claro ou escuro
-        let host = NSHostingView(rootView: IlhaView(estado: estado, mural: mural, bandeja: bandeja))
+        let host = NSHostingView(rootView: IlhaView(estado: estado, mural: mural, bandeja: bandeja, tocando: tocando))
         host.sizingOptions = []  // o tamanho é o da Geometria, não o do conteúdo
         painel.contentView = host
         painel.setFrame(geometria.janela, display: true)
@@ -58,7 +64,7 @@ final class Janela {
     }
 
     // ponytail: consulta a posição do cursor em cada monitor: a cada 50 ms com o cursor perto do topo ou a ilha aberta,
-    // a cada 250 ms longe dele, e 2 vezes por segundo sem nada na ilha. É o jeito que não depende de evento chegar a
+    // a cada 250 ms longe dele. É o jeito que não depende de evento chegar a
     // uma janela que nunca vira key; trocar por um monitor global de .mouseMoved se o consumo de energia aparecer.
     private func vigiar() {
         vigia = Task { [weak self] in
@@ -76,10 +82,9 @@ final class Janela {
         // O monitor global não vê a soltura que cai na própria ilha (nem um arraste cancelado com esc):
         // sem o botão apertado, não há arraste, e a ilha não pode ficar presa aberta sobre a barra de menus.
         if bandeja.arrastando && !botao { bandeja.arrastando = false }
-        let ativa = !mural.atividades.isEmpty || bandeja.visivel
         let g = estado.geometria
         let zona = if estado.aberta {
-            g.zona(g.aberta(linhas: mural.atividades.count, bandeja: bandeja.visivel))
+            g.zona(g.aberta(secoesAtuais(mural, bandeja, tocando)))
         } else if bandeja.arrastando {
             g.zona(g.compacta)  // arrastando, as asas também valem: ninguém clica num menu no meio de um arraste
         } else if mural.novidade != nil {
@@ -90,7 +95,15 @@ final class Janela {
         let cursor = NSEvent.mouseLocation
         // Aberta e com o botão apertado, fica aberta: um arquivo arrastado para fora da bandeja ainda está em viagem,
         // e fechar trocaria a view de origem no meio do arraste.
-        let aberta = ativa && (zona.contains(cursor) || (estado.aberta && botao))
+        let dentro = zona.contains(cursor)
+        entrada = dentro ? (entrada ?? .now) : nil
+        // A ilha está sempre lá e abre mesmo vazia, para mostrar a bandeja. Fechada, só abre se o cursor parar;
+        // com um arquivo sendo arrastado, abre na hora.
+        let aberta = if estado.aberta {
+            dentro || botao
+        } else {
+            dentro && (bandeja.arrastando || Date.now.timeIntervalSince(entrada ?? .now) >= Self.permanencia)
+        }
         if aberta != estado.aberta {
             estado.aberta = aberta
             painel.ignoresMouseEvents = !aberta  // aberta, o clique fica na ilha em vez de cair na janela de baixo
@@ -99,7 +112,6 @@ final class Janela {
                 bandeja.podar()
             }
         }
-        guard ativa else { return .milliseconds(500) }
         let pertoDoTopo = g.tela.contains(cursor) && cursor.y > g.tela.maxY - 120
         return .milliseconds(estado.aberta || pertoDoTopo ? 50 : 250)
     }

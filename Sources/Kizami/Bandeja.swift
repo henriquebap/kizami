@@ -14,8 +14,6 @@ final class Bandeja {
     /// Um arquivo está sendo arrastado em algum app: a ilha abre ao chegar no notch para receber.
     var arrastando = false
 
-    var visivel: Bool { arrastando || !arquivos.isEmpty }
-
     /// Devolve quantos arquivos entraram (0 se nada era arquivo).
     @discardableResult func adicionar(_ urls: [URL]) -> Int {
         var novos: [URL] = []

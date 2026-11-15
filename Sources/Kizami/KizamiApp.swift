@@ -73,13 +73,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 }
 
-/// Raiz de composição: o mural, a bandeja e uma ilha por monitor.
+/// Raiz de composição: o mural, a bandeja, o que está tocando e uma ilha por monitor.
 @MainActor
 final class Kizami {
     static let shared = Kizami()
 
     let mural = Mural()
     let bandeja = Bandeja()
+    let tocando = TocandoAgora()
     private var janelas: [Janela] = []
     private var arrasto: Arrasto?
 
@@ -95,7 +96,8 @@ final class Kizami {
             MainActor.assumeIsolated { Kizami.shared.montarIlhas() }
         }
         Correio.ouvir(mural)
-        // Sinal de vida ao abrir: sem ele, o Kizami começa invisível, escondido atrás do notch.
+        tocando.iniciar()
+        // Sinal de vida ao abrir: diz o que é a ilha que acabou de aparecer.
         mural.receber(Atividade(id: "kizami", titulo: String(localized: "Kizami está rodando"),
                                 detalhe: String(localized: "Passe o mouse para abrir"),
                                 simbolo: "capsule.tophalf.filled", cor: "laranja", expira: 6))
@@ -104,7 +106,7 @@ final class Kizami {
     /// Uma ilha em cada monitor: a pessoa vê o aviso na tela em que está trabalhando, tenha ela notch ou não.
     private func montarIlhas() {
         janelas.forEach { $0.fechar() }
-        janelas = NSScreen.screens.map { Janela(mural: mural, bandeja: bandeja, tela: $0) }
+        janelas = NSScreen.screens.map { Janela(mural: mural, bandeja: bandeja, tocando: tocando, tela: $0) }
         registro.info("ilhas: \(self.janelas.count) monitor(es), \(NSScreen.screens.filter { $0.safeAreaInsets.top > 0 }.count) com notch")
     }
 

@@ -36,6 +36,8 @@ make install && /Applications/Kizami.app/Contents/MacOS/Kizami enviar --titulo t
 | `Bandeja.swift` | The file tray: URLs in memory (max 20), dedupe, prune missing files |
 | `Arrasto.swift` | Global mouse monitors + the drag pasteboard: notices a file drag in any app so the closed island opens and accepts the drop |
 | `Atividades.swift` | `Atividade` (wire format + validation) and `Mural` (list, max 8, expiry, the "arrived" line) |
+| `Som.swift` | Now playing: Core Audio process list (who has audio output open), media-app allowlist, Music/Spotify notifications, debounce |
+| `Capa.swift` | Artwork through `osascript` (Music bytes to a temp file; Spotify URL from `*.scdn.co`) |
 | `Correio.swift` | CLI parsing (`Comando`) and the distributed notifications (`Correio`) |
 
 What's next and what macOS allows: [docs/ROADMAP.md](docs/ROADMAP.md).
@@ -47,7 +49,8 @@ What's next and what macOS allows: [docs/ROADMAP.md](docs/ROADMAP.md).
 3. **Never take focus.** Use `.nonactivatingPanel` and `orderFrontRegardless()`. Never `makeKey`, never `NSApp.activate`.
 4. **Never block the menu bar.** While closed, `ignoresMouseEvents = true`.
 5. **Public APIs only.** No MediaRemote, no SkyLight: they break between macOS versions.
-6. **No third-party dependencies.**
+6. **Permissions stay optional.** The only one is Automation, for the artwork; denied, everything else keeps working with the app's icon. Track titles and artists are content: never in logs.
+7. **No third-party dependencies.**
 
 ## Conventions
 
