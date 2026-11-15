@@ -84,6 +84,10 @@ final class Kizami {
     private var arrasto: Arrasto?
 
     func iniciar() {
+        // Sem janela comum, o macOS trata o app como ocioso e pode encerrá-lo sozinho (visto no log:
+        // _kLSApplicationWouldBeTerminatedByTALKey=1). A ilha precisa ficar viva enquanto o app está aberto.
+        ProcessInfo.processInfo.disableAutomaticTermination("ilha no notch")
+        ProcessInfo.processInfo.disableSuddenTermination()
         montarIlhas()
         arrasto = Arrasto(bandeja: bandeja) { Kizami.shared.janelas.forEach { $0.conferir() } }
         NotificationCenter.default.addObserver(forName: NSApplication.didChangeScreenParametersNotification,
