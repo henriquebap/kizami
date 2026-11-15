@@ -1,0 +1,9 @@
+/* Interface em inglês. A chave é o texto em português do código. */
+
+"Kizami" = "Kizami";
+"Mostrar exemplo" = "Show Example";
+"Limpar a ilha" = "Clear the Island";
+"Sair do Kizami" = "Quit Kizami";
+"Exemplo do Kizami" = "Kizami example";
+"Passe o mouse para abrir" = "Hover to open";
+"mais %lld" = "%lld more";
