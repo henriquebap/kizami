@@ -51,26 +51,31 @@ struct IlhaView: View {
                     EmptyView()
                 case .compacta:
                     // Atividade tem a vez (foi pedida por alguém); depois o som; por fim a bandeja.
+                    let lado = ladoDaAsa(g.notch.height)
                     if let destaque = mural.destaque {
-                        Compacta(simbolo: destaque.simbolo ?? "bell.fill", cor: cor(destaque),
-                                 total: mural.atividades.count, chegada: destaque.chegada)
-                            .frame(height: g.notch.height)
-                    } else if tocando.app != nil {
-                        HStack(spacing: 0) {
-                            Miniatura(tocando: tocando, lado: 20, raio: 5).frame(width: Geometria.asa)
-                            Spacer(minLength: 0)
-                            Barras(altura: 12).frame(width: Geometria.asa)
+                        Asas(altura: g.notch.height) {
+                            Simbolo(nome: destaque.simbolo ?? "bell.fill", cor: cor(destaque), chegada: destaque.chegada)
+                        } direita: {
+                            Contador(total: mural.atividades.count, cor: cor(destaque))
                         }
-                        .frame(height: g.notch.height)
+                    } else if tocando.app != nil {
+                        Asas(altura: g.notch.height) {
+                            Miniatura(tocando: tocando, lado: lado, raio: lado / 4)
+                        } direita: {
+                            Barras(altura: lado * 0.6)
+                        }
                     } else {
-                        Compacta(simbolo: "tray.full.fill", cor: .white, total: bandeja.arquivos.count, chegada: nil)
-                            .frame(height: g.notch.height)
+                        Asas(altura: g.notch.height) {
+                            Simbolo(nome: "tray.full.fill", cor: .white, chegada: nil)
+                        } direita: {
+                            Contador(total: bandeja.arquivos.count, cor: .white)
+                        }
                     }
                 case .aviso:
                     if let novidade = mural.novidade {
                         LinhaDeAviso(atividade: novidade)
                             .frame(height: Geometria.alturaLinha)
-                            .padding(.top, g.notch.height)  // a faixa do notch é a câmera: o texto vem abaixo
+                            .padding(.top, g.faixaDoTopo)  // a faixa do notch é a câmera: o texto vem abaixo
                     }
                 case .aberta:
                     VStack(spacing: Geometria.espacoSecao) {
@@ -78,7 +83,7 @@ struct IlhaView: View {
                         if secoes.linhas > 0 { Lista(atividades: mural.atividades) }
                         if secoes.bandeja { FileiraDaBandeja(bandeja: bandeja, alvo: estado.alvo) }
                     }
-                    .padding(.top, g.notch.height + 8)
+                    .padding(.top, g.faixaDoTopo + 8)
                 }
             }
             .padding(.horizontal, forma.orelha)
@@ -201,30 +206,58 @@ private struct Barras: View {
     }
 }
 
-/// Fechada: o ícone na asa esquerda e, na direita, um ponto (um item) ou quantos há.
-private struct Compacta: View {
-    let simbolo: String
+/// Fechada: uma coisa em cada asa, com a mesma folga em cima, embaixo e do lado. Assim o conteúdo acompanha
+/// o canto arredondado de baixo, em vez de encostar na borda (com 22 pt de altura no monitor externo, encostava).
+private struct Asas<Esquerda: View, Direita: View>: View {
+    let altura: CGFloat
+    let esquerda: Esquerda
+    let direita: Direita
+
+    init(altura: CGFloat, @ViewBuilder esquerda: () -> Esquerda, @ViewBuilder direita: () -> Direita) {
+        self.altura = altura
+        self.esquerda = esquerda()
+        self.direita = direita()
+    }
+
+    var body: some View {
+        let lado = ladoDaAsa(altura)
+        HStack(spacing: 0) {
+            esquerda.frame(width: lado, height: lado)
+            Spacer(minLength: 0)
+            direita.frame(minWidth: lado, maxHeight: lado)
+        }
+        .padding(.horizontal, (altura - lado) / 2 + 2)  // um pouco mais que em cima: o canto curva para dentro
+        .frame(height: altura)
+    }
+}
+
+/// O lado do conteúdo de uma asa: 20 pt no notch de 32, sempre com 6 pt de folga em cima e embaixo.
+private func ladoDaAsa(_ altura: CGFloat) -> CGFloat { min(20, altura - 12) }
+
+private struct Simbolo: View {
+    let nome: String
     let cor: Color
-    let total: Int
     let chegada: Date?
 
     var body: some View {
-        HStack(spacing: 0) {
-            Image(systemName: simbolo)
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(cor)
-                .symbolEffect(.bounce, value: chegada)
-                .frame(width: Geometria.asa)
-            Spacer(minLength: 0)
-            Group {
-                if total > 1 {
-                    Text(verbatim: "\(total)").font(.caption.weight(.bold)).monospacedDigit()
-                        .contentTransition(.numericText())
-                } else {
-                    Circle().fill(cor).frame(width: 7, height: 7)
-                }
-            }
-            .frame(width: Geometria.asa)
+        Image(systemName: nome)
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundStyle(cor)
+            .symbolEffect(.bounce, value: chegada)
+    }
+}
+
+/// Um ponto para um item; o número para mais de um.
+private struct Contador: View {
+    let total: Int
+    let cor: Color
+
+    var body: some View {
+        if total > 1 {
+            Text(verbatim: "\(total)").font(.caption.weight(.bold)).monospacedDigit()
+                .contentTransition(.numericText())
+        } else {
+            Circle().fill(cor).frame(width: 7, height: 7)
         }
     }
 }

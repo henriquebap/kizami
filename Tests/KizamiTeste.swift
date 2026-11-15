@@ -36,8 +36,11 @@ import Foundation
     let externo = Geometria(tela: CGRect(x: -1920, y: 0, width: 1920, height: 1080), esquerda: nil, direita: nil,
                             topoSeguro: 0, barraDeMenus: 24)
     conferir("sem notch", externo.temNotch, false)
-    conferir("sem notch: só as asas, com a altura da barra", externo.retangulo(externo.compacta),
-             CGRect(x: -1002, y: 1056, width: 84, height: 24))
+    conferir("sem notch: só as asas, com altura para a capa não encostar", externo.retangulo(externo.compacta),
+             CGRect(x: -1030, y: 1050, width: 140, height: 30))
+    conferir("sem notch: fechada não é mais estreita que o repouso", externo.compacta.width >= externo.repouso.width, true)
+    conferir("sem notch: o conteúdo aberto começa no topo, sem faixa vazia", externo.aberta(secoes(true, 0, 0)).height, 4 + 8 + 52 + 14)
+    conferir("com notch: o conteúdo começa abaixo da câmera", mac.faixaDoTopo, 32)
     conferir("sem notch: a pílula em repouso abre", externo.gatilho.contains(CGPoint(x: -1010, y: 1070)), true)
     conferir("áreas auxiliares sem topo seguro não contam como notch",
              Geometria(tela: externo.tela, esquerda: 10, direita: 10, topoSeguro: 0, barraDeMenus: 24).temNotch, false)

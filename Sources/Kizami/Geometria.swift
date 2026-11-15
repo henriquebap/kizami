@@ -17,11 +17,14 @@ struct Geometria: Equatable {
     /// A linha do que está tocando: miniatura, título e artista.
     static let alturaTocando: CGFloat = 52
     static let espacoSecao: CGFloat = 10
+    /// Altura mínima da ilha em tela sem notch. Com a altura da barra de menus (22 pt), a capa de 20 pt ficava
+    /// encostada em cima e embaixo; lá não há câmera nem barra para respeitar no meio do topo.
+    static let alturaSemNotch: CGFloat = 30
     /// Margem transparente da janela para a sombra da ilha aberta não ser cortada.
     static let sombra: CGFloat = 18
 
     let tela: CGRect
-    /// Largura 0 em tela sem notch: a ilha vira só as duas asas, no topo da tela.
+    /// Largura 0 em tela sem notch: a ilha vira só as duas asas, no topo da tela, com `alturaSemNotch`.
     let notch: CGSize
 
     init(tela: CGRect, esquerda: CGFloat?, direita: CGFloat?, topoSeguro: CGFloat, barraDeMenus: CGFloat) {
@@ -30,21 +33,25 @@ struct Geometria: Equatable {
             notch = CGSize(width: tela.width - esquerda - direita, height: topoSeguro)
         } else {
             // Não usar frame.maxY - visibleFrame.maxY: dá 0 com a barra de menus oculta (visto no monitor externo).
-            notch = CGSize(width: 0, height: barraDeMenus)
+            notch = CGSize(width: 0, height: max(barraDeMenus, Self.alturaSemNotch))
         }
     }
 
     var temNotch: Bool { notch.width > 0 }
 
+    /// Onde o conteúdo da ilha aberta começa. Com notch, abaixo dele (é a câmera); sem notch, quase no topo.
+    var faixaDoTopo: CGFloat { temNotch ? notch.height : 4 }
+
     /// Em repouso, sem nada para mostrar: só um pouco maior que o notch, para a ilha estar sempre à vista.
     /// Sem notch, uma pílula pequena no topo da tela.
     var repouso: CGSize { CGSize(width: max(notch.width + 2 * (Self.orelha + 12), 110), height: notch.height) }
 
-    /// Fechada: o notch com uma asa de cada lado.
-    var compacta: CGSize { CGSize(width: notch.width + 2 * (Self.asa + Self.orelha), height: notch.height) }
+    /// Fechada: o notch com uma asa de cada lado. Sem notch, as asas sozinhas dariam 84 pt, mais estreito que
+    /// o repouso: a ilha encolheria ao começar a tocar, e a capa ficaria colada nas barras.
+    var compacta: CGSize { CGSize(width: max(notch.width + 2 * (Self.asa + Self.orelha), 140), height: notch.height) }
 
     /// Por alguns segundos depois que uma atividade chega: uma linha com o título abaixo do notch.
-    var aviso: CGSize { CGSize(width: max(Self.larguraAviso, compacta.width), height: notch.height + Self.alturaLinha + 6) }
+    var aviso: CGSize { CGSize(width: max(Self.larguraAviso, compacta.width), height: faixaDoTopo + Self.alturaLinha + 6) }
 
     /// Com o cursor em cima: as seções que existem, uma embaixo da outra.
     func aberta(_ secoes: Secoes) -> CGSize {
@@ -55,7 +62,7 @@ struct Geometria: Equatable {
             secoes.bandeja ? Self.alturaBandeja : 0,
         ].filter { $0 > 0 }
         let conteudo = blocos.reduce(0, +) + CGFloat(max(blocos.count - 1, 0)) * Self.espacoSecao
-        return CGSize(width: max(Self.larguraAberta, compacta.width), height: notch.height + 8 + conteudo + 14)
+        return CGSize(width: max(Self.larguraAberta, compacta.width), height: faixaDoTopo + 8 + conteudo + 14)
     }
 
     /// A janela tem o tamanho do maior estado mais a margem da sombra; a forma anima dentro dela.
