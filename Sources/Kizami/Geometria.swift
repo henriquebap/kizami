@@ -12,6 +12,9 @@ struct Geometria: Equatable {
     static let alturaLinha: CGFloat = 30
     static let espacoLinha: CGFloat = 4
     static let maximoLinhas = 3
+    /// A fileira de arquivos da bandeja, abaixo da lista.
+    static let alturaBandeja: CGFloat = 64
+    static let espacoSecao: CGFloat = 10
     /// Margem transparente da janela para a sombra da ilha aberta não ser cortada.
     static let sombra: CGFloat = 18
 
@@ -37,16 +40,18 @@ struct Geometria: Equatable {
     /// Por alguns segundos depois que uma atividade chega: uma linha com o título abaixo do notch.
     var aviso: CGSize { CGSize(width: max(Self.larguraAviso, compacta.width), height: notch.height + Self.alturaLinha + 6) }
 
-    /// Com o cursor em cima: a lista, com a altura das linhas que existem (de 1 a 3).
-    func aberta(linhas: Int) -> CGSize {
-        let n = CGFloat(min(max(linhas, 1), Self.maximoLinhas))
-        let lista = n * Self.alturaLinha + (n - 1) * Self.espacoLinha
-        return CGSize(width: max(Self.larguraAberta, compacta.width), height: notch.height + 8 + lista + 14)
+    /// Com o cursor em cima: a lista, com a altura das linhas que existem (até 3), e a bandeja embaixo.
+    /// Sem bandeja, sempre ao menos uma linha; só a bandeja, nenhuma.
+    func aberta(linhas: Int, bandeja: Bool = false) -> CGSize {
+        let n = CGFloat(min(max(linhas, bandeja ? 0 : 1), Self.maximoLinhas))
+        let lista = n > 0 ? n * Self.alturaLinha + (n - 1) * Self.espacoLinha : 0
+        let fileira = bandeja ? Self.alturaBandeja + (n > 0 ? Self.espacoSecao : 0) : 0
+        return CGSize(width: max(Self.larguraAberta, compacta.width), height: notch.height + 8 + lista + fileira + 14)
     }
 
     /// A janela tem o tamanho do maior estado mais a margem da sombra; a forma anima dentro dela.
     var janela: CGRect {
-        let maior = aberta(linhas: Self.maximoLinhas)
+        let maior = aberta(linhas: Self.maximoLinhas, bandeja: true)
         return retangulo(CGSize(width: maior.width + 2 * Self.sombra, height: maior.height + Self.sombra))
     }
 

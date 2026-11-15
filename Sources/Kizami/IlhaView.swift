@@ -19,18 +19,19 @@ private enum Forma: Equatable {
 struct IlhaView: View {
     let estado: EstadoIlha
     let mural: Mural
+    let bandeja: Bandeja
 
     var body: some View {
         let g = estado.geometria
-        let forma: Forma = mural.atividades.isEmpty ? .escondida
-            : estado.aberta ? .aberta
+        let forma: Forma = estado.aberta ? .aberta
             : mural.novidade != nil ? .aviso
-            : .compacta
+            : !mural.atividades.isEmpty || !bandeja.arquivos.isEmpty ? .compacta
+            : .escondida
         let tamanho = switch forma {
         case .escondida: g.notch
         case .compacta: g.compacta
         case .aviso: g.aviso
-        case .aberta: g.aberta(linhas: mural.atividades.count)
+        case .aberta: g.aberta(linhas: mural.atividades.count, bandeja: bandeja.visivel)
         }
         let contorno = FormaIlha(orelha: forma.orelha, raio: forma.raio)
 
@@ -41,8 +42,13 @@ struct IlhaView: View {
                 case .escondida:
                     EmptyView()
                 case .compacta:
+                    // Atividade tem a vez; sem nenhuma, a ilha fechada mostra a bandeja.
                     if let destaque = mural.destaque {
-                        Compacta(destaque: destaque, total: mural.atividades.count)
+                        Compacta(simbolo: destaque.simbolo ?? "bell.fill", cor: cor(destaque),
+                                 total: mural.atividades.count, chegada: destaque.chegada)
+                            .frame(height: g.notch.height)
+                    } else {
+                        Compacta(simbolo: "tray.full.fill", cor: .white, total: bandeja.arquivos.count, chegada: nil)
                             .frame(height: g.notch.height)
                     }
                 case .aviso:
@@ -52,8 +58,11 @@ struct IlhaView: View {
                             .padding(.top, g.notch.height)  // a faixa do notch é a câmera: o texto vem abaixo
                     }
                 case .aberta:
-                    Lista(atividades: mural.atividades)
-                        .padding(.top, g.notch.height + 8)
+                    VStack(spacing: Geometria.espacoSecao) {
+                        if !mural.atividades.isEmpty { Lista(atividades: mural.atividades) }
+                        if bandeja.visivel { FileiraDaBandeja(bandeja: bandeja, alvo: estado.alvo) }
+                    }
+                    .padding(.top, g.notch.height + 8)
                 }
             }
             .padding(.horizontal, forma.orelha)
@@ -61,6 +70,11 @@ struct IlhaView: View {
         }
         .frame(width: tamanho.width, height: tamanho.height)
         .clipShape(contorno)
+        // Só recebe com a ilha aberta: fechada, a janela ignora o mouse e o arraste passa direto.
+        .dropDestination(for: URL.self) { urls, _ in
+            bandeja.arrastando = false
+            return bandeja.adicionar(urls) > 0  // um link da web não é arquivo: o arraste volta para a origem
+        } isTargeted: { estado.alvo = $0 }
         .shadow(color: .black.opacity(forma == .aberta ? 0.4 : 0), radius: 14, y: 6)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .foregroundStyle(.white)
@@ -69,6 +83,8 @@ struct IlhaView: View {
                    ? .spring(response: 0.34, dampingFraction: 0.92)
                    : .spring(response: 0.44, dampingFraction: 0.74), value: forma)
         .animation(.spring(response: 0.4, dampingFraction: 0.85), value: mural.atividades.count)
+        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: bandeja.arquivos.count)
+        .animation(.smooth(duration: 0.2), value: estado.alvo)
     }
 }
 
@@ -98,14 +114,19 @@ struct FormaIlha: Shape {
     }
 }
 
-/// Fechada: o ícone na asa esquerda e, na direita, um ponto (uma atividade) ou quantas há.
+/// Fechada: o ícone na asa esquerda e, na direita, um ponto (um item) ou quantos há.
 private struct Compacta: View {
-    let destaque: Atividade
+    let simbolo: String
+    let cor: Color
     let total: Int
+    let chegada: Date?
 
     var body: some View {
         HStack(spacing: 0) {
-            Icone(atividade: destaque)
+            Image(systemName: simbolo)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(cor)
+                .symbolEffect(.bounce, value: chegada)
                 .frame(width: Geometria.asa)
             Spacer(minLength: 0)
             Group {
@@ -113,10 +134,92 @@ private struct Compacta: View {
                     Text(verbatim: "\(total)").font(.caption.weight(.bold)).monospacedDigit()
                         .contentTransition(.numericText())
                 } else {
-                    Circle().fill(cor(destaque)).frame(width: 7, height: 7)
+                    Circle().fill(cor).frame(width: 7, height: 7)
                 }
             }
             .frame(width: Geometria.asa)
+        }
+    }
+}
+
+/// A bandeja aberta: os arquivos numa fileira (arrastáveis para fora) e as ações ao lado.
+/// Vazia, durante um arraste, é só a área de soltar.
+private struct FileiraDaBandeja: View {
+    let bandeja: Bandeja
+    let alvo: Bool
+
+    var body: some View {
+        Group {
+            if bandeja.arquivos.isEmpty {
+                Label("Solte aqui para guardar", systemImage: "tray.and.arrow.down")
+                    .font(.callout.weight(.medium))
+                    .foregroundStyle(alvo ? .primary : .secondary)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background {
+                        RoundedRectangle(cornerRadius: 16)
+                            .strokeBorder(style: StrokeStyle(lineWidth: 1.5, dash: [5, 4]))
+                            .foregroundStyle(.white.opacity(alvo ? 0.8 : 0.3))
+                    }
+            } else {
+                HStack(spacing: 8) {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 4) {
+                            ForEach(bandeja.arquivos, id: \.self) { url in
+                                ArquivoNaBandeja(url: url, bandeja: bandeja)
+                                    .transition(.scale(scale: 0.6).combined(with: .opacity))
+                            }
+                        }
+                    }
+                    VStack(spacing: 6) {
+                        Button("Enviar por AirDrop", systemImage: "square.and.arrow.up") {
+                            NSSharingService(named: .sendViaAirDrop)?.perform(withItems: bandeja.arquivos)
+                        }
+                        Button("Esvaziar a bandeja", systemImage: "xmark") { bandeja.esvaziar() }
+                    }
+                    .labelStyle(.iconOnly)
+                    .buttonStyle(.plain)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                }
+                .background {
+                    RoundedRectangle(cornerRadius: 16).fill(.white.opacity(alvo ? 0.14 : 0.06))
+                }
+            }
+        }
+        .frame(height: Geometria.alturaBandeja)
+        .padding(.horizontal, 10)
+    }
+}
+
+/// Um arquivo da bandeja: arrastar leva para outro app (como arrastar do Finder), clique duplo abre.
+private struct ArquivoNaBandeja: View {
+    let url: URL
+    let bandeja: Bandeja
+
+    var body: some View {
+        VStack(spacing: 3) {
+            Image(nsImage: NSWorkspace.shared.icon(forFile: url.path))
+                .resizable()
+                .frame(width: 32, height: 32)
+            // verbatim: nome de arquivo não pode virar Markdown nem chave de tradução.
+            Text(verbatim: url.lastPathComponent)
+                .font(.caption2)
+                .lineLimit(1)
+                .truncationMode(.middle)
+        }
+        .frame(width: 58)
+        .padding(.vertical, 6)
+        .contentShape(.rect)
+        .help(url.lastPathComponent)
+        // Oferece o conteúdo do arquivo, não o endereço: o destino recebe uma cópia. Com o endereço (`.draggable(url)`),
+        // o Finder moveria o original ao soltar numa pasta do mesmo disco.
+        .onDrag { NSItemProvider(contentsOf: url) ?? NSItemProvider() }
+        .onTapGesture(count: 2) { NSWorkspace.shared.open(url) }
+        .contextMenu {
+            Button("Abrir") { NSWorkspace.shared.open(url) }
+            Button("Mostrar no Finder") { NSWorkspace.shared.activateFileViewerSelecting([url]) }
+            Divider()
+            Button("Tirar da bandeja") { bandeja.remover(url) }
         }
     }
 }

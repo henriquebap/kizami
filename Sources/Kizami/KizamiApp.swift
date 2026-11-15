@@ -17,7 +17,7 @@ struct KizamiApp: App {
 
     var body: some Scene {
         MenuBarExtra("Kizami", systemImage: "capsule.tophalf.filled") {
-            MenuView(mural: Kizami.shared.mural)
+            MenuView(mural: Kizami.shared.mural, bandeja: Kizami.shared.bandeja)
         }
     }
 }
@@ -25,15 +25,19 @@ struct KizamiApp: App {
 /// O menu diz o que o Kizami é e o que está na ilha, para não ser um ícone mudo na barra.
 private struct MenuView: View {
     let mural: Mural
+    let bandeja: Bandeja
 
     var body: some View {
         Text("Kizami está rodando")
         Text(resumo)
+        Text(resumoDaBandeja)
         Divider()
         Button("Mostrar exemplo") { Kizami.shared.mostrarExemplo() }
         // Qualquer processo pode deixar uma atividade sem prazo: tirar tudo não pode depender da linha de comando.
         Button("Limpar a ilha") { mural.limpar() }
             .disabled(mural.atividades.isEmpty)
+        Button("Esvaziar a bandeja") { bandeja.esvaziar() }
+            .disabled(bandeja.arquivos.isEmpty)
         Divider()
         Button("Sair do Kizami") { NSApp.terminate(nil) }
             .keyboardShortcut("q")
@@ -44,6 +48,14 @@ private struct MenuView: View {
         case 0: String(localized: "Nenhuma atividade na ilha")
         case 1: String(localized: "1 atividade na ilha")
         case let n: String(localized: "\(n) atividades na ilha")
+        }
+    }
+
+    private var resumoDaBandeja: String {
+        switch bandeja.arquivos.count {
+        case 0: String(localized: "Bandeja vazia: arraste arquivos até o notch")
+        case 1: String(localized: "1 arquivo na bandeja")
+        case let n: String(localized: "\(n) arquivos na bandeja")
         }
     }
 }
@@ -61,16 +73,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 }
 
-/// Raiz de composição: o mural e uma ilha por monitor.
+/// Raiz de composição: o mural, a bandeja e uma ilha por monitor.
 @MainActor
 final class Kizami {
     static let shared = Kizami()
 
     let mural = Mural()
+    let bandeja = Bandeja()
     private var janelas: [Janela] = []
+    private var arrasto: Arrasto?
 
     func iniciar() {
         montarIlhas()
+        arrasto = Arrasto(bandeja: bandeja) { Kizami.shared.janelas.forEach { $0.conferir() } }
         NotificationCenter.default.addObserver(forName: NSApplication.didChangeScreenParametersNotification,
                                                object: nil, queue: .main) { _ in
             MainActor.assumeIsolated { Kizami.shared.montarIlhas() }
@@ -85,7 +100,7 @@ final class Kizami {
     /// Uma ilha em cada monitor: a pessoa vê o aviso na tela em que está trabalhando, tenha ela notch ou não.
     private func montarIlhas() {
         janelas.forEach { $0.fechar() }
-        janelas = NSScreen.screens.map { Janela(mural: mural, tela: $0) }
+        janelas = NSScreen.screens.map { Janela(mural: mural, bandeja: bandeja, tela: $0) }
         registro.info("ilhas: \(self.janelas.count) monitor(es), \(NSScreen.screens.filter { $0.safeAreaInsets.top > 0 }.count) com notch")
     }
 

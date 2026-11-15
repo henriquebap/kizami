@@ -43,6 +43,12 @@ From another app, post a distributed notification named `io.github.henriquebap.k
 
 **What arrives is data, never a command.** Any process on the Mac can post one. Kizami only displays it: cleaned of invisible and direction characters, length-limited and never parsed as Markdown. *Clear the Island*, in Kizami's menu bar item, removes everything.
 
+## File tray
+
+Drag files from any app to the notch: the island opens with *Drop here to keep*. The files stay in a row on the island so you can drag them into another app later, AirDrop them, or empty the tray. Double-click opens a file; right-click shows it in Finder or removes it. The tray keeps a reference, not a copy: dragging a file out works like dragging it from Finder, and the tray is emptied when Kizami quits.
+
+![tray](docs/bandeja.png)
+
 ## Behavior
 
 - **Notch:** on a screen with a notch, the island hugs it and opens when the cursor touches the notch itself, never the menus beside it. On a screen without one, the island is just the two "wings" under the menu bar.

@@ -19,7 +19,10 @@ import Foundation
     conferir("aberta com 1 linha é baixa", mac.aberta(linhas: 1), CGSize(width: 340, height: 84))
     conferir("aberta com 3 linhas", mac.aberta(linhas: 3), CGSize(width: 340, height: 152))
     conferir("aberta não passa de 3 linhas", mac.aberta(linhas: 8), mac.aberta(linhas: 3))
-    conferir("janela cabe a maior forma e a sombra", mac.janela, CGRect(x: 568, y: 812, width: 376, height: 170))
+    conferir("só a bandeja, sem linhas", mac.aberta(linhas: 0, bandeja: true), CGSize(width: 340, height: 118))
+    conferir("lista de 2 e bandeja", mac.aberta(linhas: 2, bandeja: true), CGSize(width: 340, height: 192))
+    conferir("sem bandeja, 0 linhas vira 1", mac.aberta(linhas: 0), mac.aberta(linhas: 1))
+    conferir("janela cabe a maior forma e a sombra", mac.janela, CGRect(x: 568, y: 738, width: 376, height: 244))
     conferir("cursor encostado no topo do notch abre", mac.gatilho.contains(CGPoint(x: 756, y: 982)), true)
     conferir("cursor na asa (barra de menus) não abre", mac.gatilho.contains(CGPoint(x: 650, y: 970)), false)
     conferir("aberta, a ilha inteira segura o hover", mac.zona(mac.aberta(linhas: 3)).contains(CGPoint(x: 600, y: 850)), true)
@@ -88,11 +91,39 @@ import Foundation
     conferir("limpar tira o aviso", mural.novidade == nil, true)
 }
 
+@MainActor func testarBandeja() {
+    let pasta = FileManager.default.temporaryDirectory.appendingPathComponent("kizami-teste-\(UUID().uuidString)")
+    try? FileManager.default.createDirectory(at: pasta, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: pasta) }
+    let a = pasta.appendingPathComponent("a.txt"), b = pasta.appendingPathComponent("b.pdf")
+    FileManager.default.createFile(atPath: a.path, contents: Data())
+    FileManager.default.createFile(atPath: b.path, contents: Data())
+
+    let bandeja = Bandeja()
+    conferir("link da web não entra", bandeja.adicionar([URL(string: "https://exemplo.com/x")!]), 0)
+    conferir("conta só os arquivos", bandeja.adicionar([a, b, a, URL(string: "https://exemplo.com/x")!]), 2)
+    conferir("só arquivos, sem duplicata, na ordem", bandeja.arquivos.map(\.lastPathComponent), ["a.txt", "b.pdf"])
+    bandeja.adicionar([a])
+    conferir("soltar de novo leva para o fim", bandeja.arquivos.map(\.lastPathComponent), ["b.pdf", "a.txt"])
+    bandeja.adicionar((0..<30).map { pasta.appendingPathComponent("\($0)") })
+    conferir("no máximo 20, sai o mais antigo", bandeja.arquivos.count, Bandeja.maximo)
+    conferir("o mais antigo saiu", bandeja.arquivos.contains(b), false)
+    bandeja.podar()
+    conferir("podar tira o que não existe mais", bandeja.arquivos.map(\.lastPathComponent), [] as [String])
+    bandeja.adicionar([b])
+    bandeja.remover(b)
+    conferir("remover", bandeja.arquivos.isEmpty, true)
+    conferir("vazia e sem arraste, invisível", bandeja.visivel, false)
+    bandeja.arrastando = true
+    conferir("arrastando, aparece para receber", bandeja.visivel, true)
+}
+
 @main struct Teste {
     @MainActor static func main() {
         testarGeometria()
         testarComando()
         testarValidacao()
+        testarBandeja()
         if falhas > 0 { exit(1) }
     }
 }

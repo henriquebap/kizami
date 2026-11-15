@@ -33,10 +33,12 @@ make install && /Applications/Kizami.app/Contents/MacOS/Kizami enviar --titulo t
 | `Geometria.swift` | Pure: notch size and the sizes of each state (closed, arrived, open) from `NSScreen` measurements |
 | `Janela.swift` | One display's `NSPanel`, hover polling, `ignoresMouseEvents` |
 | `IlhaView.swift` | The notch-shaped outline (`FormaIlha`), the states and their spring animations |
+| `Bandeja.swift` | The file tray: URLs in memory (max 20), dedupe, prune missing files |
+| `Arrasto.swift` | Global mouse monitors + the drag pasteboard: notices a file drag in any app so the closed island opens and accepts the drop |
 | `Atividades.swift` | `Atividade` (wire format + validation) and `Mural` (list, max 8, expiry, the "arrived" line) |
+| `Correio.swift` | CLI parsing (`Comando`) and the distributed notifications (`Correio`) |
 
 What's next and what macOS allows: [docs/ROADMAP.md](docs/ROADMAP.md).
-| `Correio.swift` | CLI parsing (`Comando`) and the distributed notifications (`Correio`) |
 
 ## Rules that must not break
 

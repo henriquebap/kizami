@@ -7,6 +7,10 @@
 "1 atividade na ilha" = "1 activity on the island";
 "%lld atividades na ilha" = "%lld activities on the island";
 "Mostrar exemplo" = "Show Example";
+"Bandeja vazia: arraste arquivos até o notch" = "Tray empty: drag files to the notch";
+"1 arquivo na bandeja" = "1 file in the tray";
+"%lld arquivos na bandeja" = "%lld files in the tray";
+"Esvaziar a bandeja" = "Empty the Tray";
 "Limpar a ilha" = "Clear the Island";
 "Sair do Kizami" = "Quit Kizami";
 
@@ -14,3 +18,10 @@
 "Exemplo do Kizami" = "Kizami example";
 "Passe o mouse para abrir" = "Hover to open";
 "mais %lld" = "%lld more";
+
+/* Bandeja */
+"Solte aqui para guardar" = "Drop here to keep";
+"Enviar por AirDrop" = "Send with AirDrop";
+"Abrir" = "Open";
+"Mostrar no Finder" = "Show in Finder";
+"Tirar da bandeja" = "Remove from Tray";
