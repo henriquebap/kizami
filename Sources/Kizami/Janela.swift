@@ -42,7 +42,10 @@ final class Janela {
         painel = NSPanel(contentRect: geometria.janela, styleMask: [.borderless, .nonactivatingPanel],
                          backing: .buffered, defer: false)
         painel.level = .mainMenu + 3  // acima da barra de menus; o .statusBar (25) fica logo acima dela e não basta (boring.notch usa este)
-        painel.collectionBehavior = [.canJoinAllSpaces, .stationary, .fullScreenAuxiliary, .ignoresCycle]
+        // Sem .fullScreenAuxiliary: o painel não entra no espaço de um app em tela cheia, e a ilha some ali
+        // (pedido da pessoa: em vídeo ou jogo, ela atrapalha). Cada monitor tem o seu espaço, então só some
+        // no monitor que está em tela cheia.
+        painel.collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle]
         painel.backgroundColor = .clear
         painel.isOpaque = false
         painel.hasShadow = false  // a sombra vem do SwiftUI e acompanha a forma
@@ -95,7 +98,9 @@ final class Janela {
         let cursor = NSEvent.mouseLocation
         // Aberta e com o botão apertado, fica aberta: um arquivo arrastado para fora da bandeja ainda está em viagem,
         // e fechar trocaria a view de origem no meio do arraste.
-        let dentro = zona.contains(cursor)
+        // Em tela cheia o painel não está no espaço ativo: sem isto, a ilha "abriria" invisível e
+        // encerraria o aviso de uma atividade que ninguém viu.
+        let dentro = painel.isOnActiveSpace && zona.contains(cursor)
         entrada = dentro ? (entrada ?? .now) : nil
         // A ilha está sempre lá e abre mesmo vazia, para mostrar a bandeja. Fechada, só abre se o cursor parar;
         // com um arquivo sendo arrastado, abre na hora.
