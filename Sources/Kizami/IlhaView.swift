@@ -57,7 +57,7 @@ struct IlhaView: View {
         case .repouso: g.repouso
         case .compacta: g.compacta(icones: mural.atividades.isEmpty ? 1 : mural.destaques.count)
         case .aviso: g.aviso(linhas: mural.avisos.count)
-        case .aberta: g.aberta(secoes)
+        case .aberta: estado.aba == .atalhos ? g.abertaAtalhos : g.aberta(secoes)
         }
         let contorno = FormaIlha(orelha: forma.orelha, raio: forma.raio)
 
@@ -130,13 +130,18 @@ struct IlhaView: View {
                     .padding(.top, g.faixaDoTopo)  // a faixa do notch é a câmera: o texto vem abaixo
                 case .aberta:
                     VStack(spacing: Geometria.espacoSecao) {
+                        Cabecalho(estado: estado)
+                        if estado.aba == .atalhos {
+                            GradeDeAtalhos(estado: estado, mural: mural)
+                        } else {
                         if secoes.hoje { LinhaHoje(agenda: fontes.agenda, tempo: fontes.tempo) }
                         if secoes.interesse { LinhaInteresse(interesses: fontes.interesses) }
                         if secoes.sessoes > 0 { SecaoClaude(sessoes: fontes.claude) }
                         if secoes.tocando { LinhaTocando(tocando: tocando) }
-                        if secoes.linhas > 0 { Lista(atividades: mural.atividades) }
+                        if secoes.linhas > 0 { Lista(mural: mural) }
                         if secoes.apps { LinhaApps(mac: fontes.mac) }
                         if secoes.bandeja { FileiraDaBandeja(bandeja: bandeja, alvo: estado.alvo) }
+                        }
                     }
                     .padding(.top, g.faixaDoTopo + 8)
                 }
@@ -168,6 +173,7 @@ struct IlhaView: View {
         .animation(.spring(response: 0.4, dampingFraction: 0.85), value: secoes.hoje)
         .animation(.spring(response: 0.4, dampingFraction: 0.85), value: secoes.apps)
         .animation(.spring(response: 0.4, dampingFraction: 0.85), value: secoes.interesse)
+        .animation(.spring(response: 0.4, dampingFraction: 0.82), value: estado.aba)
         .animation(.smooth(duration: 0.25), value: privacidade)
     }
 }
@@ -195,6 +201,43 @@ struct FormaIlha: Shape {
         p.addQuadCurve(to: CGPoint(x: r.maxX, y: r.minY), control: CGPoint(x: r.maxX - o, y: r.minY))
         p.closeSubpath()
         return p
+    }
+}
+
+/// O topo da ilha aberta: as abas e a engrenagem, para achar os atalhos e os Ajustes sem ir à barra de menus.
+private struct Cabecalho: View {
+    let estado: EstadoIlha
+
+    var body: some View {
+        HStack(spacing: 4) {
+            aba("Início", "house.fill", .inicio)
+            aba("Atalhos", "command", .atalhos)
+            Spacer(minLength: 0)
+            Button("Ajustes", systemImage: "gearshape.fill") { Kizami.shared.abrirAjustes() }
+                .labelStyle(.iconOnly)
+                .buttonStyle(.plain)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(.secondary)
+                .frame(width: 26, height: 26)
+                .contentShape(.rect)
+                .help(Text("Ajustes"))
+        }
+        .padding(.horizontal, 10)
+        .frame(height: Geometria.alturaCabecalho)
+    }
+
+    private func aba(_ nome: LocalizedStringKey, _ simbolo: String, _ valor: EstadoIlha.Aba) -> some View {
+        let escolhida = estado.aba == valor
+        return Button { estado.aba = valor } label: {
+            Label(nome, systemImage: simbolo)
+                .font(.caption.weight(.semibold))
+                .padding(.horizontal, 10)
+                .frame(height: 22)
+                .background(Capsule().fill(.white.opacity(escolhida ? 0.16 : 0)))
+                .foregroundStyle(escolhida ? .primary : .secondary)
+                .contentShape(.capsule)
+        }
+        .buttonStyle(.plain)
     }
 }
 
@@ -472,9 +515,10 @@ private struct LinhaDeAviso: View {
 
 /// Aberta: as três mais recentes; com mais de três, duas e a linha "mais N" no lugar da terceira.
 private struct Lista: View {
-    let atividades: [Atividade]
+    let mural: Mural
 
     var body: some View {
+        let atividades = mural.atividades
         let visiveis = atividades.count > Geometria.maximoLinhas ? Geometria.maximoLinhas - 1 : Geometria.maximoLinhas
         VStack(alignment: .leading, spacing: Geometria.espacoLinha) {
             ForEach(atividades.prefix(visiveis)) { atividade in
@@ -493,6 +537,9 @@ private struct Lista: View {
                     }
                 }
                 .frame(height: Geometria.alturaLinha)
+                .contentShape(.rect)
+                // Só as do próprio Kizami abrem algo (a sessão do Claude, o jogo, a reunião, o app do emblema).
+                .onTapGesture { mural.abrir(atividade.id) }
                 .transition(.blurReplace)
             }
             if atividades.count > visiveis {

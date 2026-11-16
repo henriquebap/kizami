@@ -57,14 +57,7 @@ struct AjustesView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 440)
-        .fixedSize(horizontal: false, vertical: true)
-        // App sem Dock (LSUIElement): sem ativar, a janela de Ajustes abre atrás do app em que a pessoa está.
-        // É a pessoa que pediu a janela; a ilha continua sem nunca tomar o foco.
-        .onAppear {
-            NSApp.activate()
-            agenda.iniciar()  // liberado nos Ajustes do Sistema depois de negado: confere de novo ao abrir esta janela
-        }
+        .frame(minWidth: 440, idealWidth: 460, minHeight: 420, idealHeight: 640)
     }
 
     private func buscar() {

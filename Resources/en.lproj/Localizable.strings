@@ -106,3 +106,24 @@
 "Adicionar" = "Add";
 "Use um link https ou webcal." = "Use an https or webcal link.";
 "Lembra na semana do evento, na véspera e 1 hora antes. Jogos e corridas vêm da ESPN." = "Reminds you during the event's week, the day before and 1 hour before. Games and races come from ESPN.";
+
+/* Cabeçalho da ilha aberta e atalhos */
+"Início" = "Home";
+"Atalhos" = "Shortcuts";
+"Ajustes" = "Settings";
+"Ajustes do Kizami" = "Kizami Settings";
+"Tela" = "Screen";
+"Área" = "Area";
+"Gravar" = "Record";
+"Janelas" = "Windows";
+"Emojis" = "Emoji";
+"Bloquear" = "Lock";
+"Captura da tela inteira" = "Capture the whole screen";
+"Captura de uma área (ou da janela, com espaço)" = "Capture an area (or a window, with Space)";
+"Captura e gravação de tela, com opções" = "Screenshot and screen recording, with options";
+"Mission Control: todas as janelas" = "Mission Control: all windows";
+"Emojis e símbolos, no app em que você está" = "Emoji and symbols, in the app you are in";
+"Bloquear a tela" = "Lock the screen";
+"Atalhos pedem Acessibilidade" = "Shortcuts need Accessibility";
+"Clique para liberar o Kizami" = "Click to allow Kizami";
+"Abrir na ESPN" = "Open on ESPN";

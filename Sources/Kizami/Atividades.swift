@@ -80,6 +80,9 @@ final class Mural {
     /// Um prazo por atividade na ilha: reenviar, remover ou empurrar para fora da lista cancela o antigo,
     /// para uma enxurrada de mensagens não acumular tarefas dormindo.
     @ObservationIgnored private var prazos: [String: Task<Void, Never>] = [:]
+    /// O que um clique na atividade abre. Só as fontes do próprio Kizami (Claude, agenda, interesses, Dock) dão uma:
+    /// o que chega de fora é dado e nunca abre nada (AGENTS, regra 1).
+    @ObservationIgnored private var acoes: [String: @MainActor () -> Void] = [:]
 
     /// As que acabaram de chegar, até `maximoAvisos`: a ilha desce com uma linha para cada por `tempoDeAviso`
     /// e depois volta a fechar. Chegando outra no meio, ela entra na pilha e o prazo recomeça.
@@ -97,7 +100,7 @@ final class Mural {
         return (a.chegada ?? .distantPast) > (b.chegada ?? .distantPast)
     }
 
-    func receber(_ bruta: Atividade) {
+    func receber(_ bruta: Atividade, aoAbrir acao: (@MainActor () -> Void)? = nil) {
         guard var atividade = Atividade.validar(bruta) else {
             registro.notice("atividade descartada: sem título ou id")
             return
@@ -107,6 +110,7 @@ final class Mural {
         // Ordenar antes de cortar: com a ilha cheia, sai a menos importante, nunca um "precisa de você".
         trocar(por: Array(([atividade] + atividades.filter { $0.id != atividade.id }).sorted(by: Self.antes).prefix(Self.maximo)))
         registro.info("atividade recebida (\(self.atividades.count) na ilha)")
+        acoes[atividade.id] = atividades.contains(where: { $0.id == atividade.id }) ? acao : nil
         avisar(atividade)
         // Cortada pela ilha cheia, não ganha prazo: ninguém cancelaria a tarefa dormindo.
         if let segundos = atividade.expira, segundos > 0, atividades.contains(where: { $0.id == atividade.id }) {
@@ -116,6 +120,15 @@ final class Mural {
                 self?.remover(id: atividade.id)
             }
         }
+    }
+
+    func podeAbrir(_ id: String) -> Bool { acoes[id] != nil }
+
+    /// Clicou: abre a origem (a sessão do Claude, o jogo, a reunião, o app) e tira a atividade, como uma notificação.
+    func abrir(_ id: String) {
+        guard let acao = acoes[id] else { return }
+        remover(id: id)
+        acao()
     }
 
     func remover(id: String) {
@@ -132,6 +145,7 @@ final class Mural {
         let ficam = Set(novas.map(\.id))
         for (id, prazo) in prazos where !ficam.contains(id) { prazo.cancel() }
         prazos = prazos.filter { ficam.contains($0.key) }
+        acoes = acoes.filter { ficam.contains($0.key) }
         avisos = avisos.filter { ficam.contains($0.id) }
         if avisos.isEmpty { fimDoAviso?.cancel() }
     }

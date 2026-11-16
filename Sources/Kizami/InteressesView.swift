@@ -22,6 +22,9 @@ struct LinhaInteresse: View {
             }
             .frame(height: Geometria.alturaLinha)
             .padding(.horizontal, 14)
+            .contentShape(.rect)
+            .onTapGesture { interesses.abrir(evento) }  // a página do jogo, com escalação, placar e onde passa
+            .help(evento.link == nil ? "" : String(localized: "Abrir na ESPN"))
             .transition(.blurReplace)
         }
     }

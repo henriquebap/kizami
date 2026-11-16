@@ -92,6 +92,8 @@ struct EventoInteresse: Equatable, Identifiable, Sendable {
     var inicio: Date
     var diaInteiro = false
     var fonte: Seguido
+    /// A página do jogo ou da corrida na ESPN, aberta no clique. Só https em www.espn.com (`ESPN.pagina`).
+    var link: URL? = nil
 
     static let horizonte: TimeInterval = 7 * 24 * 3600
 
@@ -199,6 +201,14 @@ enum ESPN {
         /// Falso quando a hora ainda não saiu ("TBD"): a data vem com uma hora de enfeite (visto: 05:00Z na semana 18).
         let timeValid: Bool?
         let competitions: [Competicao]?
+        let links: [Link]?
+    }
+    struct Link: Decodable { let href: String? }
+
+    /// A primeira página do evento no site da ESPN. Os outros links da resposta (app, apostas) ficam de fora.
+    static func pagina(_ links: [Link]?) -> URL? {
+        (links ?? []).lazy.compactMap { $0.href.flatMap(URL.init(string:)) }
+            .first { $0.scheme == "https" && $0.host() == "www.espn.com" }
     }
     struct Competicao: Decodable {
         let id: String?
@@ -265,7 +275,7 @@ enum ESPN {
             let nome = { (t: Time) in t.shortDisplayName ?? t.displayName ?? t.abbreviation ?? "?" }
             let titulo = Atividade.limpo("\(nome(nossoTime)) \(nosso.homeAway == "away" ? "@" : "x") \(nome(outroTime))", ate: 60)
             return EventoInteresse(id: "espn-\(Atividade.limpo(id, ate: 20))-\(Int(inicio.timeIntervalSince1970))",
-                                   titulo: titulo, inicio: inicio, fonte: fonte)
+                                   titulo: titulo, inicio: inicio, fonte: fonte, link: pagina(e.links))
         }
     }
 
@@ -281,7 +291,7 @@ enum ESPN {
                 let titulo = Atividade.limpo(e.shortName ?? e.name ?? "", ate: 60)
                 guard !titulo.isEmpty else { return nil }
                 return EventoInteresse(id: "f1-\(Atividade.limpo(id, ate: 20))-\(Int(inicio.timeIntervalSince1970))",
-                                       titulo: titulo, inicio: inicio, fonte: .f1)
+                                       titulo: titulo, inicio: inicio, fonte: .f1, link: pagina(e.links))
             }
         }
     }
@@ -560,6 +570,12 @@ final class Interesses {
         return achados
     }
 
+    /// O clique no lembrete ou na linha da ilha: a página do jogo na ESPN. Evento de calendário ICS não tem página.
+    func abrir(_ evento: EventoInteresse) {
+        guard let link = evento.link, link.scheme == "https", link.host() == "www.espn.com" else { return }
+        NSWorkspace.shared.open(link)
+    }
+
     private func salvar() {
         if let json = try? JSONEncoder().encode(seguidos) { UserDefaults.standard.set(json, forKey: Self.chaveSeguidos) }
     }
@@ -626,7 +642,7 @@ final class Interesses {
                                         ? String(localized: "hoje \(e.inicio.formatted(date: .omitted, time: .shortened))")
                                         : EventoInteresse.quando(e, agora: agora),
                                     simbolo: e.fonte.simbolo, cor: e.fonte.cor, expira: expira,
-                                    prioridade: lembrete.tipo == .umaHora ? "alta" : "normal"))
+                                    prioridade: lembrete.tipo == .umaHora ? "alta" : "normal")) { [weak self] in self?.abrir(e) }
         }
         let podados = EventoInteresse.podar(disparados, agora: agora)
         if !devidos.isEmpty || podados.count != disparados.count {

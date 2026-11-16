@@ -45,6 +45,10 @@ import Foundation
     conferir("em casa: Bills x Dolphins", jogos.first?.titulo, "Bills x Dolphins")
     conferir("fora: Bills @ Patriots", jogos.last?.titulo, "Bills @ Patriots")
     conferir("início do jogo", jogos.first?.inicio, utc("2026-11-22T18:00Z"))
+    conferir("página do jogo: o link https da ESPN, não o do app",
+             ESPN.pagina([ESPN.Link(href: "sportscenter://x-callback-url/showGame"), ESPN.Link(href: "https://www.espn.com/nfl/game/_/gameId/1")]),
+             URL(string: "https://www.espn.com/nfl/game/_/gameId/1"))
+    conferir("página de outro host não vale", ESPN.pagina([ESPN.Link(href: "https://espn.com.evil.example/x")]), nil as URL?)
     conferir("JSON quebrado: nil, a lista de antes fica", ESPN.jogos(de: Data("{".utf8), time: "2", fonte: .bills), nil)
     conferir("sem events: nil", ESPN.jogos(de: Data(#"{"team":{}}"#.utf8), time: "2", fonte: .bills), nil)
     conferir("adversário indefinido (time sem id) não derruba a agenda: o jogo fica",

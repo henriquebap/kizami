@@ -19,11 +19,6 @@ struct KizamiApp: App {
         MenuBarExtra("Kizami", systemImage: "capsule.tophalf.filled") {
             MenuView(mural: Kizami.shared.mural, bandeja: Kizami.shared.bandeja)
         }
-        Settings {
-            AjustesView(tempo: Kizami.shared.tempo, agenda: Kizami.shared.agenda, mac: Kizami.shared.mac,
-                        interesses: Kizami.shared.interesses, formulario: Kizami.shared.formulario,
-                        formularioInteresses: Kizami.shared.formularioInteresses)
-        }
     }
 }
 
@@ -44,7 +39,7 @@ private struct MenuView: View {
         Button("Esvaziar a bandeja") { bandeja.esvaziar() }
             .disabled(bandeja.arquivos.isEmpty)
         Divider()
-        SettingsLink { Text("Ajustes…") }
+        Button("Ajustes…") { Kizami.shared.abrirAjustes() }
             .keyboardShortcut(",")
         Button("Sair do Kizami") { NSApp.terminate(nil) }
             .keyboardShortcut("q")
@@ -98,6 +93,7 @@ final class Kizami {
     private var fontes: Fontes { Fontes(mural: mural, bandeja: bandeja, tocando: tocando, agenda: agenda, tempo: tempo, claude: claude, mac: mac,
                                        interesses: interesses) }
     private var janelas: [Janela] = []
+    private var ajustes: NSWindow?
     private var arrasto: Arrasto?
 
     private init() {
@@ -180,6 +176,27 @@ final class Kizami {
             return CGRect(dictionaryRepresentation: limites)
         }
         return (fundos, !doFundo.isEmpty)
+    }
+
+    /// A janela de Ajustes, aberta pelo menu ou pela engrenagem da ilha. Janela própria em vez da cena `Settings`:
+    /// o `SettingsLink` só funciona dentro das cenas do SwiftUI, e a ilha é um `NSHostingView` num painel.
+    func abrirAjustes() {
+        if ajustes == nil {
+            let raiz = AjustesView(tempo: tempo, agenda: agenda, mac: mac, interesses: interesses, formulario: formulario,
+                                   formularioInteresses: formularioInteresses)
+            let janela = NSWindow(contentViewController: NSHostingController(rootView: raiz))
+            janela.title = String(localized: "Ajustes do Kizami")
+            janela.styleMask = [.titled, .closable, .miniaturizable, .resizable]
+            janela.isReleasedWhenClosed = false
+            janela.center()
+            ajustes = janela
+        }
+        // App sem Dock (LSUIElement): sem ativar, a janela abre atrás do app em que a pessoa está.
+        // É a pessoa que pediu a janela; a ilha continua sem nunca tomar o foco.
+        NSApp.activate()
+        ajustes?.makeKeyAndOrderFront(nil)
+        agenda.iniciar()  // liberado nos Ajustes do Sistema depois de negado: confere de novo a cada abertura
+        mac.conferirAcesso()
     }
 
     func mostrarExemplo() {

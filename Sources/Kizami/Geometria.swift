@@ -19,6 +19,10 @@ struct Geometria: Equatable {
     static let espacoSecao: CGFloat = 10
     /// A faixa de cima da ilha aberta: o próximo evento à esquerda, o tempo à direita.
     static let alturaHoje: CGFloat = 40
+    /// O topo da ilha aberta: as abas (Início, Atalhos) e a engrenagem dos Ajustes.
+    static let alturaCabecalho: CGFloat = 26
+    /// A fileira de atalhos: ícone, nome e teclas.
+    static let alturaAtalhos: CGFloat = 62
     /// Sessões do Claude na ilha aberta, uma por linha (`alturaLinha`), as que mais pedem atenção primeiro.
     static let maximoSessoes = 3
     /// Altura mínima da ilha em tela sem notch. Com a altura da barra de menus (22 pt), a capa de 20 pt ficava
@@ -78,6 +82,7 @@ struct Geometria: Equatable {
     func aberta(_ secoes: Secoes) -> CGSize {
         func linhas(_ n: Int) -> CGFloat { n > 0 ? CGFloat(n) * Self.alturaLinha + CGFloat(n - 1) * Self.espacoLinha : 0 }
         let blocos = [
+            Self.alturaCabecalho,
             secoes.hoje ? Self.alturaHoje : 0,
             secoes.interesse ? Self.alturaLinha : 0,
             linhas(secoes.sessoes),
@@ -88,6 +93,12 @@ struct Geometria: Equatable {
         ].filter { $0 > 0 }
         let conteudo = blocos.reduce(0, +) + CGFloat(max(blocos.count - 1, 0)) * Self.espacoSecao
         return CGSize(width: max(Self.larguraAberta, compacta.width), height: faixaDoTopo + 8 + conteudo + 14)
+    }
+
+    /// A aba de atalhos: o cabeçalho e a fileira.
+    var abertaAtalhos: CGSize {
+        CGSize(width: max(Self.larguraAberta, compacta.width),
+               height: faixaDoTopo + 8 + Self.alturaCabecalho + Self.espacoSecao + Self.alturaAtalhos + 14)
     }
 
     /// A janela tem o tamanho do maior estado mais a margem da sombra; a forma anima dentro dela.

@@ -202,7 +202,7 @@ final class Mac {
         for emblema in novidades {
             let detalhe = emblema.numero == 1 ? String(localized: "1 não lida") : String(localized: "\(emblema.numero ?? 0) não lidas")
             mural.receber(Atividade(id: "mac-emblema-\(emblema.bundle)", titulo: emblema.nome, detalhe: detalhe,
-                                    simbolo: "app.badge.fill", expira: 8))
+                                    simbolo: "app.badge.fill", expira: 8)) { Mac.ativar(emblema.bundle) }
         }
         if !novidades.isEmpty { registro.info("mac: \(novidades.count) emblemas subiram (\(lidos.count) no Dock)") }
     }

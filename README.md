@@ -56,6 +56,15 @@ Only media apps count (players and browsers): Core Audio tells which apps have t
 
 ![now playing](docs/tocando.png)
 
+## The open island
+
+Hover the notch and the island opens. At the top:
+- **Home**: everything below (today, interests, Claude sessions, now playing, activities, apps, tray).
+- **Shortcuts**: one click for the Mac's shortcuts, with the keys written under each one so you learn them: full screenshot (⇧⌘3), area (⇧⌘4), screenshot and recording (⇧⌘5), Mission Control, emoji (⌃⌘Space) and lock screen (⌃⌘Q). Sending keys needs the Accessibility permission, asked on the first click.
+- **⚙︎**: opens Settings (also in Kizami's menu bar item, or ⌘, with its menu open).
+
+**Click an activity to open it:** a Claude alert brings its session's app forward, a game opens its ESPN page, a meeting reminder joins the call (or opens Calendar), a Dock badge opens the app. Activities sent by other apps or scripts only show.
+
 ## Today
 
 The open island starts with a strip for the day:
@@ -64,7 +73,7 @@ The open island starts with a strip for the day:
 
 ## Interests
 
-Games and races you follow but don't keep in your calendar. In **Settings… › Interests**, pick a league and search a team (NFL, NBA, MLB, Brasileirão, Premier League, from ESPN's public schedules), turn on Formula 1, or paste an ICS / webcal calendar link. The island reminds you during the event's week, the day before and 1 hour before, and the open island shows the next one within 7 days. The Buffalo Bills come followed by default.
+Games and races you follow but don't keep in your calendar. In **Settings › Interests** (the ⚙︎ on the open island), pick a league and search a team (NFL, NBA, MLB, Brasileirão, Premier League, from ESPN's public schedules), turn on Formula 1, or paste an ICS / webcal calendar link. The island reminds you during the event's week, the day before and 1 hour before, and the open island shows the next one within 7 days. The Buffalo Bills come followed by default.
 
 ## Claude sessions
 

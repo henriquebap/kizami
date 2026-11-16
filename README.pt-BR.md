@@ -56,6 +56,15 @@ Só apps de mídia contam (players e navegadores): o Core Audio diz quais apps e
 
 ![tocando agora](docs/tocando.png)
 
+## A ilha aberta
+
+Passe o mouse no notch e a ilha abre. No topo:
+- **Início**: tudo o que está abaixo (hoje, interesses, sessões do Claude, tocando agora, atividades, apps, bandeja).
+- **Atalhos**: os atalhos do Mac num clique, com as teclas escritas embaixo de cada um para você ir aprendendo: captura da tela (⇧⌘3), de uma área (⇧⌘4), captura e gravação (⇧⌘5), Mission Control, emojis (⌃⌘Espaço) e bloquear a tela (⌃⌘Q). Mandar teclas pede a permissão de Acessibilidade, pedida no primeiro clique.
+- **⚙︎**: abre os Ajustes (também no item do Kizami na barra de menus, ou ⌘, com o menu aberto).
+
+**Clique numa atividade para abrir:** o aviso do Claude traz o app da sessão para a frente, um jogo abre a página dele na ESPN, o lembrete de reunião entra na chamada (ou abre o Calendário), um emblema do Dock abre o app. As atividades mandadas por outros apps ou scripts só aparecem.
+
 ## Hoje
 
 A ilha aberta começa com uma faixa do dia:
@@ -64,7 +73,7 @@ A ilha aberta começa com uma faixa do dia:
 
 ## Interesses
 
-Jogos e corridas que você acompanha mas não tem no calendário. Em **Ajustes… › Interesses**, escolha a liga e busque o time (NFL, NBA, MLB, Brasileirão, Premier League, das agendas públicas da ESPN), ligue a Fórmula 1 ou cole o link de um calendário ICS / webcal. A ilha lembra na semana do evento, na véspera e 1 hora antes, e a ilha aberta mostra o próximo nos 7 dias seguintes. O Buffalo Bills já vem seguido.
+Jogos e corridas que você acompanha mas não tem no calendário. Em **Ajustes › Interesses** (a ⚙︎ na ilha aberta), escolha a liga e busque o time (NFL, NBA, MLB, Brasileirão, Premier League, das agendas públicas da ESPN), ligue a Fórmula 1 ou cole o link de um calendário ICS / webcal. A ilha lembra na semana do evento, na véspera e 1 hora antes, e a ilha aberta mostra o próximo nos 7 dias seguintes. O Buffalo Bills já vem seguido.
 
 ## Sessões do Claude
 

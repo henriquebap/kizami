@@ -16,17 +16,18 @@ import Foundation
     func secoes(_ tocando: Bool, _ atividades: Int, _ arquivos: Int, _ arrastando: Bool = false) -> Secoes {
         Secoes(tocando: tocando, atividades: atividades, arquivos: arquivos, arrastando: arrastando)
     }
-    conferir("aberta com 1 linha é baixa", mac.aberta(secoes(false, 1, 0)), CGSize(width: 340, height: 84))
-    conferir("aberta com 3 linhas", mac.aberta(secoes(false, 3, 0)), CGSize(width: 340, height: 152))
+    conferir("aberta com 1 linha é baixa", mac.aberta(secoes(false, 1, 0)), CGSize(width: 340, height: 120))
+    conferir("aberta com 3 linhas", mac.aberta(secoes(false, 3, 0)), CGSize(width: 340, height: 188))
     conferir("aberta não passa de 3 linhas", mac.aberta(secoes(false, 8, 0)), mac.aberta(secoes(false, 3, 0)))
-    conferir("vazia, aberta oferece a bandeja", mac.aberta(secoes(false, 0, 0)), CGSize(width: 340, height: 118))
-    conferir("lista de 2 e bandeja", mac.aberta(secoes(false, 2, 1)), CGSize(width: 340, height: 192))
-    conferir("só tocando, sem bandeja vazia", mac.aberta(secoes(true, 0, 0)), CGSize(width: 340, height: 106))
+    conferir("vazia, aberta oferece a bandeja", mac.aberta(secoes(false, 0, 0)), CGSize(width: 340, height: 154))
+    conferir("lista de 2 e bandeja", mac.aberta(secoes(false, 2, 1)), CGSize(width: 340, height: 228))
+    conferir("só tocando, sem bandeja vazia", mac.aberta(secoes(true, 0, 0)), CGSize(width: 340, height: 142))
     conferir("arrastando, a bandeja aparece mesmo tocando", secoes(true, 0, 0, true).bandeja, true)
-    conferir("janela cabe tudo junto e a sombra", mac.janela, CGRect(x: 559.5, y: 438, width: 393, height: 544))
+    conferir("janela cabe tudo junto e a sombra", mac.janela, CGRect(x: 559.5, y: 402, width: 393, height: 580))
     conferir("hoje e 2 sessões, sem bandeja vazia",
              mac.aberta(Secoes(tocando: false, atividades: 0, arquivos: 0, arrastando: false, sessoes: 2, hoje: true)),
-             CGSize(width: 340, height: 32 + 8 + 40 + 10 + 64 + 14))
+             CGSize(width: 340, height: 32 + 8 + 26 + 10 + 40 + 10 + 64 + 14))
+    conferir("aba de atalhos: cabeçalho e a fileira", mac.abertaAtalhos, CGSize(width: 340, height: 32 + 8 + 26 + 10 + 62 + 14))
     conferir("sessões não passam de 3", Secoes(tocando: false, atividades: 0, arquivos: 0, arrastando: false, sessoes: 9).sessoes, 3)
     conferir("cursor encostado no topo do notch abre", mac.gatilho.contains(CGPoint(x: 756, y: 982)), true)
     conferir("cursor na asa (barra de menus) não abre", mac.gatilho.contains(CGPoint(x: 650, y: 970)), false)
@@ -47,7 +48,7 @@ import Foundation
     conferir("sem notch: só as asas, com altura para a capa não encostar", externo.retangulo(externo.compacta),
              CGRect(x: -1030, y: 1050, width: 140, height: 30))
     conferir("sem notch: fechada não é mais estreita que o repouso", externo.compacta.width >= externo.repouso.width, true)
-    conferir("sem notch: o conteúdo aberto começa no topo, sem faixa vazia", externo.aberta(secoes(true, 0, 0)).height, 4 + 8 + 52 + 14)
+    conferir("sem notch: o conteúdo aberto começa no topo, sem faixa vazia", externo.aberta(secoes(true, 0, 0)).height, 4 + 8 + 26 + 10 + 52 + 14)
     conferir("com notch: o conteúdo começa abaixo da câmera", mac.faixaDoTopo, 32)
     conferir("sem notch: a pílula em repouso abre", externo.gatilho.contains(CGPoint(x: -1010, y: 1070)), true)
     conferir("áreas auxiliares sem topo seguro não contam como notch",

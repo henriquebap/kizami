@@ -9,6 +9,11 @@ final class EstadoIlha {
     var aberta = false
     /// Um arquivo arrastado está em cima da ilha: a área de soltar acende.
     var alvo = false
+    var aba: Aba = .inicio
+    /// Um atalho foi clicado: a ilha fecha e só volta a abrir depois que o cursor sai e volta.
+    var recolher = false
+
+    enum Aba { case inicio, atalhos }
 
     init(geometria: Geometria) {
         self.geometria = geometria
@@ -107,7 +112,7 @@ final class Janela {
         // Fechada, a zona tem o tamanho que a ilha desenha agora (aviso ou asas com até três ícones).
         let fechada = mural.avisos.isEmpty ? g.compacta(icones: mural.destaques.count) : g.aviso(linhas: mural.avisos.count)
         let zona = if estado.aberta {
-            g.zona(g.aberta(secoesAtuais(fontes)))
+            g.zona(estado.aba == .atalhos ? g.abertaAtalhos : g.aberta(secoesAtuais(fontes)))
         } else if bandeja.arrastando {
             g.zona(fechada)  // arrastando, as asas também valem: ninguém clica num menu no meio de um arraste
         } else if !mural.avisos.isEmpty {
@@ -119,7 +124,8 @@ final class Janela {
         // Aberta e com o botão apertado, fica aberta: um arquivo arrastado para fora da bandeja ainda está em viagem,
         // e fechar trocaria a view de origem no meio do arraste.
         // Escondida em tela cheia: sem isto, a ilha "abriria" invisível e encerraria o aviso que ninguém viu.
-        let dentro = !oculta && zona.contains(cursor)
+        if estado.recolher && !zona.contains(cursor) { estado.recolher = false }
+        let dentro = !oculta && !estado.recolher && zona.contains(cursor)
         entrada = dentro ? (entrada ?? .now) : nil
         // A ilha está sempre lá e abre mesmo vazia, para mostrar a bandeja. Fechada, só abre se o cursor parar;
         // com um arquivo sendo arrastado, abre na hora.
@@ -134,6 +140,8 @@ final class Janela {
             if aberta {
                 mural.encerrarAviso()
                 bandeja.podar()
+            } else {
+                estado.aba = .inicio  // abre sempre no início, que é onde está o que chegou
             }
         }
         let pertoDoTopo = g.tela.contains(cursor) && cursor.y > g.tela.maxY - 120
