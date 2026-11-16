@@ -10,7 +10,14 @@ Uma pequena ilha em volta do notch do MacBook que mostra o que outros apps e scr
 |---|---|---|
 | ![fechada](docs/fechada.png) | ![aviso](docs/aviso.png) | ![aberta](docs/aberta.png) |
 
-Gratuito e open source (Apache 2.0). Não usa API privada nem tem dependências de terceiros. Toda permissão é opcional: Automação, para a capa e os botões da música que está tocando, e Calendários, para o seu próximo evento. A rede só vai ao Open-Meteo, para o tempo da cidade que você digita nos Ajustes.
+Gratuito e open source (Apache 2.0). Não usa API privada nem tem dependências de terceiros.
+
+**Toda permissão é opcional**, e cada uma liga uma coisa:
+- **Automação:** a capa e os botões da música que está tocando.
+- **Calendários:** o seu próximo evento.
+- **Acessibilidade:** os emblemas do Dock, a aba Atalhos e a aba Kanji.
+
+**A rede só vai a serviços que não pedem chave:** Open-Meteo para o tempo, as agendas públicas da ESPN para os jogos que você segue, e os links de calendário que você cola nos Ajustes. Áudio, arquivos e o que você digita nunca saem do Mac.
 
 ## Compilar
 

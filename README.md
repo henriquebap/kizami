@@ -10,7 +10,14 @@ A small island around the MacBook notch that shows what other apps and scripts a
 |---|---|---|
 | ![closed](docs/fechada.png) | ![arrived](docs/aviso.png) | ![open](docs/aberta.png) |
 
-Free and open source (Apache 2.0). No private APIs and no third-party dependencies. Every permission is optional: Automation, for the artwork and media buttons of the song that is playing, and Calendars, for your next event. The network goes only to Open-Meteo, for the weather of the city you type in Settings.
+Free and open source (Apache 2.0). No private APIs and no third-party dependencies.
+
+**Every permission is optional**, and each one turns on one thing:
+- **Automation:** the artwork and media buttons of the song that is playing.
+- **Calendars:** your next event.
+- **Accessibility:** the Dock badges, the Shortcuts tab and the Kanji tab.
+
+**The network goes only to services that need no key:** Open-Meteo for the weather, ESPN's public schedules for the games you follow, and the calendar links you paste in Settings. Audio, files and what you type never leave the Mac.
 
 ## Build
 

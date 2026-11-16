@@ -80,6 +80,33 @@ Events the person follows but doesn't keep in their calendar (Buffalo Bills, F1,
 | Timer | Kizami's own state, set from the open island | none |
 | Media keys for browsers (YouTube) | Post the system media-key events | Accessibility |
 
+### v0.9: The open island as a menu (done)
+
+- Tabs at the top of the open island: **Home**, **Shortcuts** and **Kanji**, plus a ⚙︎ that opens Settings.
+- **Shortcuts:** the Mac's shortcuts in one click, with the keys written under each one (screenshots, Mission Control, emoji, lock).
+- **Kanji:** dictate, transcribe the Mac's audio, open Kanji, and one button per Kanji skill. They are Kanji's own global shortcuts, read from its settings and sent as key events.
+- **Click an activity to open it:** the Claude session's app, the game's ESPN page, the meeting, the Dock app. Only Kizami's own sources get an action; activities from outside only show.
+- **Clear:** a Clear button for every activity, and a ✕ on the row under the cursor.
+- **Interests side by side:** the next event of each followed source, up to three.
+
+## Ideas (not scheduled)
+
+Ranked by value for daily use against the work it takes.
+
+| Idea | How | Cost |
+|---|---|---|
+| Live score of a followed game in the closed wings | ESPN scoreboard every minute, only while the game is on | small |
+| Rain alert ("rain in 20 min") | Open-Meteo `minutely_15` precipitation, already the weather source | small |
+| Timer / pomodoro in the closed wings | Kizami's own state, started from a new tab | small |
+| Today tab: the whole day's agenda | EventKit, already allowed | small |
+| Browser media keys (YouTube play/pause) | System media-key events; Accessibility is now granted for Shortcuts | small |
+| Urgent over full screen (meeting starting, Claude permission) | A second panel that joins full-screen Spaces, off by default | medium |
+| Kanji: live level of the microphone while dictating | Kanji posts a level (never text) on the existing protocol | medium (both apps) |
+| GitHub: CI failed / review requested on your PRs | `gh` CLI the person already logged in, polled every few minutes | medium |
+| Clipboard: the last copies, click to paste again | Shared with Kanji's clipboard history (it already filters passwords) | medium |
+| Downloads: progress of a file being downloaded | Watch `~/Downloads` for `.download` / `.crdownload` (asks for the Downloads folder) | medium |
+| Camera mirror before a call | AVFoundation preview in the open island (asks for the camera) | medium |
+
 ## Not possible with public APIs
 
 - **Other apps' notification text** (WhatsApp, Slack, Messages). macOS has no API to read another app's notifications, and macOS 26.3 moved the Notification Center data to a protected location (CVE-2026-20648). Reading the banners through Accessibility is fragile. What is possible: the unread *count* from the Dock badge (v0.8), and any app or script that wants to show up can send an activity to Kizami.

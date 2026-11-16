@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Guide for coding agents. For people, start with the [README](README.md).
+Guide for coding agents. For people, start with the [README](README.md). For the design, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## What it is
 
@@ -64,6 +64,7 @@ What's next and what macOS allows: [docs/ROADMAP.md](docs/ROADMAP.md).
 
 Same as Kanji:
 - Code, comments and logs in pt-BR, with correct accents.
+- Docs are English-first; README and ARCHITECTURE have pt-BR copies (`README.pt-BR.md`, `docs/ARCHITECTURE.pt-BR.md`). Change both.
 - UI localized pt-BR + en: the Portuguese text is the key in `Resources/en.lproj/Localizable.strings`. Never localize the wire format or CLI options.
 - Comments explain the why.
 - `// ponytail:` marks a deliberate simplification and its ceiling.
