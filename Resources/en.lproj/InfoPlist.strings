@@ -1,2 +1,3 @@
 /* Info.plist em inglês. */
 "NSAppleEventsUsageDescription" = "Kizami asks Music and Spotify for the artwork of the song that is playing, to show it at the notch.";
+"NSCalendarsFullAccessUsageDescription" = "Kizami shows your next event at the notch and reminds you 15 minutes before it starts.";

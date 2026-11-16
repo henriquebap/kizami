@@ -9,9 +9,9 @@ Kizami is a menu-bar-only macOS app that draws a black island around the MacBook
 ## Build and tests
 
 ```bash
-make app      # build/Kizami.app (swiftc only, ad-hoc signature: the app asks for no permission)
+make app      # build/Kizami.app (swiftc only; signed with the local "Kanji Dev" certificate when present, so permissions survive rebuilds)
 make install  # /Applications/Kizami.app
-make teste    # pure rules: Geometria, Comando, Atividade.validar, Mural
+make teste    # pure rules: Geometria, Comando, Atividade, Som, Agenda, Tempo, Claude
 ```
 
 **Constraints:**
@@ -38,19 +38,24 @@ make install && /Applications/Kizami.app/Contents/MacOS/Kizami enviar --titulo t
 | `Atividades.swift` | `Atividade` (wire format + validation) and `Mural` (list, max 8, expiry, the "arrived" line) |
 | `Som.swift` | Now playing: Core Audio process list (who has audio output open), media-app allowlist, Music/Spotify notifications, debounce |
 | `Player.swift` | Music and Spotify through `osascript`: media commands (`Controle`), artwork (`Capa`: Music bytes to a temp file, Spotify URL from `*.scdn.co`), the runner with a timeout (`AppleScript`) |
-| `Correio.swift` | CLI parsing (`Comando`) and the distributed notifications (`Correio`) |
+| `Correio.swift` | CLI parsing (`Comando`, including `Kizami claude` for Claude Code hooks) and the distributed notifications (`Correio`) |
+| `Claude.swift`, `ClaudeView.swift` | Claude Code sessions: hook events → session states, expiry, the "needs you" alert, the open-island section |
+| `Agenda.swift`, `AgendaView.swift` | Calendar (EventKit): next event, meeting-link allowlist, 15-min / starting reminders, the "Today" chip |
+| `Tempo.swift`, `TempoView.swift` | Weather from Open-Meteo for the city in Settings: fetch + validation, WMO code → symbol, the "Today" chip |
+| `AjustesView.swift` | The Settings window (city, calendar access, Claude hooks pointer) |
 
 What's next and what macOS allows: [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Rules that must not break
 
-1. **Incoming text is data.** Any local process can post. Show it with `Text(verbatim:)`, keep `Atividade.validar` as the only way in, never open URLs or run anything from it.
+1. **Incoming text is data.** Any local process can post. Show it with `Text(verbatim:)`, keep `Atividade.validar` as the only way in, never open URLs or run anything from it. The one exception is a meeting link from the user's own calendar: opened only on the user's click, and only if `EventoAgenda.aceito` passes (https + allowlisted host).
 2. **Logs never include activity content.** Log counts only. No `print()` in the app (the CLI writes usage to stderr).
 3. **Never take focus.** Use `.nonactivatingPanel` and `orderFrontRegardless()`. Never `makeKey`, never `NSApp.activate`.
 4. **Never block the menu bar.** While closed, `ignoresMouseEvents = true`.
 5. **Public APIs only.** No MediaRemote, no SkyLight: they break between macOS versions.
-6. **Permissions stay optional.** The only one is Automation, for the artwork and the media buttons; denied, everything else keeps working with the app's icon. Track titles and artists are content: never in logs.
+6. **Permissions stay optional.** Automation (artwork, media buttons) and Calendars (next event). Denied, everything else keeps working. Track titles, event titles, session folders and the city are content: never in logs.
 7. **No third-party dependencies.**
+8. **Network only to named services that need no key**, over HTTPS with a timeout and a size cap: today Open-Meteo. A new service is a decision written in the ROADMAP.
 
 ## Conventions
 

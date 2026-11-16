@@ -10,7 +10,7 @@ Uma pequena ilha em volta do notch do MacBook que mostra o que outros apps e scr
 |---|---|---|
 | ![fechada](docs/fechada.png) | ![aviso](docs/aviso.png) | ![aberta](docs/aberta.png) |
 
-Gratuito e open source (Apache 2.0). Não usa API privada nem tem dependências de terceiros. A única permissão é opcional: Automação, para mostrar a capa da música que está tocando.
+Gratuito e open source (Apache 2.0). Não usa API privada nem tem dependências de terceiros. Toda permissão é opcional: Automação, para a capa e os botões da música que está tocando, e Calendários, para o seu próximo evento. A rede só vai ao Open-Meteo, para o tempo da cidade que você digita nos Ajustes.
 
 ## Compilar
 
@@ -55,6 +55,16 @@ Só apps de mídia contam (players e navegadores): o Core Audio diz quais apps e
 
 ![tocando agora](docs/tocando.png)
 
+## Hoje
+
+A ilha aberta começa com uma faixa do dia:
+- **Próximo evento** dos seus calendários (EventKit), com aviso 15 minutos antes e na hora de começar. Quando o evento tem link de Meet, Zoom, Teams, FaceTime ou Whereby, o botão **Entrar** abre a reunião. Na primeira vez o macOS pede acesso aos Calendários; negado, a faixa só deixa o evento de fora.
+- **Tempo** da cidade que você digita em **Ajustes… › Tempo**, do [Open-Meteo](https://open-meteo.com) (sem chave nem conta), atualizado a cada 30 minutos.
+
+## Sessões do Claude
+
+Os hooks do Claude Code chamam `Kizami claude`, e a ilha aberta lista as sessões rodando: trabalhando, **precisa de você** (um pedido de permissão) ou pronta. Uma sessão que precisa de você também faz a ilha descer com um aviso. Clicar numa sessão traz o app dela para a frente. Só passam o id da sessão, o nome da pasta e o estado, nunca os seus pedidos nem as respostas do Claude. Como ligar: [docs/CLAUDE-HOOKS.md](docs/CLAUDE-HOOKS.md).
+
 ## Bandeja de arquivos
 
 Arraste arquivos de qualquer app até o notch: a ilha abre com *Solte aqui para guardar*. Os arquivos ficam numa fileira na ilha para você arrastar depois para outro app, mandar por AirDrop ou esvaziar a bandeja. Clique duplo abre o arquivo; o botão direito mostra no Finder ou tira da bandeja. A bandeja guarda o endereço, não uma cópia: arrastar para fora funciona como arrastar do Finder, e a bandeja esvazia quando o Kizami fecha.
@@ -67,7 +77,7 @@ Arraste arquivos de qualquer app até o notch: a ilha abre com *Solte aqui para 
 - **Monitores:** uma ilha em cada monitor, para você ver na tela em que está trabalhando. Elas são recriadas quando os monitores mudam.
 - **Atividade nova:** a ilha desce uma linha abaixo do notch com o título por alguns segundos e depois volta a fechar.
 - **Ao abrir:** mostra "Kizami está rodando", e o item na barra de menus diz quantas atividades há na ilha.
-- **Tela cheia:** a ilha aparece por cima de apps em tela cheia.
+- **Tela cheia:** a ilha some no monitor que está em tela cheia, para nunca ficar por cima de um vídeo, jogo ou apresentação.
 - **Sempre lá:** sem nada para mostrar, a ilha fica em repouso, uma pílula pequena em volta do notch (ou no topo de uma tela sem notch). Com o mouse em cima, oferece a bandeja vazia.
 - **Cliques:** fechada, ela deixa os cliques passarem para a barra de menus.
 

@@ -19,6 +19,9 @@ struct KizamiApp: App {
         MenuBarExtra("Kizami", systemImage: "capsule.tophalf.filled") {
             MenuView(mural: Kizami.shared.mural, bandeja: Kizami.shared.bandeja)
         }
+        Settings {
+            AjustesView(tempo: Kizami.shared.tempo, agenda: Kizami.shared.agenda, formulario: Kizami.shared.formulario)
+        }
     }
 }
 
@@ -39,6 +42,8 @@ private struct MenuView: View {
         Button("Esvaziar a bandeja") { bandeja.esvaziar() }
             .disabled(bandeja.arquivos.isEmpty)
         Divider()
+        SettingsLink { Text("Ajustes…") }
+            .keyboardShortcut(",")
         Button("Sair do Kizami") { NSApp.terminate(nil) }
             .keyboardShortcut("q")
     }
@@ -81,8 +86,18 @@ final class Kizami {
     let mural = Mural()
     let bandeja = Bandeja()
     let tocando = TocandoAgora()
+    let agenda: Agenda
+    let tempo = Tempo()
+    let claude: SessoesClaude
+    let formulario = FormularioAjustes()
+    private var fontes: Fontes { Fontes(mural: mural, bandeja: bandeja, tocando: tocando, agenda: agenda, tempo: tempo, claude: claude) }
     private var janelas: [Janela] = []
     private var arrasto: Arrasto?
+
+    private init() {
+        agenda = Agenda(mural: mural)
+        claude = SessoesClaude(mural: mural)
+    }
 
     func iniciar() {
         // Sem janela comum, o macOS trata o app como ocioso e pode encerrá-lo sozinho (visto no log:
@@ -97,6 +112,9 @@ final class Kizami {
         }
         Correio.ouvir(mural)
         tocando.iniciar()
+        tempo.iniciar()
+        claude.iniciar()
+        agenda.iniciar()  // por último: na primeira vez, o macOS pergunta pelo acesso aos Calendários
         // Sinal de vida ao abrir: diz o que é a ilha que acabou de aparecer.
         mural.receber(Atividade(id: "kizami", titulo: String(localized: "Kizami está rodando"),
                                 detalhe: String(localized: "Passe o mouse para abrir"),
@@ -106,7 +124,7 @@ final class Kizami {
     /// Uma ilha em cada monitor: a pessoa vê o aviso na tela em que está trabalhando, tenha ela notch ou não.
     private func montarIlhas() {
         janelas.forEach { $0.fechar() }
-        janelas = NSScreen.screens.map { Janela(mural: mural, bandeja: bandeja, tocando: tocando, tela: $0) }
+        janelas = NSScreen.screens.map { Janela(fontes: fontes, tela: $0) }
         registro.info("ilhas: \(self.janelas.count) monitor(es), \(NSScreen.screens.filter { $0.safeAreaInsets.top > 0 }.count) com notch")
     }
 

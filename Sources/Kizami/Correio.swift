@@ -53,6 +53,12 @@ enum Comando {
 
     /// Código de saída do processo.
     static func executar(_ argumentos: [String]) -> Int32 {
+        // Chamado por um hook do Claude Code: sai sempre com 0 e sem nada na saída padrão. Um código diferente
+        // vira aviso de erro na conversa, e no SessionStart e no UserPromptSubmit o que sai vira contexto do Claude.
+        if argumentos.first == "claude" {
+            Correio.encaminharHookDoClaude()
+            return 0
+        }
         guard let pedido = ler(argumentos) else {
             FileHandle.standardError.write(Data((ajuda + "\n").utf8))
             return 2
@@ -69,6 +75,7 @@ enum Correio {
     static let enviar = Notification.Name(prefixo + "enviar")
     static let remover = Notification.Name(prefixo + "remover")
     static let limpar = Notification.Name(prefixo + "limpar")
+    static let claude = Notification.Name(prefixo + "claude")
 
     static func postar(_ pedido: Pedido) {
         let (nome, objeto): (Notification.Name, String?) = switch pedido {
@@ -99,5 +106,44 @@ enum Correio {
         centro.addObserver(forName: limpar, object: nil, queue: .main) { _ in
             MainActor.assumeIsolated { mural.limpar() }
         }
+    }
+
+    /// Lê o JSON do hook na entrada padrão e manda ao app só o id da sessão, a pasta, o evento e o app onde ela roda.
+    static func encaminharHookDoClaude() {
+        guard isatty(STDIN_FILENO) == 0, let dados = entrada(ate: MensagemClaude.limiteHook),
+              let mensagem = MensagemClaude.doHook(dados, app: appDosAncestrais()),
+              let texto = (try? JSONEncoder().encode(mensagem)).flatMap({ String(data: $0, encoding: .utf8) })
+        else { return }
+        DistributedNotificationCenter.default().postNotificationName(claude, object: texto, userInfo: nil, deliverImmediately: true)
+    }
+
+    /// nil se passar do limite: JSON cortado não teria como ser lido.
+    private static func entrada(ate limite: Int) -> Data? {
+        var dados = Data()
+        while dados.count <= limite, let pedaco = try? FileHandle.standardInput.read(upToCount: 1 << 16), !pedaco.isEmpty {
+            dados.append(pedaco)
+        }
+        return dados.count <= limite ? dados : nil
+    }
+
+    /// O app onde a sessão roda: sobe pelos processos pais (sh do hook, claude, shell, Terminal) até o primeiro
+    /// que está dentro de um .app. `Som.caminhoDoApp` pega o .app mais de fora do caminho, então um helper do
+    /// VS Code ("Code Helper (Plugin).app" dentro de "Visual Studio Code.app") vira o VS Code.
+    private static func appDosAncestrais() -> String? {
+        var pid = getppid()
+        for _ in 0..<32 where pid > 1 {
+            var caminho = [CChar](repeating: 0, count: 4096)
+            if proc_pidpath(pid, &caminho, UInt32(caminho.count)) > 0,
+               let app = Som.caminhoDoApp(String(decoding: caminho.prefix { $0 != 0 }.map { UInt8(bitPattern: $0) }, as: UTF8.self)),
+               let bundle = Bundle(path: app)?.bundleIdentifier {
+                return bundle
+            }
+            var info = kinfo_proc()
+            var tamanho = MemoryLayout<kinfo_proc>.stride
+            var mib: [Int32] = [CTL_KERN, KERN_PROC, KERN_PROC_PID, pid]
+            guard sysctl(&mib, u_int(mib.count), &info, &tamanho, nil, 0) == 0, tamanho > 0 else { return nil }
+            pid = info.kp_eproc.e_ppid
+        }
+        return nil
     }
 }

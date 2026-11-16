@@ -192,6 +192,9 @@ import Foundation
         testarValidacao()
         testarBandeja()
         testarSom()
+        testarAgenda()
+        testarTempo()
+        testarClaude()
         if falhas > 0 { exit(1) }
     }
 }

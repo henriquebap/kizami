@@ -10,7 +10,7 @@ A small island around the MacBook notch that shows what other apps and scripts a
 |---|---|---|
 | ![closed](docs/fechada.png) | ![arrived](docs/aviso.png) | ![open](docs/aberta.png) |
 
-Free and open source (Apache 2.0). No private APIs and no third-party dependencies. The only permission is optional: Automation, to show the artwork of the song that is playing.
+Free and open source (Apache 2.0). No private APIs and no third-party dependencies. Every permission is optional: Automation, for the artwork and media buttons of the song that is playing, and Calendars, for your next event. The network goes only to Open-Meteo, for the weather of the city you type in Settings.
 
 ## Build
 
@@ -55,6 +55,16 @@ Only media apps count (players and browsers): Core Audio tells which apps have t
 
 ![now playing](docs/tocando.png)
 
+## Today
+
+The open island starts with a strip for the day:
+- **Next event** from your calendars (EventKit), with a reminder 15 minutes before and when it starts. When the event has a Meet, Zoom, Teams, FaceTime or Whereby link, a **Join** button opens it. macOS asks for access to Calendars the first time; say no and the strip just leaves the event out.
+- **Weather** for the city you type in **Settings… › Weather**, from [Open-Meteo](https://open-meteo.com) (no key, no account), refreshed every 30 minutes.
+
+## Claude sessions
+
+Claude Code hooks call `Kizami claude`, and the open island lists the running sessions: working, **needs you** (a permission prompt) or ready. A session that needs you also drops the island with an alert. Click a session to bring its app forward. Only the session id, the folder name and the state cross over, never your prompts or Claude's replies. Setup: [docs/CLAUDE-HOOKS.md](docs/CLAUDE-HOOKS.md).
+
 ## File tray
 
 Drag files from any app to the notch: the island opens with *Drop here to keep*. The files stay in a row on the island so you can drag them into another app later, AirDrop them, or empty the tray. Double-click opens a file; right-click shows it in Finder or removes it. The tray keeps a reference, not a copy: dragging a file out works like dragging it from Finder, and the tray is emptied when Kizami quits.
@@ -67,7 +77,7 @@ Drag files from any app to the notch: the island opens with *Drop here to keep*.
 - **Monitors:** one island on every display, so you see it on the screen you are working on. They are rebuilt when displays change.
 - **New activity:** the island drops a line below the notch with the title for a few seconds, then closes again.
 - **On launch:** it shows "Kizami is running", and the menu bar item says how many activities are on the island.
-- **Full screen:** it shows on top of full-screen apps.
+- **Full screen:** it hides on a display that is in full screen, so it never sits over a video, game or presentation.
 - **Always there:** with nothing to show, the island rests as a small pill around the notch (or at the top of a display without one). Hovered, it offers the empty tray.
 - **Clicks:** while closed, clicks pass through to the menu bar.
 

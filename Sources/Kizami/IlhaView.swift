@@ -15,22 +15,34 @@ private enum Forma: Equatable {
     }
 }
 
+/// Tudo o que a ilha mostra: as mesmas instâncias em todos os monitores.
+@MainActor struct Fontes {
+    let mural: Mural
+    let bandeja: Bandeja
+    let tocando: TocandoAgora
+    let agenda: Agenda
+    let tempo: Tempo
+    let claude: SessoesClaude
+}
+
 /// As seções da ilha aberta agora. A janela mede a área do hover com a mesma conta.
-@MainActor func secoesAtuais(_ mural: Mural, _ bandeja: Bandeja, _ tocando: TocandoAgora) -> Secoes {
-    Secoes(tocando: tocando.app != nil, atividades: mural.atividades.count,
-           arquivos: bandeja.arquivos.count, arrastando: bandeja.arrastando)
+@MainActor func secoesAtuais(_ f: Fontes) -> Secoes {
+    Secoes(tocando: f.tocando.app != nil, atividades: f.mural.atividades.count,
+           arquivos: f.bandeja.arquivos.count, arrastando: f.bandeja.arrastando,
+           sessoes: f.claude.sessoes.count, hoje: f.agenda.proximo != nil || f.tempo.previsao != nil)
 }
 
 /// A forma preta presa ao topo. Sempre à vista: sem nada, fica em repouso, só um pouco maior que o notch.
 struct IlhaView: View {
     let estado: EstadoIlha
-    let mural: Mural
-    let bandeja: Bandeja
-    let tocando: TocandoAgora
+    let fontes: Fontes
+    private var mural: Mural { fontes.mural }
+    private var bandeja: Bandeja { fontes.bandeja }
+    private var tocando: TocandoAgora { fontes.tocando }
 
     var body: some View {
         let g = estado.geometria
-        let secoes = secoesAtuais(mural, bandeja, tocando)
+        let secoes = secoesAtuais(fontes)
         let forma: Forma = estado.aberta ? .aberta
             : mural.novidade != nil ? .aviso
             : !mural.atividades.isEmpty || !bandeja.arquivos.isEmpty || tocando.app != nil ? .compacta
@@ -84,6 +96,8 @@ struct IlhaView: View {
                     }
                 case .aberta:
                     VStack(spacing: Geometria.espacoSecao) {
+                        if secoes.hoje { LinhaHoje(agenda: fontes.agenda, tempo: fontes.tempo) }
+                        if secoes.sessoes > 0 { SecaoClaude(sessoes: fontes.claude) }
                         if secoes.tocando { LinhaTocando(tocando: tocando) }
                         if secoes.linhas > 0 { Lista(atividades: mural.atividades) }
                         if secoes.bandeja { FileiraDaBandeja(bandeja: bandeja, alvo: estado.alvo) }
@@ -113,6 +127,8 @@ struct IlhaView: View {
         .animation(.smooth(duration: 0.2), value: estado.alvo)
         .animation(.spring(response: 0.4, dampingFraction: 0.85), value: tocando.app)
         .animation(.smooth(duration: 0.3), value: tocando.metadados)
+        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: fontes.claude.sessoes)
+        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: secoes.hoje)
     }
 }
 
@@ -139,6 +155,23 @@ struct FormaIlha: Shape {
         p.addQuadCurve(to: CGPoint(x: r.maxX, y: r.minY), control: CGPoint(x: r.maxX - o, y: r.minY))
         p.closeSubpath()
         return p
+    }
+}
+
+/// A faixa de cima da ilha aberta: o próximo evento à esquerda, o tempo à direita. Cada um some sozinho
+/// quando não tem o que mostrar (sem acesso à agenda, sem cidade).
+private struct LinhaHoje: View {
+    let agenda: Agenda
+    let tempo: Tempo
+
+    var body: some View {
+        HStack(spacing: 8) {
+            ChipAgenda(agenda: agenda)
+            Spacer(minLength: 0)
+            ChipTempo(tempo: tempo).fixedSize()  // a máxima e a mínima não podem virar reticências
+        }
+        .padding(.horizontal, 14)
+        .frame(height: Geometria.alturaHoje)
     }
 }
 

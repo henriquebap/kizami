@@ -33,12 +33,12 @@ Kizami is the more flexible sibling of Kanji: it may call **named network servic
 
 | Piece | What | Why |
 |---|---|---|
-| **Settings window** | City, interests, one toggle per module | Today there is only the menu. |
+| **Settings window** (done: city) | City, interests, one toggle per module | |
 | **Reminder schedule** (pure) | From an event's start: "this week", "tomorrow", "in 1 hour", "in 15 min" → activities in the `Mural` | Calendar and interests use the same rule; tested like `Geometria`. |
 | **Who owns the closed wings** (pure) | Music, a meeting in 5 min, a Claude session waiting: one wins the closed island | A product decision, written as a small tested function. |
 | **Urgent over full screen** | Optional: a meeting about to start or a Claude permission prompt still shows on a full-screen display | Needs a second panel that does join full-screen Spaces; off by default. |
 
-### v0.5: Claude sessions
+### v0.5: Claude sessions (done)
 
 | What | How | Permission |
 |---|---|---|
@@ -48,7 +48,7 @@ Kizami is the more flexible sibling of Kanji: it may call **named network servic
 
 Only `session_id`, the folder name and the state cross over; never the prompt or the reply. Answering a permission prompt from the island is not possible: Claude Code has no public way in.
 
-### v0.6: Today (calendar and weather)
+### v0.6: Today (calendar and weather) (done)
 
 | What | How | Permission |
 |---|---|---|
@@ -76,7 +76,7 @@ Events the person follows but doesn't keep in their calendar (Buffalo Bills, F1,
 | Which app is using the mic | Core Audio `kAudioProcessPropertyIsRunningInput`, the same process list as "now playing" | none |
 | Camera in use | CoreMediaIO `kCMIODevicePropertyDeviceIsRunningSomewhere` (that it is, not which app) | none |
 | Battery low / charging | IOKit `IOPSNotificationCreateRunLoopSource` | none |
-| Kanji is transcribing | Kanji posts `io.github.henriquebap.kizami.enviar` | none |
+| Kanji is transcribing (done on Kanji's side: id `kanji-transcricao`) | Kanji posts `io.github.henriquebap.kizami.enviar` | none |
 | Timer | Kizami's own state, set from the open island | none |
 | Media keys for browsers (YouTube) | Post the system media-key events | Accessibility |
 

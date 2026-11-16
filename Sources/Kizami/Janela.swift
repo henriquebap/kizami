@@ -22,19 +22,17 @@ final class EstadoIlha {
 final class Janela {
     private let painel: NSPanel
     private let estado: EstadoIlha
-    private let mural: Mural
-    private let bandeja: Bandeja
-    private let tocando: TocandoAgora
+    private let fontes: Fontes
+    private var mural: Mural { fontes.mural }
+    private var bandeja: Bandeja { fontes.bandeja }
     private var vigia: Task<Void, Never>?
     /// Quando o cursor entrou na área que abre a ilha fechada.
     private var entrada: Date?
     /// O cursor precisa parar no notch este tempo: passar por ele a caminho dos menus da direita não abre a ilha.
     private static let permanencia: TimeInterval = 0.15
 
-    init(mural: Mural, bandeja: Bandeja, tocando: TocandoAgora, tela: NSScreen) {
-        self.mural = mural
-        self.bandeja = bandeja
-        self.tocando = tocando
+    init(fontes: Fontes, tela: NSScreen) {
+        self.fontes = fontes
         let geometria = Geometria(tela: tela.frame, esquerda: tela.auxiliaryTopLeftArea?.width,
                                   direita: tela.auxiliaryTopRightArea?.width, topoSeguro: tela.safeAreaInsets.top,
                                   barraDeMenus: NSStatusBar.system.thickness)
@@ -53,7 +51,7 @@ final class Janela {
         painel.isMovable = false
         painel.ignoresMouseEvents = true
         painel.appearance = NSAppearance(named: .darkAqua)  // texto claro sobre o preto, com o Mac em modo claro ou escuro
-        let host = NSHostingView(rootView: IlhaView(estado: estado, mural: mural, bandeja: bandeja, tocando: tocando))
+        let host = NSHostingView(rootView: IlhaView(estado: estado, fontes: fontes))
         host.sizingOptions = []  // o tamanho é o da Geometria, não o do conteúdo
         painel.contentView = host
         painel.setFrame(geometria.janela, display: true)
@@ -87,7 +85,7 @@ final class Janela {
         if bandeja.arrastando && !botao { bandeja.arrastando = false }
         let g = estado.geometria
         let zona = if estado.aberta {
-            g.zona(g.aberta(secoesAtuais(mural, bandeja, tocando)))
+            g.zona(g.aberta(secoesAtuais(fontes)))
         } else if bandeja.arrastando {
             g.zona(g.compacta)  // arrastando, as asas também valem: ninguém clica num menu no meio de um arraste
         } else if mural.novidade != nil {

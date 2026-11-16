@@ -3,16 +3,18 @@ APP := build/Kizami.app
 SRC := $(wildcard Sources/Kizami/*.swift)
 TEXTOS := $(wildcard Resources/*.lproj/*.strings)
 SWIFTC := swiftc -parse-as-library -swift-version 6 -target arm64-apple-macosx27.0
+# O mesmo certificado local do Kanji (scripts/dev-certificate.sh lá): as permissões do macOS (Calendários,
+# Automação) ficam presas à assinatura, e com a ad-hoc o macOS perguntaria tudo de novo a cada build.
+IDENTIDADE := $(shell security find-certificate -c "Kanji Dev" >/dev/null 2>&1 && echo "Kanji Dev" || echo -)
 
 app: $(APP)
 
-# Assinatura ad-hoc: o Kizami não pede nenhuma permissão, então não há o que perder entre builds.
 $(APP): $(SRC) $(TEXTOS) Resources/Info.plist
 	mkdir -p "$(APP)/Contents/MacOS" "$(APP)/Contents/Resources"
 	cp -R Resources/en.lproj Resources/pt-BR.lproj "$(APP)/Contents/Resources/"
 	cp Resources/Info.plist "$(APP)/Contents/Info.plist"
 	$(SWIFTC) -O $(SRC) -o "$(APP)/Contents/MacOS/Kizami"
-	codesign --force --sign - "$(APP)"
+	codesign --force --sign "$(IDENTIDADE)" "$(APP)"
 
 run: app
 	-pkill -x Kizami
@@ -26,7 +28,8 @@ install: app
 
 teste:
 	mkdir -p build
-	$(SWIFTC) Tests/*.swift Sources/Kizami/Geometria.swift Sources/Kizami/Atividades.swift Sources/Kizami/Correio.swift Sources/Kizami/Bandeja.swift Sources/Kizami/Som.swift Sources/Kizami/Player.swift -o build/teste
+	$(SWIFTC) Tests/*.swift Sources/Kizami/Geometria.swift Sources/Kizami/Atividades.swift Sources/Kizami/Correio.swift Sources/Kizami/Bandeja.swift Sources/Kizami/Som.swift Sources/Kizami/Player.swift \
+		Sources/Kizami/Agenda.swift Sources/Kizami/Tempo.swift Sources/Kizami/Claude.swift -o build/teste
 	./build/teste
 
 clean:

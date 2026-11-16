@@ -32,3 +32,46 @@
 "Tocar" = "Play";
 "Pausar" = "Pause";
 "Próxima" = "Next";
+
+/* Ajustes */
+"Ajustes…" = "Settings…";
+"Tempo" = "Weather";
+"Cidade" = "City";
+"Trocar de cidade" = "Change city";
+"Buscar" = "Search";
+"Não encontrei essa cidade, ou a rede falhou." = "Couldn't find that city, or the network failed.";
+"Esquecer a cidade" = "Forget the city";
+"Agenda" = "Calendar";
+"O próximo evento aparece na ilha, com um aviso 15 minutos antes." = "Your next event shows on the island, with a reminder 15 minutes before.";
+"O Kizami pede acesso aos Calendários ao abrir." = "Kizami asks for access to Calendars when it opens.";
+"Sem acesso aos Calendários: libere o Kizami nos Ajustes do Sistema e abra esta janela de novo." = "No access to Calendars: allow Kizami in System Settings, then open this window again.";
+"Abrir os Ajustes do Sistema" = "Open System Settings";
+"Claude Code" = "Claude Code";
+"As sessões aparecem na ilha quando os hooks do Claude Code chamam o Kizami (docs/CLAUDE-HOOKS.md)." = "Sessions show on the island when Claude Code hooks call Kizami (docs/CLAUDE-HOOKS.md).";
+
+/* Agenda */
+"Entrar" = "Join";
+"agora" = "now";
+"em %lld min" = "in %lld min";
+"começando agora" = "starting now";
+"Sem título" = "Untitled";
+
+/* Tempo */
+"Céu limpo" = "Clear sky";
+"Parcialmente nublado" = "Partly cloudy";
+"Nublado" = "Overcast";
+"Neblina" = "Fog";
+"Garoa" = "Drizzle";
+"Chuva" = "Rain";
+"Pancadas de chuva" = "Rain showers";
+"Neve" = "Snow";
+"Trovoada" = "Thunderstorm";
+"máx %@ · mín %@" = "high %@ · low %@";
+"Chance de chuva: %@" = "Chance of rain: %@";
+
+/* Claude */
+"Claude precisa de você" = "Claude needs you";
+"Claude terminou" = "Claude finished";
+"precisa de você" = "needs you";
+"trabalhando" = "working";
+"pronta" = "ready";

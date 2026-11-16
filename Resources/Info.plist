@@ -15,5 +15,6 @@
 	<key>NSSupportsAutomaticTermination</key><false/>
 	<key>NSAppleEventsUsageDescription</key><string>O Kizami pede ao Music e ao Spotify a capa da música que está tocando, para mostrar no notch.</string>
 	<key>NSSupportsSuddenTermination</key><false/>
+	<key>NSCalendarsFullAccessUsageDescription</key><string>O Kizami mostra no notch o seu próximo evento e avisa 15 minutos antes de ele começar.</string>
 </dict>
 </plist>
