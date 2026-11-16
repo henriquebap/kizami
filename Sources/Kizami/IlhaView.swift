@@ -33,7 +33,7 @@ private enum Forma: Equatable {
            arquivos: f.bandeja.arquivos.count, arrastando: f.bandeja.arrastando,
            sessoes: f.claude.sessoes.count, hoje: f.agenda.proximo != nil || f.tempo.previsao != nil,
            apps: !f.mac.emblemas.isEmpty || !f.mac.microfone.isEmpty || f.mac.camera || f.mac.bateria != nil,
-           interesse: f.interesses.proximo != nil)
+           interesse: !f.interesses.proximos.isEmpty)
 }
 
 /// A forma preta presa ao topo. Sempre à vista: sem nada, fica em repouso, só um pouco maior que o notch.
@@ -130,7 +130,7 @@ struct IlhaView: View {
                     .padding(.top, g.faixaDoTopo)  // a faixa do notch é a câmera: o texto vem abaixo
                 case .aberta:
                     VStack(spacing: Geometria.espacoSecao) {
-                        Cabecalho(estado: estado)
+                        Cabecalho(estado: estado, mural: mural)
                         if estado.aba == .atalhos {
                             GradeDeAtalhos(estado: estado, mural: mural)
                         } else {
@@ -138,7 +138,7 @@ struct IlhaView: View {
                         if secoes.interesse { LinhaInteresse(interesses: fontes.interesses) }
                         if secoes.sessoes > 0 { SecaoClaude(sessoes: fontes.claude) }
                         if secoes.tocando { LinhaTocando(tocando: tocando) }
-                        if secoes.linhas > 0 { Lista(mural: mural) }
+                        if secoes.linhas > 0 { Lista(mural: mural, estado: estado) }
                         if secoes.apps { LinhaApps(mac: fontes.mac) }
                         if secoes.bandeja { FileiraDaBandeja(bandeja: bandeja, alvo: estado.alvo) }
                         }
@@ -207,12 +207,28 @@ struct FormaIlha: Shape {
 /// O topo da ilha aberta: as abas e a engrenagem, para achar os atalhos e os Ajustes sem ir à barra de menus.
 private struct Cabecalho: View {
     let estado: EstadoIlha
+    let mural: Mural
 
     var body: some View {
         HStack(spacing: 4) {
             aba("Início", "house.fill", .inicio)
             aba("Atalhos", "command", .atalhos)
             Spacer(minLength: 0)
+            if estado.aba == .inicio && !mural.atividades.isEmpty {
+                // Duas sessões do Claude terminaram e os avisos ficaram: um clique tira todos.
+                Button { mural.limpar() } label: {
+                    Label("Limpar", systemImage: "xmark.circle.fill")
+                        .font(.caption.weight(.semibold))
+                        .padding(.horizontal, 8)
+                        .frame(height: 22)
+                        .background(Capsule().fill(.white.opacity(0.1)))
+                        .contentShape(.capsule)
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.secondary)
+                .help(Text("Tirar todos os avisos da ilha"))
+                .transition(.opacity)
+            }
             Button("Ajustes", systemImage: "gearshape.fill") { Kizami.shared.abrirAjustes() }
                 .labelStyle(.iconOnly)
                 .buttonStyle(.plain)
@@ -516,6 +532,7 @@ private struct LinhaDeAviso: View {
 /// Aberta: as três mais recentes; com mais de três, duas e a linha "mais N" no lugar da terceira.
 private struct Lista: View {
     let mural: Mural
+    let estado: EstadoIlha
 
     var body: some View {
         let atividades = mural.atividades
@@ -532,9 +549,20 @@ private struct Lista: View {
                     }
                     .lineLimit(1)
                     Spacer(minLength: 8)
-                    if let chegada = atividade.chegada {
+                    if estado.linhaSobCursor == atividade.id {
+                        Button("Tirar da ilha", systemImage: "xmark.circle.fill") { mural.remover(id: atividade.id) }
+                            .labelStyle(.iconOnly)
+                            .buttonStyle(.plain)
+                            .font(.system(size: 14))
+                            .foregroundStyle(.secondary)
+                            .help(Text("Tirar da ilha"))
+                    } else if let chegada = atividade.chegada {
                         Text(chegada, style: .relative).font(.caption2).monospacedDigit().foregroundStyle(.tertiary)
                     }
+                }
+                .onHover { dentro in
+                    if dentro { estado.linhaSobCursor = atividade.id }
+                    else if estado.linhaSobCursor == atividade.id { estado.linhaSobCursor = nil }
                 }
                 .frame(height: Geometria.alturaLinha)
                 .contentShape(.rect)

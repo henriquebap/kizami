@@ -84,7 +84,7 @@ struct Geometria: Equatable {
         let blocos = [
             Self.alturaCabecalho,
             secoes.hoje ? Self.alturaHoje : 0,
-            secoes.interesse ? Self.alturaLinha : 0,
+            secoes.interesse ? Self.alturaLinha + 4 : 0,
             linhas(secoes.sessoes),
             secoes.tocando ? Self.alturaTocando : 0,
             linhas(secoes.linhas),

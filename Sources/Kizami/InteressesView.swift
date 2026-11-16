@@ -1,32 +1,41 @@
 import SwiftUI
 
-/// O próximo jogo ou evento seguido, numa linha da ilha aberta, no estilo da `Lista`. Sem evento, não mostra nada.
+/// O próximo de cada fonte seguida, lado a lado (os Bills e a F1, por exemplo), no estilo da `Lista`.
+/// Clicar num abre a página dele na ESPN. Sem evento, não mostra nada.
 struct LinhaInteresse: View {
     let interesses: Interesses
 
     var body: some View {
-        if let evento = interesses.proximo {
-            HStack(spacing: 10) {
-                Image(systemName: evento.fonte.simbolo)
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(Self.cor(evento.fonte))
-                    .frame(width: 22)
-                // verbatim: o título vem da ESPN ou de um calendário de fora e não pode virar Markdown nem chave de tradução.
-                Text(verbatim: evento.titulo).font(.callout.weight(.semibold)).lineLimit(1)
-                Spacer(minLength: 8)
-                // Por minuto: "em 12 min" precisa andar sozinho, sem os Interesses publicarem nada.
-                TimelineView(.everyMinute) { contexto in
-                    Text(verbatim: EventoInteresse.quando(evento, agora: contexto.date))
-                        .font(.caption).monospacedDigit().foregroundStyle(.secondary)
+        let eventos = interesses.proximos
+        HStack(spacing: 6) {
+            ForEach(eventos) { evento in
+                HStack(spacing: 6) {
+                    Image(systemName: evento.fonte.simbolo)
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(Self.cor(evento.fonte))
+                    VStack(alignment: .leading, spacing: 0) {
+                        // verbatim: o título vem da ESPN ou de um calendário de fora e não pode virar Markdown nem chave de tradução.
+                        Text(verbatim: evento.titulo).font(.caption.weight(.semibold))
+                        // Por minuto: "em 12 min" precisa andar sozinho, sem os Interesses publicarem nada.
+                        TimelineView(.everyMinute) { contexto in
+                            Text(verbatim: EventoInteresse.quando(evento, agora: contexto.date))
+                                .font(.caption2).monospacedDigit().foregroundStyle(.secondary)
+                        }
+                    }
+                    .lineLimit(1)
+                    Spacer(minLength: 0)
                 }
+                .padding(.horizontal, 8)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(RoundedRectangle(cornerRadius: 10).fill(.white.opacity(eventos.count > 1 ? 0.07 : 0)))
+                .contentShape(.rect)
+                .onTapGesture { interesses.abrir(evento) }  // a página do jogo, com escalação, placar e onde passa
+                .help(evento.link == nil ? "" : String(localized: "Abrir na ESPN"))
+                .transition(.blurReplace)
             }
-            .frame(height: Geometria.alturaLinha)
-            .padding(.horizontal, 14)
-            .contentShape(.rect)
-            .onTapGesture { interesses.abrir(evento) }  // a página do jogo, com escalação, placar e onde passa
-            .help(evento.link == nil ? "" : String(localized: "Abrir na ESPN"))
-            .transition(.blurReplace)
         }
+        .frame(height: Geometria.alturaLinha + 4)
+        .padding(.horizontal, eventos.count > 1 ? 10 : 6)
     }
 
     private static func cor(_ fonte: Seguido) -> Color {

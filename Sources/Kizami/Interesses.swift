@@ -98,6 +98,13 @@ struct EventoInteresse: Equatable, Identifiable, Sendable {
     static let horizonte: TimeInterval = 7 * 24 * 3600
 
     /// O da linha da ilha: o primeiro que ainda não começou, nos próximos 7 dias.
+    /// Os da linha da ilha: o próximo de cada fonte seguida, lado a lado, o mais perto primeiro. Um só "próximo"
+    /// escondia o jogo dos Bills atrás da corrida da F1 da véspera (pedido da pessoa: ver os dois).
+    static func proximos(_ eventos: [EventoInteresse], agora: Date, maximo: Int = 3) -> [EventoInteresse] {
+        let porFonte = Dictionary(grouping: eventos, by: \.fonte).compactMap { proximo($0.value, agora: agora) }
+        return Array(porFonte.sorted { ($0.inicio, $0.titulo) < ($1.inicio, $1.titulo) }.prefix(maximo))
+    }
+
     static func proximo(_ eventos: [EventoInteresse], agora: Date) -> EventoInteresse? {
         eventos
             .filter { $0.inicio > agora && $0.inicio.timeIntervalSince(agora) <= horizonte }
@@ -495,7 +502,8 @@ final class Interesses {
     private static let intervalo: Duration = .seconds(6 * 3600)
 
     private(set) var seguidos: [Seguido] = []
-    private(set) var proximo: EventoInteresse?
+    /// O próximo de cada fonte, até três, para a linha da ilha aberta.
+    private(set) var proximos: [EventoInteresse] = []
 
     @ObservationIgnored private let mural: Mural
     @ObservationIgnored private var porFonte: [Seguido: [EventoInteresse]] = [:]
@@ -623,8 +631,8 @@ final class Interesses {
         var vistos = Set<String>()
         // O mesmo jogo vem duas vezes quando a pessoa segue os dois times.
         let eventos = seguidos.flatMap { porFonte[$0] ?? [] }.filter { vistos.insert($0.id).inserted }
-        let novo = EventoInteresse.proximo(eventos, agora: agora)
-        if novo != proximo { proximo = novo }
+        let novos = EventoInteresse.proximos(eventos, agora: agora)
+        if novos != proximos { proximos = novos }
 
         // No máximo três por minuto, o mais perto de começar primeiro: um calendário com 20 eventos na semana
         // encheria a ilha (máximo 8) e empurraria o resto para fora. Os outros saem nos minutos seguintes.

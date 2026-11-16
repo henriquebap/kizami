@@ -23,7 +23,7 @@ import Foundation
     conferir("lista de 2 e bandeja", mac.aberta(secoes(false, 2, 1)), CGSize(width: 340, height: 228))
     conferir("só tocando, sem bandeja vazia", mac.aberta(secoes(true, 0, 0)), CGSize(width: 340, height: 142))
     conferir("arrastando, a bandeja aparece mesmo tocando", secoes(true, 0, 0, true).bandeja, true)
-    conferir("janela cabe tudo junto e a sombra", mac.janela, CGRect(x: 559.5, y: 402, width: 393, height: 580))
+    conferir("janela cabe tudo junto e a sombra", mac.janela, CGRect(x: 559.5, y: 398, width: 393, height: 584))
     conferir("hoje e 2 sessões, sem bandeja vazia",
              mac.aberta(Secoes(tocando: false, atividades: 0, arquivos: 0, arrastando: false, sessoes: 2, hoje: true)),
              CGSize(width: 340, height: 32 + 8 + 26 + 10 + 40 + 10 + 64 + 14))

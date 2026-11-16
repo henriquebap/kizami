@@ -12,6 +12,8 @@ final class EstadoIlha {
     var aba: Aba = .inicio
     /// Um atalho foi clicado: a ilha fecha e só volta a abrir depois que o cursor sai e volta.
     var recolher = false
+    /// A linha da lista sob o cursor: só ela mostra o ✕ (a view não tem `@State` sem as macros).
+    var linhaSobCursor: String?
 
     enum Aba { case inicio, atalhos }
 

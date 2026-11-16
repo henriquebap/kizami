@@ -192,6 +192,10 @@ import Foundation
     conferir("próximo: o de dentro de 7 dias", EventoInteresse.proximo([longe, jogo], agora: utc("2026-11-16T12:00Z"))?.id, "espn-1")
     conferir("próximo: mais de 7 dias fica fora", EventoInteresse.proximo([longe], agora: utc("2026-11-16T12:00Z")), nil)
     conferir("próximo: o que começou não conta", EventoInteresse.proximo([jogo], agora: utc("2026-11-22T18:01Z")), nil)
+    let corrida = EventoInteresse(id: "f1-1", titulo: "Las Vegas", inicio: utc("2026-11-22T04:00Z"), fonte: .f1)
+    let outroJogo = EventoInteresse(id: "espn-2", titulo: "Bills @ Jets", inicio: utc("2026-11-29T18:00Z"), fonte: .bills)
+    conferir("lado a lado: o próximo de cada fonte, o mais perto primeiro",
+             EventoInteresse.proximos([outroJogo, jogo, corrida], agora: utc("2026-11-16T12:00Z")).map(\.id), ["f1-1", "espn-1"])
     func quando(_ agora: String, _ e: EventoInteresse = jogo) -> String { EventoInteresse.quando(e, agora: utc(agora), calendario: cal) }
     conferir("quando: em 45 min", quando("2026-11-22T17:15Z"), "em 45 min")
     conferir("quando: em 1 hora", quando("2026-11-22T17:00Z"), "em 1 hora")
