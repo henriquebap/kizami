@@ -38,8 +38,9 @@ $K limpar
 - `--cor`: one of `vermelho`, `laranja`, `amarelo`, `verde`, `azul`, `roxo`, `rosa`, `cinza`.
 - `--expira`: seconds until the activity disappears (default 10). `0` keeps it until `remover`.
 - `--id`: sending again with the same id replaces the activity.
+- `--prioridade`: `baixa`, `normal` (default), `alta` or `urgente`. The island sorts by it, and when it's full the least important activity leaves first. `baixa` joins the island without dropping it down.
 
-From another app, post a distributed notification named `io.github.henriquebap.kizami.enviar`. Put the activity's JSON in `object`: `{"id", "titulo", "detalhe"?, "simbolo"?, "cor"?, "expira"?}`. Pass `deliverImmediately: true`: Kizami is never the active app, and without that flag macOS may hold the notification back.
+From another app, post a distributed notification named `io.github.henriquebap.kizami.enviar`. Put the activity's JSON in `object`: `{"id", "titulo", "detalhe"?, "simbolo"?, "cor"?, "expira"?, "prioridade"?}`. Pass `deliverImmediately: true`: Kizami is never the active app, and without that flag macOS may hold the notification back.
 
 **What arrives is data, never a command.** Any process on the Mac can post one. Kizami only displays it: cleaned of invisible and direction characters, length-limited and never parsed as Markdown. *Clear the Island*, in Kizami's menu bar item, removes everything.
 
@@ -61,9 +62,19 @@ The open island starts with a strip for the day:
 - **Next event** from your calendars (EventKit), with a reminder 15 minutes before and when it starts. When the event has a Meet, Zoom, Teams, FaceTime or Whereby link, a **Join** button opens it. macOS asks for access to Calendars the first time; say no and the strip just leaves the event out.
 - **Weather** for the city you type in **Settings… › Weather**, from [Open-Meteo](https://open-meteo.com) (no key, no account), refreshed every 30 minutes.
 
+## Interests
+
+Games and races you follow but don't keep in your calendar. In **Settings… › Interests**, pick a league and search a team (NFL, NBA, MLB, Brasileirão, Premier League, from ESPN's public schedules), turn on Formula 1, or paste an ICS / webcal calendar link. The island reminds you during the event's week, the day before and 1 hour before, and the open island shows the next one within 7 days. The Buffalo Bills come followed by default.
+
 ## Claude sessions
 
 Claude Code hooks call `Kizami claude`, and the open island lists the running sessions: working, **needs you** (a permission prompt) or ready. A session that needs you also drops the island with an alert. Click a session to bring its app forward. Only the session id, the folder name and the state cross over, never your prompts or Claude's replies. Setup: [docs/CLAUDE-HOOKS.md](docs/CLAUDE-HOOKS.md).
+
+## Apps and Mac
+
+- **Microphone and camera in use:** an orange dot (mic) and a green dot (camera) on the closed island, like on the iPhone, and the app that is listening when you hover.
+- **Battery:** the percentage when hovered, and a warning at 20% and 10%.
+- **Unread counts from the Dock** (WhatsApp 3, Mail 12): turn them on in **Settings… › Apps and Mac**. Reading the Dock needs the Accessibility permission. When a count goes up, the island drops a line; click an app to open it. macOS has no way to read other apps' notification text, only these counts.
 
 ## File tray
 
@@ -75,7 +86,7 @@ Drag files from any app to the notch: the island opens with *Drop here to keep*.
 
 - **Notch:** on a screen with a notch, the island hugs it and opens when the cursor touches the notch itself, never the menus beside it. On a screen without one, the island is just the two "wings" under the menu bar.
 - **Monitors:** one island on every display, so you see it on the screen you are working on. They are rebuilt when displays change.
-- **New activity:** the island drops a line below the notch with the title for a few seconds, then closes again.
+- **New activity:** the island drops a line below the notch with the title for a few seconds, then closes again. Up to three that arrive together drop at once, the most important on top; closed, the island shows up to three icons.
 - **On launch:** it shows "Kizami is running", and the menu bar item says how many activities are on the island.
 - **Full screen:** it hides on a display that is in full screen, so it never sits over a video, game or presentation.
 - **Always there:** with nothing to show, the island rests as a small pill around the notch (or at the top of a display without one). Hovered, it offers the empty tray.

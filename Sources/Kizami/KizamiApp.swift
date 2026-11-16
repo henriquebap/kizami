@@ -21,7 +21,8 @@ struct KizamiApp: App {
         }
         Settings {
             AjustesView(tempo: Kizami.shared.tempo, agenda: Kizami.shared.agenda, mac: Kizami.shared.mac,
-                        formulario: Kizami.shared.formulario)
+                        interesses: Kizami.shared.interesses, formulario: Kizami.shared.formulario,
+                        formularioInteresses: Kizami.shared.formularioInteresses)
         }
     }
 }
@@ -91,8 +92,11 @@ final class Kizami {
     let tempo = Tempo()
     let claude: SessoesClaude
     let mac: Mac
+    let interesses: Interesses
     let formulario = FormularioAjustes()
-    private var fontes: Fontes { Fontes(mural: mural, bandeja: bandeja, tocando: tocando, agenda: agenda, tempo: tempo, claude: claude, mac: mac) }
+    let formularioInteresses = FormularioInteresses()
+    private var fontes: Fontes { Fontes(mural: mural, bandeja: bandeja, tocando: tocando, agenda: agenda, tempo: tempo, claude: claude, mac: mac,
+                                       interesses: interesses) }
     private var janelas: [Janela] = []
     private var arrasto: Arrasto?
 
@@ -100,6 +104,7 @@ final class Kizami {
         agenda = Agenda(mural: mural)
         claude = SessoesClaude(mural: mural)
         mac = Mac(mural: mural)
+        interesses = Interesses(mural: mural)
     }
 
     func iniciar() {
@@ -124,6 +129,7 @@ final class Kizami {
         tempo.iniciar()
         claude.iniciar()
         mac.iniciar()
+        interesses.iniciar()
         agenda.iniciar()  // por último: na primeira vez, o macOS pergunta pelo acesso aos Calendários
         // Sinal de vida ao abrir: diz o que é a ilha que acabou de aparecer.
         mural.receber(Atividade(id: "kizami", titulo: String(localized: "Kizami está rodando"),

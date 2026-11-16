@@ -11,7 +11,7 @@ Kizami is a menu-bar-only macOS app that draws a black island around the MacBook
 ```bash
 make app      # build/Kizami.app (swiftc only; signed with the local "Kanji Dev" certificate when present, so permissions survive rebuilds)
 make install  # /Applications/Kizami.app
-make teste    # pure rules: Geometria, Comando, Atividade, Som, Agenda, Tempo, Claude
+make teste    # pure rules: Geometria, Comando, Atividade, Som, Agenda, Tempo, Claude, Mac, Interesses
 ```
 
 **Constraints:**
@@ -42,7 +42,9 @@ make install && /Applications/Kizami.app/Contents/MacOS/Kizami enviar --titulo t
 | `Claude.swift`, `ClaudeView.swift` | Claude Code sessions: hook events → session states, expiry, the "needs you" alert, the open-island section |
 | `Agenda.swift`, `AgendaView.swift` | Calendar (EventKit): next event, meeting-link allowlist, 15-min / starting reminders, the "Today" chip |
 | `Tempo.swift`, `TempoView.swift` | Weather from Open-Meteo for the city in Settings: fetch + validation, WMO code → symbol, the "Today" chip |
-| `AjustesView.swift` | The Settings window (city, calendar access, Claude hooks pointer) |
+| `Interesses.swift`, `InteressesView.swift` | Interests: ESPN schedules (teams, F1) and ICS feeds the person adds, the week / day-before / 1-hour reminders, the open-island row and its Settings section |
+| `Mac.swift`, `MacView.swift` | Mic and camera in use, battery, Dock badges (opt-in, Accessibility): the privacy dots, the open-island row, its Settings section |
+| `AjustesView.swift` | The Settings window (city, calendar access, interests, apps and Mac, Claude hooks pointer) |
 
 What's next and what macOS allows: [docs/ROADMAP.md](docs/ROADMAP.md).
 
@@ -53,9 +55,9 @@ What's next and what macOS allows: [docs/ROADMAP.md](docs/ROADMAP.md).
 3. **Never take focus.** Use `.nonactivatingPanel` and `orderFrontRegardless()`. Never `makeKey`, never `NSApp.activate`.
 4. **Never block the menu bar.** While closed, `ignoresMouseEvents = true`.
 5. **Public APIs only.** No MediaRemote, no SkyLight: they break between macOS versions.
-6. **Permissions stay optional.** Automation (artwork, media buttons) and Calendars (next event). Denied, everything else keeps working. Track titles, event titles, session folders and the city are content: never in logs.
+6. **Permissions stay optional.** Automation (artwork, media buttons), Calendars (next event) and Accessibility (Dock badges, off by default). Denied, everything else keeps working. Track titles, event titles, session folders, the city, followed teams, app names and badge counts are content: never in logs.
 7. **No third-party dependencies.**
-8. **Network only to named services that need no key**, over HTTPS with a timeout and a size cap: today Open-Meteo. A new service is a decision written in the ROADMAP.
+8. **Network only to named services that need no key**, over HTTPS with a timeout, a size cap and the redirect target checked: today Open-Meteo and ESPN's public JSON (`site.api.espn.com`), plus ICS feeds whose link the person pastes in Settings. A new service is a decision written in the ROADMAP.
 
 ## Conventions
 

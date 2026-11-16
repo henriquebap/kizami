@@ -38,8 +38,9 @@ $K limpar
 - `--cor`: uma de `vermelho`, `laranja`, `amarelo`, `verde`, `azul`, `roxo`, `rosa`, `cinza`.
 - `--expira`: segundos até a atividade sumir (padrão: 10). `0` deixa na ilha até o `remover`.
 - `--id`: enviar de novo com o mesmo id substitui a atividade.
+- `--prioridade`: `baixa`, `normal` (padrão), `alta` ou `urgente`. A ilha ordena por ela, e cheia, sai primeiro a menos importante. `baixa` entra na ilha sem fazer ela descer.
 
-De outro app, poste uma notificação distribuída com o nome `io.github.henriquebap.kizami.enviar`. O JSON da atividade vai em `object`: `{"id", "titulo", "detalhe"?, "simbolo"?, "cor"?, "expira"?}`. Passe `deliverImmediately: true`: o Kizami nunca é o app ativo, e sem esse parâmetro o macOS pode segurar a notificação.
+De outro app, poste uma notificação distribuída com o nome `io.github.henriquebap.kizami.enviar`. O JSON da atividade vai em `object`: `{"id", "titulo", "detalhe"?, "simbolo"?, "cor"?, "expira"?, "prioridade"?}`. Passe `deliverImmediately: true`: o Kizami nunca é o app ativo, e sem esse parâmetro o macOS pode segurar a notificação.
 
 **O que chega é dado, nunca comando.** Qualquer processo do Mac pode enviar. O Kizami só exibe: tira os caracteres invisíveis e de direção, limita o tamanho e nunca interpreta Markdown. *Limpar a ilha*, no item do Kizami na barra de menus, tira tudo.
 
@@ -61,9 +62,19 @@ A ilha aberta começa com uma faixa do dia:
 - **Próximo evento** dos seus calendários (EventKit), com aviso 15 minutos antes e na hora de começar. Quando o evento tem link de Meet, Zoom, Teams, FaceTime ou Whereby, o botão **Entrar** abre a reunião. Na primeira vez o macOS pede acesso aos Calendários; negado, a faixa só deixa o evento de fora.
 - **Tempo** da cidade que você digita em **Ajustes… › Tempo**, do [Open-Meteo](https://open-meteo.com) (sem chave nem conta), atualizado a cada 30 minutos.
 
+## Interesses
+
+Jogos e corridas que você acompanha mas não tem no calendário. Em **Ajustes… › Interesses**, escolha a liga e busque o time (NFL, NBA, MLB, Brasileirão, Premier League, das agendas públicas da ESPN), ligue a Fórmula 1 ou cole o link de um calendário ICS / webcal. A ilha lembra na semana do evento, na véspera e 1 hora antes, e a ilha aberta mostra o próximo nos 7 dias seguintes. O Buffalo Bills já vem seguido.
+
 ## Sessões do Claude
 
 Os hooks do Claude Code chamam `Kizami claude`, e a ilha aberta lista as sessões rodando: trabalhando, **precisa de você** (um pedido de permissão) ou pronta. Uma sessão que precisa de você também faz a ilha descer com um aviso. Clicar numa sessão traz o app dela para a frente. Só passam o id da sessão, o nome da pasta e o estado, nunca os seus pedidos nem as respostas do Claude. Como ligar: [docs/CLAUDE-HOOKS.md](docs/CLAUDE-HOOKS.md).
+
+## Apps e Mac
+
+- **Microfone e câmera em uso:** um ponto laranja (microfone) e um verde (câmera) na ilha fechada, como no iPhone, e o app que está ouvindo com o mouse em cima.
+- **Bateria:** a porcentagem com o mouse em cima, e um aviso em 20% e 10%.
+- **Mensagens não lidas do Dock** (WhatsApp 3, Mail 12): ligue em **Ajustes… › Apps e Mac**. Ler o Dock pede a permissão de Acessibilidade. Quando um número sobe, a ilha desce uma linha; clicar num app abre o app. O macOS não deixa ler o texto das notificações de outros apps, só esses números.
 
 ## Bandeja de arquivos
 
@@ -75,7 +86,7 @@ Arraste arquivos de qualquer app até o notch: a ilha abre com *Solte aqui para 
 
 - **Notch:** na tela com notch, a ilha abraça o notch e abre quando o cursor toca o próprio notch, nunca os menus ao lado. Em tela sem notch, a ilha é só as duas "asas", sob a barra de menus.
 - **Monitores:** uma ilha em cada monitor, para você ver na tela em que está trabalhando. Elas são recriadas quando os monitores mudam.
-- **Atividade nova:** a ilha desce uma linha abaixo do notch com o título por alguns segundos e depois volta a fechar.
+- **Atividade nova:** a ilha desce uma linha abaixo do notch com o título por alguns segundos e depois volta a fechar. Até três que chegam juntas descem de uma vez, a mais importante em cima; fechada, a ilha mostra até três ícones.
 - **Ao abrir:** mostra "Kizami está rodando", e o item na barra de menus diz quantas atividades há na ilha.
 - **Tela cheia:** a ilha some no monitor que está em tela cheia, para nunca ficar por cima de um vídeo, jogo ou apresentação.
 - **Sempre lá:** sem nada para mostrar, a ilha fica em repouso, uma pílula pequena em volta do notch (ou no topo de uma tela sem notch). Com o mouse em cima, oferece a bandeja vazia.

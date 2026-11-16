@@ -24,6 +24,7 @@ private enum Forma: Equatable {
     let tempo: Tempo
     let claude: SessoesClaude
     let mac: Mac
+    let interesses: Interesses
 }
 
 /// As seções da ilha aberta agora. A janela mede a área do hover com a mesma conta.
@@ -31,7 +32,8 @@ private enum Forma: Equatable {
     Secoes(tocando: f.tocando.app != nil, atividades: f.mural.atividades.count,
            arquivos: f.bandeja.arquivos.count, arrastando: f.bandeja.arrastando,
            sessoes: f.claude.sessoes.count, hoje: f.agenda.proximo != nil || f.tempo.previsao != nil,
-           apps: !f.mac.emblemas.isEmpty || !f.mac.microfone.isEmpty || f.mac.camera || f.mac.bateria != nil)
+           apps: !f.mac.emblemas.isEmpty || !f.mac.microfone.isEmpty || f.mac.camera || f.mac.bateria != nil,
+           interesse: f.interesses.proximo != nil)
 }
 
 /// A forma preta presa ao topo. Sempre à vista: sem nada, fica em repouso, só um pouco maior que o notch.
@@ -129,6 +131,7 @@ struct IlhaView: View {
                 case .aberta:
                     VStack(spacing: Geometria.espacoSecao) {
                         if secoes.hoje { LinhaHoje(agenda: fontes.agenda, tempo: fontes.tempo) }
+                        if secoes.interesse { LinhaInteresse(interesses: fontes.interesses) }
                         if secoes.sessoes > 0 { SecaoClaude(sessoes: fontes.claude) }
                         if secoes.tocando { LinhaTocando(tocando: tocando) }
                         if secoes.linhas > 0 { Lista(atividades: mural.atividades) }
@@ -164,6 +167,7 @@ struct IlhaView: View {
         .animation(.spring(response: 0.4, dampingFraction: 0.85), value: fontes.claude.sessoes)
         .animation(.spring(response: 0.4, dampingFraction: 0.85), value: secoes.hoje)
         .animation(.spring(response: 0.4, dampingFraction: 0.85), value: secoes.apps)
+        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: secoes.interesse)
         .animation(.smooth(duration: 0.25), value: privacidade)
     }
 }

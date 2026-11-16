@@ -79,6 +79,7 @@ struct Geometria: Equatable {
         func linhas(_ n: Int) -> CGFloat { n > 0 ? CGFloat(n) * Self.alturaLinha + CGFloat(n - 1) * Self.espacoLinha : 0 }
         let blocos = [
             secoes.hoje ? Self.alturaHoje : 0,
+            secoes.interesse ? Self.alturaLinha : 0,
             linhas(secoes.sessoes),
             secoes.tocando ? Self.alturaTocando : 0,
             linhas(secoes.linhas),
@@ -92,7 +93,7 @@ struct Geometria: Equatable {
     /// A janela tem o tamanho do maior estado mais a margem da sombra; a forma anima dentro dela.
     var janela: CGRect {
         let maior = aberta(Secoes(tocando: true, atividades: Self.maximoLinhas, arquivos: 1, arrastando: false,
-                                  sessoes: Self.maximoSessoes, hoje: true, apps: true))
+                                  sessoes: Self.maximoSessoes, hoje: true, apps: true, interesse: true))
         return retangulo(CGSize(width: maior.width + 2 * Self.sombra, height: maior.height + Self.sombra))
     }
 
@@ -127,6 +128,8 @@ struct Geometria: Equatable {
 /// O que a ilha aberta mostra, de cima para baixo. A janela (área do hover) e a view medem com a mesma regra.
 struct Secoes: Equatable {
     let hoje: Bool
+    /// O próximo jogo ou corrida que a pessoa segue, nos próximos 7 dias.
+    let interesse: Bool
     let sessoes: Int
     let tocando: Bool
     let linhas: Int
@@ -135,13 +138,14 @@ struct Secoes: Equatable {
     let bandeja: Bool
 
     init(tocando: Bool, atividades: Int, arquivos: Int, arrastando: Bool, sessoes: Int = 0, hoje: Bool = false,
-         apps: Bool = false) {
+         apps: Bool = false, interesse: Bool = false) {
         self.hoje = hoje
+        self.interesse = interesse
         self.sessoes = min(sessoes, Geometria.maximoSessoes)
         self.tocando = tocando
         linhas = min(atividades, Geometria.maximoLinhas)
         self.apps = apps
         // Sem nada para mostrar, a ilha aberta oferece a bandeja vazia: é o que dá para fazer com ela.
-        bandeja = arquivos > 0 || arrastando || (atividades == 0 && !tocando && sessoes == 0 && !hoje && !apps)
+        bandeja = arquivos > 0 || arrastando || (atividades == 0 && !tocando && sessoes == 0 && !hoje && !apps && !interesse)
     }
 }

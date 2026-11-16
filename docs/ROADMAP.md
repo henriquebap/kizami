@@ -23,7 +23,7 @@ Kizami stays on public APIs, so every feature below says what macOS allows and w
 
 ## v0.4.1 (done)
 
-- The island hides on a display that is in full screen (video, game, presentation): the panel no longer joins full-screen Spaces.
+- The island hides on a display that is in full screen (video, game, presentation). Dropping `.fullScreenAuxiliary` wasn't enough: at the island's window level macOS still draws it on a full-screen Space (seen with YouTube in Chrome). The working signal is that macOS takes the wallpaper and the Finder desktop windows off a display in full screen; Kizami checks the window list on every Space change.
 
 ## Plan from v0.5
 
@@ -35,7 +35,7 @@ Kizami is the more flexible sibling of Kanji: it may call **named network servic
 |---|---|---|
 | **Settings window** (done: city) | City, interests, one toggle per module | |
 | **Reminder schedule** (pure) | From an event's start: "this week", "tomorrow", "in 1 hour", "in 15 min" → activities in the `Mural` | Calendar and interests use the same rule; tested like `Geometria`. |
-| **Who owns the closed wings** (pure) | Music, a meeting in 5 min, a Claude session waiting: one wins the closed island | A product decision, written as a small tested function. |
+| **Priority queue** (done) | Activities carry `prioridade` (`baixa`, `normal`, `alta`, `urgente`). The island sorts by it, then by arrival; full, it drops the least important. Up to three notices drop together, and the closed wings show up to three icons. `baixa` joins without dropping the island. | `Mural.antes` is the whole rule. Activities still beat music in the closed wings. |
 | **Urgent over full screen** | Optional: a meeting about to start or a Claude permission prompt still shows on a full-screen display | Needs a second panel that does join full-screen Spaces; off by default. |
 
 ### v0.5: Claude sessions (done)
@@ -57,7 +57,7 @@ Only `session_id`, the folder name and the state cross over; never the prompt or
 
 WeatherKit needs a paid developer account, and Core Location would ask for location for a city the person can type once.
 
-### v0.7: Interests (the "external calendar")
+### v0.7: Interests (the "external calendar") (done, except live score)
 
 Events the person follows but doesn't keep in their calendar (Buffalo Bills, F1, a football club):
 
@@ -68,7 +68,7 @@ Events the person follows but doesn't keep in their calendar (Buffalo Bills, F1,
 | Reminders | The shared schedule: the week's list, the day before, 1 hour before | |
 | Later: live score | Poll the ESPN scoreboard every minute only while a followed game is on | |
 
-### v0.8: Apps and the Mac
+### v0.8: Apps and the Mac (done: mic, camera, battery, Dock badges; timer and browser media keys still open)
 
 | What | How | Permission |
 |---|---|---|
