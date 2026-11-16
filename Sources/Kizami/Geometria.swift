@@ -88,6 +88,16 @@ struct Geometria: Equatable {
         retangulo(tamanho).insetBy(dx: -4, dy: -4)
     }
 
+    /// Um monitor está num espaço de tela cheia quando o fundo da mesa saiu dele. Em tela cheia o macOS tira dali
+    /// a janela do papel de parede e a da mesa do Finder (visto com `CGWindowListCopyWindowInfo`), e é o único
+    /// sinal público: a janela do app em tela cheia tem o mesmo tamanho de uma janela maximizada com o Dock oculto.
+    /// Sem nenhum fundo em monitor nenhum, não dá para saber: a ilha fica.
+    /// `tela` e `fundos` em coordenadas do Quartz (origem no canto de cima do monitor principal).
+    // ponytail: com os dois monitores em tela cheia ao mesmo tempo não sobra fundo, e a ilha fica nos dois.
+    static func emTelaCheia(tela: CGRect, fundos: [CGRect]) -> Bool {
+        !fundos.isEmpty && !fundos.contains { $0.insetBy(dx: -1, dy: -1).contains(tela) }
+    }
+
     /// Onde o cursor abre a ilha fechada: só o notch, que é área morta. As asas ficam sobre a barra de menus,
     /// e abrir por elas cobriria os menus ao lado do notch a cada passada do cursor.
     /// Sem notch, a pílula em repouso: o meio do topo da tela costuma ficar vazio.

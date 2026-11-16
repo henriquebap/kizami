@@ -30,9 +30,15 @@ final class Janela {
     private var entrada: Date?
     /// O cursor precisa parar no notch este tempo: passar por ele a caminho dos menus da direita não abre a ilha.
     private static let permanencia: TimeInterval = 0.15
+    /// O monitor em coordenadas do Quartz, as da lista de janelas do macOS.
+    private let telaQuartz: CGRect
+    /// O monitor está num espaço de tela cheia: a ilha sai dele (pedido da pessoa: em vídeo ou jogo, ela atrapalha).
+    private(set) var oculta = false
 
     init(fontes: Fontes, tela: NSScreen) {
         self.fontes = fontes
+        let numero = tela.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID
+        telaQuartz = numero.map(CGDisplayBounds) ?? .null
         let geometria = Geometria(tela: tela.frame, esquerda: tela.auxiliaryTopLeftArea?.width,
                                   direita: tela.auxiliaryTopRightArea?.width, topoSeguro: tela.safeAreaInsets.top,
                                   barraDeMenus: NSStatusBar.system.thickness)
@@ -40,9 +46,8 @@ final class Janela {
         painel = NSPanel(contentRect: geometria.janela, styleMask: [.borderless, .nonactivatingPanel],
                          backing: .buffered, defer: false)
         painel.level = .mainMenu + 3  // acima da barra de menus; o .statusBar (25) fica logo acima dela e não basta (boring.notch usa este)
-        // Sem .fullScreenAuxiliary: o painel não entra no espaço de um app em tela cheia, e a ilha some ali
-        // (pedido da pessoa: em vídeo ou jogo, ela atrapalha). Cada monitor tem o seu espaço, então só some
-        // no monitor que está em tela cheia.
+        // Sem .fullScreenAuxiliary não basta para sumir em tela cheia: neste nível, o macOS mostra o painel
+        // também no espaço do app em tela cheia (visto com o YouTube no Chrome). Quem esconde é `ajustar(fundos:)`.
         painel.collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle]
         painel.backgroundColor = .clear
         painel.isOpaque = false
@@ -57,6 +62,21 @@ final class Janela {
         painel.setFrame(geometria.janela, display: true)
         painel.orderFrontRegardless()  // nunca makeKey nem activate: o foco fica no app em que a pessoa está
         vigiar()
+    }
+
+    /// Esconde a ilha no monitor que está em tela cheia e devolve quando sai dela. `fundos`: as janelas do fundo
+    /// da mesa que estão à vista (`Geometria.emTelaCheia`).
+    func ajustar(fundos: [CGRect]) {
+        let cheia = Geometria.emTelaCheia(tela: telaQuartz, fundos: fundos)
+        guard cheia != oculta else { return }
+        oculta = cheia
+        if cheia {
+            painel.orderOut(nil)
+            estado.aberta = false
+            painel.ignoresMouseEvents = true
+        } else {
+            painel.orderFrontRegardless()
+        }
     }
 
     func fechar() {
@@ -96,9 +116,8 @@ final class Janela {
         let cursor = NSEvent.mouseLocation
         // Aberta e com o botão apertado, fica aberta: um arquivo arrastado para fora da bandeja ainda está em viagem,
         // e fechar trocaria a view de origem no meio do arraste.
-        // Em tela cheia o painel não está no espaço ativo: sem isto, a ilha "abriria" invisível e
-        // encerraria o aviso de uma atividade que ninguém viu.
-        let dentro = painel.isOnActiveSpace && zona.contains(cursor)
+        // Escondida em tela cheia: sem isto, a ilha "abriria" invisível e encerraria o aviso que ninguém viu.
+        let dentro = !oculta && zona.contains(cursor)
         entrada = dentro ? (entrada ?? .now) : nil
         // A ilha está sempre lá e abre mesmo vazia, para mostrar a bandeja. Fechada, só abre se o cursor parar;
         // com um arquivo sendo arrastado, abre na hora.

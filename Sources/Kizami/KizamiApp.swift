@@ -110,6 +110,12 @@ final class Kizami {
                                                object: nil, queue: .main) { _ in
             MainActor.assumeIsolated { Kizami.shared.montarIlhas() }
         }
+        // Entrar e sair de tela cheia troca o espaço ativo. A lista de janelas só se acerta depois da animação,
+        // por isso confere de novo um pouco depois.
+        NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.activeSpaceDidChangeNotification,
+                                                          object: nil, queue: .main) { _ in
+            MainActor.assumeIsolated { Kizami.shared.conferirTelaCheia(depois: [0, 0.4, 1.2]) }
+        }
         Correio.ouvir(mural)
         tocando.iniciar()
         tempo.iniciar()
@@ -125,7 +131,34 @@ final class Kizami {
     private func montarIlhas() {
         janelas.forEach { $0.fechar() }
         janelas = NSScreen.screens.map { Janela(fontes: fontes, tela: $0) }
+        conferirTelaCheia(depois: [0])
         registro.info("ilhas: \(self.janelas.count) monitor(es), \(NSScreen.screens.filter { $0.safeAreaInsets.top > 0 }.count) com notch")
+    }
+
+    // ponytail: confere só quando o espaço muda. Um app que cobre a tela sem trocar de espaço (o modo antigo de tela
+    // cheia, sem animação) não esconde a ilha; conferir também na troca de app ativo se aparecer.
+    private func conferirTelaCheia(depois atrasos: [Double]) {
+        for atraso in atrasos {
+            DispatchQueue.main.asyncAfter(deadline: .now() + atraso) {
+                MainActor.assumeIsolated {
+                    let fundos = Self.fundosDaMesa()
+                    Kizami.shared.janelas.forEach { $0.ajustar(fundos: fundos) }
+                }
+            }
+        }
+    }
+
+    /// O papel de parede e a mesa do Finder à vista, em coordenadas do Quartz. Dono e camada vêm sem a permissão
+    /// de Gravação de Tela (só o nome das janelas pede).
+    nonisolated private static func fundosDaMesa() -> [CGRect] {
+        let janelas = CGWindowListCopyWindowInfo([.optionOnScreenOnly], kCGNullWindowID) as? [[String: Any]] ?? []
+        let mesa = Int(CGWindowLevelForKey(.desktopIconWindow))
+        return janelas.compactMap { janela in
+            guard let dono = janela[kCGWindowOwnerName as String] as? String, dono == "Wallpaper" || dono == "Finder",
+                  let camada = janela[kCGWindowLayer as String] as? Int, camada <= mesa,
+                  let limites = janela[kCGWindowBounds as String] as? NSDictionary else { return nil }
+            return CGRect(dictionaryRepresentation: limites)
+        }
     }
 
     func mostrarExemplo() {

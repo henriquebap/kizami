@@ -28,6 +28,13 @@ import Foundation
     conferir("cursor na asa (barra de menus) não abre", mac.gatilho.contains(CGPoint(x: 650, y: 970)), false)
     conferir("aberta, a ilha inteira segura o hover", mac.zona(mac.aberta(secoes(false, 3, 0))).contains(CGPoint(x: 600, y: 850)), true)
 
+    // Tela cheia, com as janelas reais do fundo da mesa (MacBook 14" e um monitor de 1920x1080 à esquerda).
+    let interno = CGRect(x: 0, y: 0, width: 1512, height: 982), lateral = CGRect(x: -1920, y: -98, width: 1920, height: 1080)
+    conferir("mesa à vista: não é tela cheia", Geometria.emTelaCheia(tela: interno, fundos: [lateral, interno]), false)
+    conferir("o fundo saiu do monitor: tela cheia", Geometria.emTelaCheia(tela: interno, fundos: [lateral]), true)
+    conferir("tela cheia num monitor não esconde o outro", Geometria.emTelaCheia(tela: lateral, fundos: [lateral]), false)
+    conferir("sem fundo nenhum não dá para saber: fica", Geometria.emTelaCheia(tela: interno, fundos: []), false)
+
     // Monitor externo à esquerda: x negativo, sem notch e com a barra de menus oculta.
     let externo = Geometria(tela: CGRect(x: -1920, y: 0, width: 1920, height: 1080), esquerda: nil, direita: nil,
                             topoSeguro: 0, barraDeMenus: 24)
