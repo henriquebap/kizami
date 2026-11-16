@@ -1,14 +1,6 @@
 import Foundation
 
 // Regras puras do Kizami: geometria da ilha, comandos da linha de comando e validação do que chega de fora.
-@MainActor var falhas = 0
-
-@MainActor func conferir<T: Equatable>(_ nome: String, _ obtido: T, _ esperado: T) {
-    let ok = obtido == esperado
-    print(ok ? "ok   " : "FALHA", nome, ok ? "" : "\n  obtido:   \(obtido)\n  esperado: \(esperado)")
-    if !ok { falhas += 1 }
-}
-
 @MainActor func testarGeometria() {
     // Medidas reais do MacBook 14" com macOS 27 (NSScreen.safeAreaInsets e auxiliaryTop*Area).
     let mac = Geometria(tela: CGRect(x: 0, y: 0, width: 1512, height: 982), esquerda: 663.5, direita: 663.5,
