@@ -27,7 +27,11 @@ import Foundation
     conferir("lista de 2 e bandeja", mac.aberta(secoes(false, 2, 1)), CGSize(width: 340, height: 192))
     conferir("só tocando, sem bandeja vazia", mac.aberta(secoes(true, 0, 0)), CGSize(width: 340, height: 106))
     conferir("arrastando, a bandeja aparece mesmo tocando", secoes(true, 0, 0, true).bandeja, true)
-    conferir("janela cabe tudo junto e a sombra", mac.janela, CGRect(x: 568, y: 676, width: 376, height: 306))
+    conferir("janela cabe tudo junto e a sombra", mac.janela, CGRect(x: 568, y: 518, width: 376, height: 464))
+    conferir("hoje e 2 sessões, sem bandeja vazia",
+             mac.aberta(Secoes(tocando: false, atividades: 0, arquivos: 0, arrastando: false, sessoes: 2, hoje: true)),
+             CGSize(width: 340, height: 32 + 8 + 40 + 10 + 64 + 14))
+    conferir("sessões não passam de 3", Secoes(tocando: false, atividades: 0, arquivos: 0, arrastando: false, sessoes: 9).sessoes, 3)
     conferir("cursor encostado no topo do notch abre", mac.gatilho.contains(CGPoint(x: 756, y: 982)), true)
     conferir("cursor na asa (barra de menus) não abre", mac.gatilho.contains(CGPoint(x: 650, y: 970)), false)
     conferir("aberta, a ilha inteira segura o hover", mac.zona(mac.aberta(secoes(false, 3, 0))).contains(CGPoint(x: 600, y: 850)), true)

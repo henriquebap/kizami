@@ -17,6 +17,10 @@ struct Geometria: Equatable {
     /// A linha do que está tocando: miniatura, título e artista.
     static let alturaTocando: CGFloat = 52
     static let espacoSecao: CGFloat = 10
+    /// A faixa de cima da ilha aberta: o próximo evento à esquerda, o tempo à direita.
+    static let alturaHoje: CGFloat = 40
+    /// Sessões do Claude na ilha aberta, uma por linha (`alturaLinha`), as que mais pedem atenção primeiro.
+    static let maximoSessoes = 3
     /// Altura mínima da ilha em tela sem notch. Com a altura da barra de menus (22 pt), a capa de 20 pt ficava
     /// encostada em cima e embaixo; lá não há câmera nem barra para respeitar no meio do topo.
     static let alturaSemNotch: CGFloat = 30
@@ -55,10 +59,12 @@ struct Geometria: Equatable {
 
     /// Com o cursor em cima: as seções que existem, uma embaixo da outra.
     func aberta(_ secoes: Secoes) -> CGSize {
-        let n = CGFloat(secoes.linhas)
+        func linhas(_ n: Int) -> CGFloat { n > 0 ? CGFloat(n) * Self.alturaLinha + CGFloat(n - 1) * Self.espacoLinha : 0 }
         let blocos = [
+            secoes.hoje ? Self.alturaHoje : 0,
+            linhas(secoes.sessoes),
             secoes.tocando ? Self.alturaTocando : 0,
-            n > 0 ? n * Self.alturaLinha + (n - 1) * Self.espacoLinha : 0,
+            linhas(secoes.linhas),
             secoes.bandeja ? Self.alturaBandeja : 0,
         ].filter { $0 > 0 }
         let conteudo = blocos.reduce(0, +) + CGFloat(max(blocos.count - 1, 0)) * Self.espacoSecao
@@ -67,7 +73,8 @@ struct Geometria: Equatable {
 
     /// A janela tem o tamanho do maior estado mais a margem da sombra; a forma anima dentro dela.
     var janela: CGRect {
-        let maior = aberta(Secoes(tocando: true, atividades: Self.maximoLinhas, arquivos: 1, arrastando: false))
+        let maior = aberta(Secoes(tocando: true, atividades: Self.maximoLinhas, arquivos: 1, arrastando: false,
+                                  sessoes: Self.maximoSessoes, hoje: true))
         return retangulo(CGSize(width: maior.width + 2 * Self.sombra, height: maior.height + Self.sombra))
     }
 
@@ -91,14 +98,18 @@ struct Geometria: Equatable {
 
 /// O que a ilha aberta mostra, de cima para baixo. A janela (área do hover) e a view medem com a mesma regra.
 struct Secoes: Equatable {
+    let hoje: Bool
+    let sessoes: Int
     let tocando: Bool
     let linhas: Int
     let bandeja: Bool
 
-    init(tocando: Bool, atividades: Int, arquivos: Int, arrastando: Bool) {
+    init(tocando: Bool, atividades: Int, arquivos: Int, arrastando: Bool, sessoes: Int = 0, hoje: Bool = false) {
+        self.hoje = hoje
+        self.sessoes = min(sessoes, Geometria.maximoSessoes)
         self.tocando = tocando
         linhas = min(atividades, Geometria.maximoLinhas)
         // Sem nada para mostrar, a ilha aberta oferece a bandeja vazia: é o que dá para fazer com ela.
-        bandeja = arquivos > 0 || arrastando || (atividades == 0 && !tocando)
+        bandeja = arquivos > 0 || arrastando || (atividades == 0 && !tocando && sessoes == 0 && !hoje)
     }
 }
