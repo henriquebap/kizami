@@ -88,10 +88,11 @@ final class Kizami {
     let claude: SessoesClaude
     let mac: Mac
     let interesses: Interesses
+    let kanji: PonteKanji
     let formulario = FormularioAjustes()
     let formularioInteresses = FormularioInteresses()
     private var fontes: Fontes { Fontes(mural: mural, bandeja: bandeja, tocando: tocando, agenda: agenda, tempo: tempo, claude: claude, mac: mac,
-                                       interesses: interesses) }
+                                       interesses: interesses, kanji: kanji) }
     private var janelas: [Janela] = []
     private var ajustes: NSWindow?
     private var arrasto: Arrasto?
@@ -101,6 +102,7 @@ final class Kizami {
         claude = SessoesClaude(mural: mural)
         mac = Mac(mural: mural)
         interesses = Interesses(mural: mural)
+        kanji = PonteKanji(mural: mural)
     }
 
     func iniciar() {

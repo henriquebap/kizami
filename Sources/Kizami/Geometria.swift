@@ -96,9 +96,15 @@ struct Geometria: Equatable {
     }
 
     /// A aba de atalhos: o cabeçalho e a fileira.
-    var abertaAtalhos: CGSize {
+    var abertaAtalhos: CGSize { abertaComAba(Self.alturaAtalhos) }
+
+    /// A aba do Kanji: a fileira das ações e, com skills, a fileira delas (44 pt) logo abaixo.
+    static func alturaKanji(skills: Int) -> CGFloat { alturaAtalhos + (skills > 0 ? 6 + 44 : 0) }
+
+    /// Uma aba que não é o Início: o cabeçalho e o conteúdo dela (atalhos, Kanji).
+    func abertaComAba(_ conteudo: CGFloat) -> CGSize {
         CGSize(width: max(Self.larguraAberta, compacta.width),
-               height: faixaDoTopo + 8 + Self.alturaCabecalho + Self.espacoSecao + Self.alturaAtalhos + 14)
+               height: faixaDoTopo + 8 + Self.alturaCabecalho + Self.espacoSecao + conteudo + 14)
     }
 
     /// A janela tem o tamanho do maior estado mais a margem da sombra; a forma anima dentro dela.

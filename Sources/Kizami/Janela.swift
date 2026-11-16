@@ -15,7 +15,7 @@ final class EstadoIlha {
     /// A linha da lista sob o cursor: só ela mostra o ✕ (a view não tem `@State` sem as macros).
     var linhaSobCursor: String?
 
-    enum Aba { case inicio, atalhos }
+    enum Aba { case inicio, atalhos, kanji }
 
     init(geometria: Geometria) {
         self.geometria = geometria
@@ -114,7 +114,7 @@ final class Janela {
         // Fechada, a zona tem o tamanho que a ilha desenha agora (aviso ou asas com até três ícones).
         let fechada = mural.avisos.isEmpty ? g.compacta(icones: mural.destaques.count) : g.aviso(linhas: mural.avisos.count)
         let zona = if estado.aberta {
-            g.zona(estado.aba == .atalhos ? g.abertaAtalhos : g.aberta(secoesAtuais(fontes)))
+            g.zona(tamanhoAberto(g, estado.aba, fontes))
         } else if bandeja.arrastando {
             g.zona(fechada)  // arrastando, as asas também valem: ninguém clica num menu no meio de um arraste
         } else if !mural.avisos.isEmpty {

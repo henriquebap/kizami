@@ -22,7 +22,6 @@
 /* Bandeja */
 "Solte aqui para guardar" = "Drop here to keep";
 "Enviar por AirDrop" = "Send with AirDrop";
-"Abrir" = "Open";
 "Mostrar no Finder" = "Show in Finder";
 "Tirar da bandeja" = "Remove from Tray";
 
@@ -130,3 +129,17 @@
 "Limpar" = "Clear";
 "Tirar todos os avisos da ilha" = "Remove every activity from the island";
 "Tirar da ilha" = "Remove from the island";
+
+/* Aba do Kanji */
+"Kanji" = "Kanji";
+"Ditar" = "Dictate";
+"Transcrever o Mac" = "Transcribe Mac";
+"Abrir" = "Open";
+"Começa ou para o ditado no app em que você está" = "Starts or stops dictation in the app you're in";
+"Começa ou para a transcrição do áudio que o Mac está tocando" = "Starts or stops transcribing the audio your Mac is playing";
+"Abre a janela do Kanji" = "Opens the Kanji window";
+"Kanji não está instalado" = "Kanji isn't installed";
+"Abrindo o Kanji…" = "Opening Kanji…";
+"Clique de novo quando ele abrir" = "Click again once it opens";
+"Sem atalho livre: escolha um para esta skill no Kanji" = "No free shortcut: pick one for this skill in Kanji";
+"Começa um ditado com esta skill" = "Starts a dictation with this skill";

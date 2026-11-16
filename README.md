@@ -68,6 +68,7 @@ Only media apps count (players and browsers): Core Audio tells which apps have t
 Hover the notch and the island opens. At the top:
 - **Home**: everything below (today, interests, Claude sessions, now playing, activities, apps, tray).
 - **Shortcuts**: one click for the Mac's shortcuts, with the keys written under each one so you learn them: full screenshot (⇧⌘3), area (⇧⌘4), screenshot and recording (⇧⌘5), Mission Control, emoji (⌃⌘Space) and lock screen (⌃⌘Q). Sending keys needs the Accessibility permission, asked on the first click.
+- **Kanji**: [Kanji](https://github.com/henriquebap/kanji-local-dictation), the dictation app, in one click: dictate, transcribe the Mac's audio, open Kanji, and one button per skill (dictate already rewritten as a LinkedIn reply, an informal message, a prompt…). They are Kanji's own shortcuts, read from its settings, so they change when you change them there. Same Accessibility permission as Shortcuts.
 - **⚙︎**: opens Settings (also in Kizami's menu bar item, or ⌘, with its menu open).
 
 **Click an activity to open it:** a Claude alert brings its session's app forward, a game opens its ESPN page, a meeting reminder joins the call (or opens Calendar), a Dock badge opens the app. Activities sent by other apps or scripts only show.

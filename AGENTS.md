@@ -45,6 +45,7 @@ make install && /Applications/Kizami.app/Contents/MacOS/Kizami enviar --titulo t
 | `Interesses.swift`, `InteressesView.swift` | Interests: ESPN schedules (teams, F1) and ICS feeds the person adds, the week / day-before / 1-hour reminders, the open-island row and its Settings section |
 | `Mac.swift`, `MacView.swift` | Mic and camera in use, battery, Dock badges (opt-in, Accessibility): the privacy dots, the open-island row, its Settings section |
 | `Atalhos.swift` | The Shortcuts tab: system shortcuts sent as key events (screenshots, emoji, lock) or opened as apps (Mission Control) |
+| `Kanji.swift`, `KanjiAba.swift` | The Kanji tab: Kanji's global shortcuts read from its defaults, skill headers from `~/Library/Application Support/Kanji/Skills`, sent as key events |
 | `AjustesView.swift` | The Settings window (city, calendar access, interests, apps and Mac, Claude hooks pointer) |
 
 What's next and what macOS allows: [docs/ROADMAP.md](docs/ROADMAP.md).

@@ -222,6 +222,7 @@ import Foundation
         testarClaude()
         testarMac()
         testarInteresses()
+        testarKanjiAba()
         if falhas > 0 { exit(1) }
     }
 }

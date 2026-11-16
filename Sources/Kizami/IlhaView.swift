@@ -25,6 +25,16 @@ private enum Forma: Equatable {
     let claude: SessoesClaude
     let mac: Mac
     let interesses: Interesses
+    let kanji: PonteKanji
+}
+
+/// O tamanho da ilha aberta na aba escolhida. A janela mede a área do hover com a mesma conta.
+@MainActor func tamanhoAberto(_ g: Geometria, _ aba: EstadoIlha.Aba, _ f: Fontes) -> CGSize {
+    switch aba {
+    case .inicio: g.aberta(secoesAtuais(f))
+    case .atalhos: g.abertaAtalhos
+    case .kanji: g.abertaComAba(AbaKanji.altura(skills: f.kanji.skills.count))
+    }
 }
 
 /// As seções da ilha aberta agora. A janela mede a área do hover com a mesma conta.
@@ -57,7 +67,7 @@ struct IlhaView: View {
         case .repouso: g.repouso
         case .compacta: g.compacta(icones: mural.atividades.isEmpty ? 1 : mural.destaques.count)
         case .aviso: g.aviso(linhas: mural.avisos.count)
-        case .aberta: estado.aba == .atalhos ? g.abertaAtalhos : g.aberta(secoes)
+        case .aberta: tamanhoAberto(g, estado.aba, fontes)
         }
         let contorno = FormaIlha(orelha: forma.orelha, raio: forma.raio)
 
@@ -133,6 +143,8 @@ struct IlhaView: View {
                         Cabecalho(estado: estado, mural: mural)
                         if estado.aba == .atalhos {
                             GradeDeAtalhos(estado: estado, mural: mural)
+                        } else if estado.aba == .kanji {
+                            AbaKanji(estado: estado, kanji: fontes.kanji, mural: mural)
                         } else {
                         if secoes.hoje { LinhaHoje(agenda: fontes.agenda, tempo: fontes.tempo) }
                         if secoes.interesse { LinhaInteresse(interesses: fontes.interesses) }
@@ -213,6 +225,7 @@ private struct Cabecalho: View {
         HStack(spacing: 4) {
             aba("Início", "house.fill", .inicio)
             aba("Atalhos", "command", .atalhos)
+            aba("Kanji", "waveform", .kanji)
             Spacer(minLength: 0)
             if estado.aba == .inicio && !mural.atividades.isEmpty {
                 // Duas sessões do Claude terminaram e os avisos ficaram: um clique tira todos.

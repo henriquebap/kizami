@@ -68,6 +68,7 @@ Só apps de mídia contam (players e navegadores): o Core Audio diz quais apps e
 Passe o mouse no notch e a ilha abre. No topo:
 - **Início**: tudo o que está abaixo (hoje, interesses, sessões do Claude, tocando agora, atividades, apps, bandeja).
 - **Atalhos**: os atalhos do Mac num clique, com as teclas escritas embaixo de cada um para você ir aprendendo: captura da tela (⇧⌘3), de uma área (⇧⌘4), captura e gravação (⇧⌘5), Mission Control, emojis (⌃⌘Espaço) e bloquear a tela (⌃⌘Q). Mandar teclas pede a permissão de Acessibilidade, pedida no primeiro clique.
+- **Kanji**: o [Kanji](https://github.com/henriquebap/kanji-local-dictation), o app de ditado, num clique: ditar, transcrever o áudio do Mac, abrir o Kanji e um botão por skill (ditar já reescrevendo como resposta de LinkedIn, mensagem informal, prompt…). São os próprios atalhos do Kanji, lidos dos ajustes dele, então mudam quando você muda lá. A mesma permissão de Acessibilidade dos Atalhos.
 - **⚙︎**: abre os Ajustes (também no item do Kizami na barra de menus, ou ⌘, com o menu aberto).
 
 **Clique numa atividade para abrir:** o aviso do Claude traz o app da sessão para a frente, um jogo abre a página dele na ESPN, o lembrete de reunião entra na chamada (ou abre o Calendário), um emblema do Dock abre o app. As atividades mandadas por outros apps ou scripts só aparecem.
