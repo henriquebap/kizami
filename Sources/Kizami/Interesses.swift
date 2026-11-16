@@ -190,9 +190,10 @@ enum ESPN {
     struct RespostaAgenda: Decodable {
         let events: [Evento]?
     }
+    // Quase tudo opcional: um jogo com vaga ainda indefinida (time sem id) derrubava a agenda inteira na decodificação.
     struct Evento: Decodable {
-        let id: String
-        let date: String
+        let id: String?
+        let date: String?
         let name: String?
         let shortName: String?
         /// Falso quando a hora ainda não saiu ("TBD"): a data vem com uma hora de enfeite (visto: 05:00Z na semana 18).
@@ -200,7 +201,7 @@ enum ESPN {
         let competitions: [Competicao]?
     }
     struct Competicao: Decodable {
-        let id: String
+        let id: String?
         let date: String?
         let type: Tipo?
         let competitors: [Competidor]?
@@ -213,10 +214,10 @@ enum ESPN {
     }
     struct Competidor: Decodable {
         let homeAway: String?
-        let team: Time
+        let team: Time?
     }
     struct Time: Decodable {
-        let id: String
+        let id: String?
         let displayName: String?
         let shortDisplayName: String?
         let abbreviation: String?
@@ -252,31 +253,35 @@ enum ESPN {
     }
 
     /// Os jogos ainda não terminados do time, do ponto de vista dele: "Bills x Dolphins" em casa, "Bills @ Jets" fora.
-    static func jogos(de dados: Data, time: String, fonte: Seguido) -> [EventoInteresse] {
-        guard let r = try? JSONDecoder().decode(RespostaAgenda.self, from: dados) else { return [] }
-        return (r.events ?? []).compactMap { e in
-            guard e.timeValid != false, let inicio = data(e.date), let c = e.competitions?.first,
-                  c.status?.type?.completed != true, let lados = c.competitors, lados.count == 2,
-                  let nosso = lados.first(where: { $0.team.id == time }),
-                  let outro = lados.first(where: { $0.team.id != time }) else { return nil }
-            let nome = { (t: Time) in t.shortDisplayName ?? t.displayName ?? t.abbreviation ?? "" }
-            let titulo = Atividade.limpo("\(nome(nosso.team)) \(nosso.homeAway == "away" ? "@" : "x") \(nome(outro.team))", ate: 60)
-            return EventoInteresse(id: "espn-\(Atividade.limpo(e.id, ate: 20))", titulo: titulo, inicio: inicio, fonte: fonte)
+    /// nil quando a resposta não é uma agenda (erro com status 200): aí a lista de antes continua valendo.
+    /// O início entra no id: um jogo que muda de horário (o "flex" da NFL) ganha lembretes novos.
+    static func jogos(de dados: Data, time: String, fonte: Seguido) -> [EventoInteresse]? {
+        guard let r = try? JSONDecoder().decode(RespostaAgenda.self, from: dados), let eventos = r.events else { return nil }
+        return eventos.compactMap { e in
+            guard e.timeValid != false, let id = e.id, let inicio = e.date.flatMap(data), let c = e.competitions?.first,
+                  c.status?.type?.completed != true, let lados = c.competitors?.compactMap(\.self), lados.count == 2,
+                  let nosso = lados.first(where: { $0.team?.id == time }), let nossoTime = nosso.team,
+                  let outroTime = lados.first(where: { $0.team?.id != time })?.team else { return nil }
+            let nome = { (t: Time) in t.shortDisplayName ?? t.displayName ?? t.abbreviation ?? "?" }
+            let titulo = Atividade.limpo("\(nome(nossoTime)) \(nosso.homeAway == "away" ? "@" : "x") \(nome(outroTime))", ate: 60)
+            return EventoInteresse(id: "espn-\(Atividade.limpo(id, ate: 20))-\(Int(inicio.timeIntervalSince1970))",
+                                   titulo: titulo, inicio: inicio, fonte: fonte)
         }
     }
 
     /// O placar da F1 só traz o fim de semana atual (ou o próximo): treinos, classificação e corrida. Fica a corrida.
     // ponytail: só a corrida do fim de semana que o placar mostra; o `calendar` da resposta tem o ano todo, mas só com
     // o intervalo do fim de semana, sem a hora da largada. Ler o evento de cada etapa se a pessoa quiser a de daqui a duas semanas.
-    static func corridas(de dados: Data) -> [EventoInteresse] {
-        guard let r = try? JSONDecoder().decode(RespostaAgenda.self, from: dados) else { return [] }
-        return (r.events ?? []).flatMap { e in
+    static func corridas(de dados: Data) -> [EventoInteresse]? {
+        guard let r = try? JSONDecoder().decode(RespostaAgenda.self, from: dados), let eventos = r.events else { return nil }
+        return eventos.flatMap { e in
             (e.competitions ?? []).compactMap { c -> EventoInteresse? in
-                guard c.type?.abbreviation == "Race", c.status?.type?.completed != true,
+                guard c.type?.abbreviation == "Race", c.status?.type?.completed != true, let id = c.id,
                       let inicio = c.date.flatMap(data) else { return nil }
                 let titulo = Atividade.limpo(e.shortName ?? e.name ?? "", ate: 60)
                 guard !titulo.isEmpty else { return nil }
-                return EventoInteresse(id: "f1-\(Atividade.limpo(c.id, ate: 20))", titulo: titulo, inicio: inicio, fonte: .f1)
+                return EventoInteresse(id: "f1-\(Atividade.limpo(id, ate: 20))-\(Int(inicio.timeIntervalSince1970))",
+                                       titulo: titulo, inicio: inicio, fonte: .f1)
             }
         }
     }
@@ -289,7 +294,8 @@ enum ESPN {
         return times
             .filter { t in [t.displayName, t.shortDisplayName, t.abbreviation].contains { $0?.localizedStandardContains(busca) == true } }
             .compactMap { t in
-                let s = Seguido.espnTime(esporte: liga.esporte, liga: liga.liga, time: t.id,
+                guard let id = t.id else { return nil }
+                let s = Seguido.espnTime(esporte: liga.esporte, liga: liga.liga, time: id,
                                          nome: Atividade.limpo(t.displayName ?? t.shortDisplayName ?? "", ate: 60))
                 return s.valido ? s : nil
             }
@@ -307,7 +313,9 @@ enum ESPN {
 enum ICS {
     static let tamanhoMaximo = 1_000_000
 
-    static func eventos(de texto: String, fonte: Seguido, fusoLocal: TimeZone = .current) -> [EventoInteresse] {
+    /// nil quando o texto não é um calendário (uma página de login, um erro): aí a lista de antes continua valendo.
+    static func eventos(de texto: String, fonte: Seguido, fusoLocal: TimeZone = .current) -> [EventoInteresse]? {
+        guard texto.range(of: "BEGIN:VCALENDAR", options: .caseInsensitive) != nil else { return nil }
         // Dobra de linha (RFC 5545 3.1): uma linha que começa com espaço ou tab continua a anterior.
         let linhas = texto.replacingOccurrences(of: "\r\n", with: "\n")
             .replacingOccurrences(of: "\n ", with: "").replacingOccurrences(of: "\n\t", with: "")
@@ -349,13 +357,16 @@ enum ICS {
 
     private static func evento(_ c: [String: (parametros: [String: String], valor: String)], fonte: Seguido,
                                fusoLocal: TimeZone) -> EventoInteresse? {
-        guard let dt = c["DTSTART"], let (inicio, diaInteiro) = data(dt.valor, parametros: dt.parametros, fusoLocal: fusoLocal)
+        // Feeds de jogos mantêm o adiado ou cancelado na lista, com STATUS:CANCELLED: sem lembrete para ele.
+        guard c["STATUS"]?.valor.uppercased() != "CANCELLED",
+              let dt = c["DTSTART"], let (inicio, diaInteiro) = data(dt.valor, parametros: dt.parametros, fusoLocal: fusoLocal)
         else { return nil }
         let titulo = Atividade.limpo(texto(c["SUMMARY"]?.valor ?? ""), ate: 60)
         guard !titulo.isEmpty else { return nil }
         let uid = (c["UID"]?.valor ?? titulo).unicodeScalars.filter { CharacterSet.alphanumerics.contains($0) && $0.isASCII }
         // Id curto: vai no id da atividade, que tem teto de 64. A data entra porque o UID se repete em recorrências.
-        return EventoInteresse(id: "ics-\(Int(inicio.timeIntervalSince1970))-\(String(String.UnicodeScalarView(uid.prefix(16))))",
+        // O fim do UID, não o começo: os do Outlook começam todos com o mesmo prefixo longo.
+        return EventoInteresse(id: "ics-\(Int(inicio.timeIntervalSince1970))-\(String(String.UnicodeScalarView(uid.suffix(16))))",
                                titulo: titulo, inicio: inicio, diaInteiro: diaInteiro, fonte: fonte)
     }
 
@@ -411,15 +422,26 @@ enum RedeInteresses {
     /// O host da resposta tem de ser o do pedido: redirecionar para outro lugar é recusado.
     static func aceitar(_ resposta: URLResponse, host: String, teto: Int) -> Bool {
         guard let http = resposta as? HTTPURLResponse, http.statusCode == 200, let url = http.url else { return false }
-        return url.scheme == "https" && url.host() == host && http.expectedContentLength <= Int64(teto)
+        return url.scheme?.lowercased() == "https" && url.host() == host && http.expectedContentLength <= Int64(teto)
+    }
+
+    /// Recusa o redirecionamento antes de seguir: conferir só a resposta final já teria mandado o pedido para o
+    /// outro host (um ICS colado que redireciona para um endereço da rede local, por exemplo).
+    private final class SoMesmoHost: NSObject, URLSessionTaskDelegate, Sendable {
+        func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse,
+                        newRequest request: URLRequest) async -> URLRequest? {
+            guard let destino = request.url, destino.scheme?.lowercased() == "https",
+                  destino.host() == task.originalRequest?.url?.host() else { return nil }
+            return request
+        }
     }
 
     static func baixar(_ url: URL, teto: Int) async -> Data? {
-        guard url.scheme == "https", let host = url.host() else { return nil }
+        guard url.scheme?.lowercased() == "https", let host = url.host() else { return nil }
         var pedido = URLRequest(url: url)
         pedido.timeoutInterval = 15
         do {
-            let (bytes, resposta) = try await sessao.bytes(for: pedido)
+            let (bytes, resposta) = try await sessao.bytes(for: pedido, delegate: SoMesmoHost())
             guard aceitar(resposta, host: host, teto: teto) else { return nil }
             var dados = Data()
             // Corta no meio: um servidor que não diz o tamanho (ou mente) não enche a memória.
@@ -445,6 +467,7 @@ enum RedeInteresses {
             return ESPN.corridas(de: dados)
         case .ics(let url):
             guard seguido.valido, let dados = await baixar(url, teto: ICS.tamanhoMaximo) else { return nil }
+            // ponytail: o endereço (que pode ter token) fica no UserDefaults em texto puro; Keychain se virar problema.
             return ICS.eventos(de: String(decoding: dados, as: UTF8.self), fonte: seguido)
         }
     }
@@ -545,17 +568,26 @@ final class Interesses {
         ciclo?.cancel()
         ciclo = Task { [weak self] in
             var espera = espera
+            var tentativas = 0
             while true {
                 try? await Task.sleep(for: espera)
                 guard !Task.isCancelled, let self else { return }
-                await self.atualizar()
-                espera = Interesses.intervalo
+                // Falhou (o Mac ligou antes do Wi-Fi, por exemplo): tenta de novo logo, sem esperar 6 horas
+                // e perder a véspera e a 1 hora de um jogo nesse meio.
+                if await self.atualizar() {
+                    tentativas = 0
+                    espera = Interesses.intervalo
+                } else {
+                    espera = .seconds(min(60 * (1 << min(tentativas, 4)), 900))
+                    tentativas += 1
+                }
             }
         }
     }
 
     // ponytail: uma fonte de cada vez; com 10 fontes no máximo e de 6 em 6 horas, paralelo não muda nada.
-    private func atualizar() async {
+    /// true quando todas as fontes responderam.
+    private func atualizar() async -> Bool {
         let inicio = ContinuousClock.now
         var falharam = 0
         for seguido in seguidos {
@@ -566,6 +598,7 @@ final class Interesses {
         let total = porFonte.values.reduce(0) { $0 + $1.count }
         registro.info("interesses: \(total) eventos de \(self.seguidos.count) fontes, \(falharam) sem rede (\(ContinuousClock.now - inicio, privacy: .public))")
         conferir()
+        return falharam == 0
     }
 
     /// Recalcula o próximo e manda os lembretes devidos. Roda a cada minuto, ao acordar e depois de cada busca.
@@ -577,14 +610,21 @@ final class Interesses {
         let novo = EventoInteresse.proximo(eventos, agora: agora)
         if novo != proximo { proximo = novo }
 
+        // No máximo três por minuto, o mais perto de começar primeiro: um calendário com 20 eventos na semana
+        // encheria a ilha (máximo 8) e empurraria o resto para fora. Os outros saem nos minutos seguintes.
         let devidos = EventoInteresse.lembretes(eventos, agora: agora, disparados: Set(disparados.keys))
+            .sorted { $0.evento.inicio < $1.evento.inicio }
+            .prefix(Mural.maximoAvisos)
         for lembrete in devidos {
             disparados[lembrete.chave] = lembrete.evento.inicio
             let e = lembrete.evento
             // O de 1 hora fica até o início (o Mural corta em 1 hora, que é o que falta); os outros, 10 s.
             let expira = lembrete.tipo == .umaHora ? max(e.inicio.timeIntervalSince(agora), 1) : Atividade.expiraPadrao
             mural.receber(Atividade(id: "interesse-\(lembrete.chave)", titulo: e.titulo,
-                                    detalhe: EventoInteresse.quando(e, agora: agora),
+                                    // O de 1 hora fica até o início: "em 1 hora" ficaria parado; a hora não envelhece.
+                                    detalhe: lembrete.tipo == .umaHora
+                                        ? String(localized: "hoje \(e.inicio.formatted(date: .omitted, time: .shortened))")
+                                        : EventoInteresse.quando(e, agora: agora),
                                     simbolo: e.fonte.simbolo, cor: e.fonte.cor, expira: expira,
                                     prioridade: lembrete.tipo == .umaHora ? "alta" : "normal"))
         }

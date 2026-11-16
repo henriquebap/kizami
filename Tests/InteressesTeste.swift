@@ -38,13 +38,18 @@ import Foundation
          "status":{"type":{"state":"pre","completed":false}}}]}
         ],"team":{"id":"2","abbreviation":"BUF"}}
         """
-    let jogos = ESPN.jogos(de: Data(agendaReal.utf8), time: "2", fonte: .bills)
-    conferir("jogos: sem o que já foi nem o sem hora", jogos.map(\.id), ["espn-401873070", "espn-401873105"])
+    let jogos = ESPN.jogos(de: Data(agendaReal.utf8), time: "2", fonte: .bills) ?? []
+    conferir("jogos: sem o que já foi nem o sem hora", jogos.map { String($0.id.prefix(14)) }, ["espn-401873070", "espn-401873105"])
+    conferir("o início entra no id: jogo que muda de horário ganha lembretes novos", jogos.first?.id,
+             "espn-401873070-\(Int(utc("2026-11-22T18:00Z").timeIntervalSince1970))")
     conferir("em casa: Bills x Dolphins", jogos.first?.titulo, "Bills x Dolphins")
     conferir("fora: Bills @ Patriots", jogos.last?.titulo, "Bills @ Patriots")
     conferir("início do jogo", jogos.first?.inicio, utc("2026-11-22T18:00Z"))
-    conferir("JSON quebrado: nada", ESPN.jogos(de: Data("{".utf8), time: "2", fonte: .bills), [])
-    conferir("sem events: nada", ESPN.jogos(de: Data(#"{"team":{}}"#.utf8), time: "2", fonte: .bills), [])
+    conferir("JSON quebrado: nil, a lista de antes fica", ESPN.jogos(de: Data("{".utf8), time: "2", fonte: .bills), nil)
+    conferir("sem events: nil", ESPN.jogos(de: Data(#"{"team":{}}"#.utf8), time: "2", fonte: .bills), nil)
+    conferir("adversário indefinido (time sem id) não derruba a agenda: o jogo fica",
+             ESPN.jogos(de: Data(#"{"events":[{"id":"9","date":"2026-12-01T18:00Z","competitions":[{"competitors":[{"team":{}},{"team":{"id":"2"}}]}]}]}"#.utf8),
+                        time: "2", fonte: .bills)?.count, 1)
 
     // Placar real da F1 (16/11/2026), cortado: treino, classificação e corrida de Las Vegas.
     let f1Real = """
@@ -54,8 +59,8 @@ import Foundation
         {"id":"401839136","date":"2026-11-21T04:00Z","type":{"id":"2","abbreviation":"Qual"},"status":{"type":{"completed":false}}},
         {"id":"401839137","date":"2026-11-22T04:00Z","type":{"id":"3","abbreviation":"Race"},"status":{"type":{"completed":false}}}]}]}
         """
-    let corridas = ESPN.corridas(de: Data(f1Real.utf8))
-    conferir("F1: só a corrida", corridas.map(\.id), ["f1-401839137"])
+    let corridas = ESPN.corridas(de: Data(f1Real.utf8)) ?? []
+    conferir("F1: só a corrida", corridas.map(\.id), ["f1-401839137-\(Int(utc("2026-11-22T04:00Z").timeIntervalSince1970))"])
     conferir("F1: título da ESPN", corridas.first?.titulo, "Heineken Las Vegas GP")
     conferir("F1: largada", corridas.first?.inicio, utc("2026-11-22T04:00Z"))
 
@@ -103,7 +108,7 @@ import Foundation
         + "BEGIN:VEVENT\r\nUID:sem-data\r\nSUMMARY:Sem DTSTART\r\nEND:VEVENT\r\n"
         + "BEGIN:VEVENT\r\nUID:sem-titulo\r\nDTSTART:20261122T180000Z\r\nEND:VEVENT\r\n"
         + "END:VCALENDAR\r\n"
-    let lidos = ICS.eventos(de: ics, fonte: fonte, fusoLocal: cal.timeZone)
+    let lidos = ICS.eventos(de: ics, fonte: fonte, fusoLocal: cal.timeZone) ?? []
     conferir("ICS: os quatro com data e título", lidos.map(\.titulo),
              ["Flamengo x Palmeiras, final", "Um título dobrado em duas linhas", "Dia de jogo", "Com aspas"])
     conferir("ICS: UTC", lidos.first?.inicio, utc("2026-11-22T18:00Z"))
@@ -113,8 +118,11 @@ import Foundation
     conferir("ICS: TZID entre aspas", lidos.last?.inicio, utc("2026-11-22T18:00Z"))
     conferir("ICS: id curto com a data", lidos.first?.id, "ics-1795370400-jogo1exemplocom")
     conferir("ICS: linhas só com \\n", ICS.eventos(de: ics.replacingOccurrences(of: "\r\n", with: "\n"), fonte: fonte,
-                                                    fusoLocal: cal.timeZone).count, 4)
-    conferir("ICS: lixo não quebra", ICS.eventos(de: "BEGIN:VEVENT\nDTSTART:2026\nSUMMARY:x", fonte: fonte), [])
+                                                    fusoLocal: cal.timeZone)?.count, 4)
+    conferir("ICS: lixo não quebra", ICS.eventos(de: "BEGIN:VCALENDAR\nBEGIN:VEVENT\nDTSTART:2026\nSUMMARY:x", fonte: fonte), [])
+    conferir("ICS: página que não é calendário dá nil", ICS.eventos(de: "<html>login</html>", fonte: fonte), nil)
+    conferir("ICS: cancelado fica de fora",
+             ICS.eventos(de: "BEGIN:VCALENDAR\nBEGIN:VEVENT\nDTSTART:20261201T180000Z\nSUMMARY:Jogo\nSTATUS:CANCELLED\nEND:VEVENT", fonte: fonte), [])
     conferir("ICS: TZID desconhecido cai no fuso local",
              ICS.data("20261122T150000", parametros: ["TZID": "Eastern Standard Time"], fusoLocal: cal.timeZone)?.0,
              utc("2026-11-22T18:00Z"))
