@@ -108,7 +108,8 @@ final class Mural {
         trocar(por: Array(([atividade] + atividades.filter { $0.id != atividade.id }).sorted(by: Self.antes).prefix(Self.maximo)))
         registro.info("atividade recebida (\(self.atividades.count) na ilha)")
         avisar(atividade)
-        if let segundos = atividade.expira, segundos > 0 {
+        // Cortada pela ilha cheia, não ganha prazo: ninguém cancelaria a tarefa dormindo.
+        if let segundos = atividade.expira, segundos > 0, atividades.contains(where: { $0.id == atividade.id }) {
             prazos[atividade.id] = Task { [weak self] in
                 try? await Task.sleep(for: .seconds(segundos))
                 guard !Task.isCancelled else { return }
@@ -138,8 +139,11 @@ final class Mural {
     /// Baixa prioridade não desce: entra na lista e nas asas em silêncio.
     private func avisar(_ atividade: Atividade) {
         guard atividade.peso > 0, atividades.contains(where: { $0.id == atividade.id }) else { return }
+        let novos = Array(([atividade] + avisos.filter { $0.id != atividade.id }).sorted(by: Self.antes).prefix(Self.maximoAvisos))
+        // Fora da pilha (três mais importantes já na tela), não estica o aviso: a ilha voltaria a fechar nunca.
+        guard novos.contains(where: { $0.id == atividade.id }) else { return }
         fimDoAviso?.cancel()
-        avisos = Array(([atividade] + avisos.filter { $0.id != atividade.id }).sorted(by: Self.antes).prefix(Self.maximoAvisos))
+        avisos = novos
         fimDoAviso = Task { [weak self] in
             try? await Task.sleep(for: Self.tempoDeAviso)
             guard !Task.isCancelled else { return }

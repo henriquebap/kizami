@@ -124,6 +124,11 @@ final class Kizami {
                                                           object: nil, queue: .main) { _ in
             MainActor.assumeIsolated { Kizami.shared.conferirTelaCheia(depois: [0, 0.4, 1.2]) }
         }
+        for nome in [NSWorkspace.didWakeNotification, NSWorkspace.screensDidWakeNotification] {
+            NSWorkspace.shared.notificationCenter.addObserver(forName: nome, object: nil, queue: .main) { _ in
+                MainActor.assumeIsolated { Kizami.shared.conferirTelaCheia(depois: [0.4, 1.2, 3]) }
+            }
+        }
         Correio.ouvir(mural)
         tocando.iniciar()
         tempo.iniciar()
@@ -141,7 +146,8 @@ final class Kizami {
     private func montarIlhas() {
         janelas.forEach { $0.fechar() }
         janelas = NSScreen.screens.map { Janela(fontes: fontes, tela: $0) }
-        conferirTelaCheia(depois: [0])
+        // Monitor novo ou Mac acordando: o papel de parede do monitor chega depois da notificação.
+        conferirTelaCheia(depois: [0, 0.4, 1.2, 3])
         registro.info("ilhas: \(self.janelas.count) monitor(es), \(NSScreen.screens.filter { $0.safeAreaInsets.top > 0 }.count) com notch")
     }
 
@@ -151,24 +157,29 @@ final class Kizami {
         for atraso in atrasos {
             DispatchQueue.main.asyncAfter(deadline: .now() + atraso) {
                 MainActor.assumeIsolated {
-                    let fundos = Self.fundosDaMesa()
-                    Kizami.shared.janelas.forEach { $0.ajustar(fundos: fundos) }
+                    let (fundos, mesa) = Self.fundosDaMesa()
+                    Kizami.shared.janelas.forEach { $0.ajustar(fundos: fundos, mesa: mesa) }
                 }
             }
         }
     }
 
-    /// O papel de parede e a mesa do Finder à vista, em coordenadas do Quartz. Dono e camada vêm sem a permissão
-    /// de Gravação de Tela (só o nome das janelas pede).
-    nonisolated private static func fundosDaMesa() -> [CGRect] {
-        let janelas = CGWindowListCopyWindowInfo([.optionOnScreenOnly], kCGNullWindowID) as? [[String: Any]] ?? []
-        let mesa = Int(CGWindowLevelForKey(.desktopIconWindow))
-        return janelas.compactMap { janela in
+    /// O papel de parede e a mesa do Finder à vista, em coordenadas do Quartz, e se essas janelas existem (à vista
+    /// ou não). Dono e camada vêm sem a permissão de Gravação de Tela (só o nome das janelas pede).
+    nonisolated private static func fundosDaMesa() -> (fundos: [CGRect], mesa: Bool) {
+        let janelas = CGWindowListCopyWindowInfo([.optionAll], kCGNullWindowID) as? [[String: Any]] ?? []
+        let nivel = Int(CGWindowLevelForKey(.desktopIconWindow))
+        let doFundo = janelas.filter { janela in
             guard let dono = janela[kCGWindowOwnerName as String] as? String, dono == "Wallpaper" || dono == "Finder",
-                  let camada = janela[kCGWindowLayer as String] as? Int, camada <= mesa,
+                  let camada = janela[kCGWindowLayer as String] as? Int else { return false }
+            return camada <= nivel
+        }
+        let fundos = doFundo.compactMap { janela -> CGRect? in
+            guard janela[kCGWindowIsOnscreen as String] as? Bool == true,
                   let limites = janela[kCGWindowBounds as String] as? NSDictionary else { return nil }
             return CGRect(dictionaryRepresentation: limites)
         }
+        return (fundos, !doFundo.isEmpty)
     }
 
     func mostrarExemplo() {

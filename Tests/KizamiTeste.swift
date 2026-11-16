@@ -23,7 +23,7 @@ import Foundation
     conferir("lista de 2 e bandeja", mac.aberta(secoes(false, 2, 1)), CGSize(width: 340, height: 192))
     conferir("só tocando, sem bandeja vazia", mac.aberta(secoes(true, 0, 0)), CGSize(width: 340, height: 106))
     conferir("arrastando, a bandeja aparece mesmo tocando", secoes(true, 0, 0, true).bandeja, true)
-    conferir("janela cabe tudo junto e a sombra", mac.janela, CGRect(x: 568, y: 438, width: 376, height: 544))
+    conferir("janela cabe tudo junto e a sombra", mac.janela, CGRect(x: 559.5, y: 438, width: 393, height: 544))
     conferir("hoje e 2 sessões, sem bandeja vazia",
              mac.aberta(Secoes(tocando: false, atividades: 0, arquivos: 0, arrastando: false, sessoes: 2, hoje: true)),
              CGSize(width: 340, height: 32 + 8 + 40 + 10 + 64 + 14))
@@ -34,10 +34,11 @@ import Foundation
 
     // Tela cheia, com as janelas reais do fundo da mesa (MacBook 14" e um monitor de 1920x1080 à esquerda).
     let interno = CGRect(x: 0, y: 0, width: 1512, height: 982), lateral = CGRect(x: -1920, y: -98, width: 1920, height: 1080)
-    conferir("mesa à vista: não é tela cheia", Geometria.emTelaCheia(tela: interno, fundos: [lateral, interno]), false)
-    conferir("o fundo saiu do monitor: tela cheia", Geometria.emTelaCheia(tela: interno, fundos: [lateral]), true)
-    conferir("tela cheia num monitor não esconde o outro", Geometria.emTelaCheia(tela: lateral, fundos: [lateral]), false)
-    conferir("sem fundo nenhum não dá para saber: fica", Geometria.emTelaCheia(tela: interno, fundos: []), false)
+    conferir("mesa à vista: não é tela cheia", Geometria.emTelaCheia(tela: interno, fundos: [lateral, interno], mesa: true), false)
+    conferir("o fundo saiu do monitor: tela cheia", Geometria.emTelaCheia(tela: interno, fundos: [lateral], mesa: true), true)
+    conferir("tela cheia num monitor não esconde o outro", Geometria.emTelaCheia(tela: lateral, fundos: [lateral], mesa: true), false)
+    conferir("MacBook sozinho em tela cheia: nenhum fundo à vista", Geometria.emTelaCheia(tela: interno, fundos: [], mesa: true), true)
+    conferir("sem janelas de fundo no sistema não dá para saber: fica", Geometria.emTelaCheia(tela: interno, fundos: [], mesa: false), false)
 
     // Monitor externo à esquerda: x negativo, sem notch e com a barra de menus oculta.
     let externo = Geometria(tela: CGRect(x: -1920, y: 0, width: 1920, height: 1080), esquerda: nil, direita: nil,

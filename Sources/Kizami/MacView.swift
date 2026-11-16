@@ -25,7 +25,7 @@ struct LinhaApps: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            ForEach(mac.emblemas) { emblema in
+            ForEach(mac.emblemas.prefix(6)) { emblema in  // mais que isso espremeria a bateria e o microfone
                 Button { Mac.ativar(emblema.bundle) } label: {
                     Self.icone(emblema.bundle)
                         .frame(width: 22, height: 22)

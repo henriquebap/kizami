@@ -66,8 +66,8 @@ final class Janela {
 
     /// Esconde a ilha no monitor que está em tela cheia e devolve quando sai dela. `fundos`: as janelas do fundo
     /// da mesa que estão à vista (`Geometria.emTelaCheia`).
-    func ajustar(fundos: [CGRect]) {
-        let cheia = Geometria.emTelaCheia(tela: telaQuartz, fundos: fundos)
+    func ajustar(fundos: [CGRect], mesa: Bool) {
+        let cheia = Geometria.emTelaCheia(tela: telaQuartz, fundos: fundos, mesa: mesa)
         guard cheia != oculta else { return }
         oculta = cheia
         if cheia {
@@ -104,12 +104,14 @@ final class Janela {
         // sem o botão apertado, não há arraste, e a ilha não pode ficar presa aberta sobre a barra de menus.
         if bandeja.arrastando && !botao { bandeja.arrastando = false }
         let g = estado.geometria
+        // Fechada, a zona tem o tamanho que a ilha desenha agora (aviso ou asas com até três ícones).
+        let fechada = mural.avisos.isEmpty ? g.compacta(icones: mural.destaques.count) : g.aviso(linhas: mural.avisos.count)
         let zona = if estado.aberta {
             g.zona(g.aberta(secoesAtuais(fontes)))
         } else if bandeja.arrastando {
-            g.zona(g.compacta)  // arrastando, as asas também valem: ninguém clica num menu no meio de um arraste
+            g.zona(fechada)  // arrastando, as asas também valem: ninguém clica num menu no meio de um arraste
         } else if !mural.avisos.isEmpty {
-            g.zona(g.aviso(linhas: mural.avisos.count))  // o aviso já está à vista: passar o cursor nele abre a lista
+            g.zona(fechada)  // o aviso já está à vista: passar o cursor nele abre a lista
         } else {
             g.gatilho
         }

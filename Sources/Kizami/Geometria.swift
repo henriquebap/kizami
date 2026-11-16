@@ -94,7 +94,9 @@ struct Geometria: Equatable {
     var janela: CGRect {
         let maior = aberta(Secoes(tocando: true, atividades: Self.maximoLinhas, arquivos: 1, arrastando: false,
                                   sessoes: Self.maximoSessoes, hoje: true, apps: true, interesse: true))
-        return retangulo(CGSize(width: maior.width + 2 * Self.sombra, height: maior.height + Self.sombra))
+        // A fechada com três ícones passa da aberta num notch mais largo que ~204 pt.
+        let largura = max(maior.width, compacta(icones: 3).width, aviso(linhas: 3).width)
+        return retangulo(CGSize(width: largura + 2 * Self.sombra, height: maior.height + Self.sombra))
     }
 
     /// Retângulo de um tamanho preso ao topo da tela, centrado no notch.
@@ -110,11 +112,11 @@ struct Geometria: Equatable {
     /// Um monitor está num espaço de tela cheia quando o fundo da mesa saiu dele. Em tela cheia o macOS tira dali
     /// a janela do papel de parede e a da mesa do Finder (visto com `CGWindowListCopyWindowInfo`), e é o único
     /// sinal público: a janela do app em tela cheia tem o mesmo tamanho de uma janela maximizada com o Dock oculto.
-    /// Sem nenhum fundo em monitor nenhum, não dá para saber: a ilha fica.
+    /// `mesa`: as janelas do fundo existem, à vista ou não. Sem elas (o Finder sem mesa e o papel de parede fora do ar),
+    /// não dá para saber, e a ilha fica. Com elas e nenhuma à vista (o MacBook sozinho em tela cheia), é tela cheia.
     /// `tela` e `fundos` em coordenadas do Quartz (origem no canto de cima do monitor principal).
-    // ponytail: com os dois monitores em tela cheia ao mesmo tempo não sobra fundo, e a ilha fica nos dois.
-    static func emTelaCheia(tela: CGRect, fundos: [CGRect]) -> Bool {
-        !fundos.isEmpty && !fundos.contains { $0.insetBy(dx: -1, dy: -1).contains(tela) }
+    static func emTelaCheia(tela: CGRect, fundos: [CGRect], mesa: Bool) -> Bool {
+        mesa && !fundos.contains { $0.insetBy(dx: -1, dy: -1).contains(tela) }
     }
 
     /// Onde o cursor abre a ilha fechada: só o notch, que é área morta. As asas ficam sobre a barra de menus,
