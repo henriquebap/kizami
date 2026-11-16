@@ -108,8 +108,8 @@ final class Janela {
             g.zona(g.aberta(secoesAtuais(fontes)))
         } else if bandeja.arrastando {
             g.zona(g.compacta)  // arrastando, as asas também valem: ninguém clica num menu no meio de um arraste
-        } else if mural.novidade != nil {
-            g.zona(g.aviso)  // o aviso já está à vista: passar o cursor nele abre a lista
+        } else if !mural.avisos.isEmpty {
+            g.zona(g.aviso(linhas: mural.avisos.count))  // o aviso já está à vista: passar o cursor nele abre a lista
         } else {
             g.gatilho
         }

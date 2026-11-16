@@ -75,3 +75,16 @@
 "precisa de você" = "needs you";
 "trabalhando" = "working";
 "pronta" = "ready";
+
+/* Apps e Mac (v0.8) */
+"Apps e Mac" = "Apps and Mac";
+"Mostrar as mensagens não lidas do Dock" = "Show unread counts from the Dock";
+"Para ler os emblemas do Dock, o Kizami precisa de Acessibilidade. Libere nos Ajustes do Sistema e abra esta janela de novo." = "To read the Dock badges, Kizami needs Accessibility. Allow it in System Settings and open this window again.";
+"Microfone, câmera e bateria aparecem na ilha sem pedir permissão." = "Microphone, camera and battery show on the island without asking for permission.";
+"Bateria fraca" = "Low battery";
+"Carregando" = "Charging";
+"Carga completa" = "Fully charged";
+"1 não lida" = "1 unread";
+"%lld não lidas" = "%lld unread";
+"Microfone em uso" = "Microphone in use";
+"Câmera em uso" = "Camera in use";

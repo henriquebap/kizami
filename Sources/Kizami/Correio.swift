@@ -11,17 +11,19 @@ enum Pedido: Equatable {
 ///     Kizami.app/Contents/MacOS/Kizami enviar --titulo "Build pronto" --simbolo hammer --cor verde
 enum Comando {
     private static let opcoes: [String: Set<String>] = [
-        "enviar": ["titulo", "detalhe", "simbolo", "cor", "id", "expira"],
+        "enviar": ["titulo", "detalhe", "simbolo", "cor", "id", "expira", "prioridade"],
         "remover": ["id"],
         "limpar": [],
     ]
 
     static let ajuda = """
         uso: Kizami enviar --titulo TEXTO [--detalhe TEXTO] [--simbolo SF_SYMBOL] [--cor COR] [--id ID] [--expira SEGUNDOS]
+                           [--prioridade baixa|normal|alta|urgente]
              Kizami remover --id ID
              Kizami limpar
         cores: \(Atividade.cores.sorted().joined(separator: ", "))
         --expira 0 deixa a atividade na ilha até "remover"; sem --expira, some em \(Int(Atividade.expiraPadrao)) s.
+        --prioridade ordena a ilha (a mais alta primeiro); baixa entra sem descer como aviso. Sem ela, normal.
         """
 
     /// nil quando falta algo ou sobra uma opção desconhecida: um erro de digitação não pode passar calado.
@@ -43,7 +45,8 @@ enum Comando {
                 expira = numero
             }
             return .enviar(Atividade(id: valores["id"] ?? UUID().uuidString, titulo: titulo, detalhe: valores["detalhe"],
-                                     simbolo: valores["simbolo"], cor: valores["cor"], expira: expira))
+                                     simbolo: valores["simbolo"], cor: valores["cor"], expira: expira,
+                                     prioridade: valores["prioridade"]))
         case "remover":
             return valores["id"].map(Pedido.remover)
         default:

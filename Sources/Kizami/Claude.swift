@@ -254,7 +254,8 @@ final class SessoesClaude {
             switch sessao.estado {
             case .precisaDeVoce:
                 mural.receber(Atividade(id: "claude-\(sessao.id)", titulo: String(localized: "Claude precisa de você"),
-                                        detalhe: sessao.pasta, simbolo: "exclamationmark.bubble.fill", cor: "laranja", expira: 0))
+                                        detalhe: sessao.pasta, simbolo: "exclamationmark.bubble.fill", cor: "laranja", expira: 0,
+                                        prioridade: "urgente"))
             case .pronta where avisarFim && antes[sessao.id] == .trabalhando:
                 mural.receber(Atividade(id: "claude-fim-\(sessao.id)", titulo: String(localized: "Claude terminou"),
                                         detalhe: sessao.pasta, simbolo: "checkmark.circle.fill", cor: "verde", expira: 6))

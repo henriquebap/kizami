@@ -52,10 +52,27 @@ struct Geometria: Equatable {
 
     /// Fechada: o notch com uma asa de cada lado. Sem notch, as asas sozinhas dariam 84 pt, mais estreito que
     /// o repouso: a ilha encolheria ao começar a tocar, e a capa ficaria colada nas barras.
-    var compacta: CGSize { CGSize(width: max(notch.width + 2 * (Self.asa + Self.orelha), 140), height: notch.height) }
+    var compacta: CGSize { compacta(icones: 1) }
+
+    /// Fechada com até três atividades: cada ícone a mais alarga as duas asas por igual, para a ilha seguir
+    /// centrada no notch (à esquerda os ícones, à direita o contador).
+    func compacta(icones: Int) -> CGSize {
+        let extra = CGFloat(min(max(icones, 1), 3) - 1) * Self.iconeExtra
+        return CGSize(width: max(notch.width + 2 * (Self.asa + extra + Self.orelha), 140 + 2 * extra), height: notch.height)
+    }
+
+    /// O que cada ícone a mais ocupa numa asa: o ícone de 20 pt e o espaço entre eles.
+    static let iconeExtra: CGFloat = 22
 
     /// Por alguns segundos depois que uma atividade chega: uma linha com o título abaixo do notch.
-    var aviso: CGSize { CGSize(width: max(Self.larguraAviso, compacta.width), height: faixaDoTopo + Self.alturaLinha + 6) }
+    var aviso: CGSize { aviso(linhas: 1) }
+
+    /// Várias chegaram juntas: uma linha para cada, até três.
+    func aviso(linhas: Int) -> CGSize {
+        let n = CGFloat(min(max(linhas, 1), 3))
+        return CGSize(width: max(Self.larguraAviso, compacta.width),
+                      height: faixaDoTopo + n * Self.alturaLinha + (n - 1) * Self.espacoLinha + 6)
+    }
 
     /// Com o cursor em cima: as seções que existem, uma embaixo da outra.
     func aberta(_ secoes: Secoes) -> CGSize {
@@ -65,6 +82,7 @@ struct Geometria: Equatable {
             linhas(secoes.sessoes),
             secoes.tocando ? Self.alturaTocando : 0,
             linhas(secoes.linhas),
+            secoes.apps ? Self.alturaLinha : 0,
             secoes.bandeja ? Self.alturaBandeja : 0,
         ].filter { $0 > 0 }
         let conteudo = blocos.reduce(0, +) + CGFloat(max(blocos.count - 1, 0)) * Self.espacoSecao
@@ -74,7 +92,7 @@ struct Geometria: Equatable {
     /// A janela tem o tamanho do maior estado mais a margem da sombra; a forma anima dentro dela.
     var janela: CGRect {
         let maior = aberta(Secoes(tocando: true, atividades: Self.maximoLinhas, arquivos: 1, arrastando: false,
-                                  sessoes: Self.maximoSessoes, hoje: true))
+                                  sessoes: Self.maximoSessoes, hoje: true, apps: true))
         return retangulo(CGSize(width: maior.width + 2 * Self.sombra, height: maior.height + Self.sombra))
     }
 
@@ -112,14 +130,18 @@ struct Secoes: Equatable {
     let sessoes: Int
     let tocando: Bool
     let linhas: Int
+    /// Emblemas do Dock, microfone, câmera e bateria numa linha.
+    let apps: Bool
     let bandeja: Bool
 
-    init(tocando: Bool, atividades: Int, arquivos: Int, arrastando: Bool, sessoes: Int = 0, hoje: Bool = false) {
+    init(tocando: Bool, atividades: Int, arquivos: Int, arrastando: Bool, sessoes: Int = 0, hoje: Bool = false,
+         apps: Bool = false) {
         self.hoje = hoje
         self.sessoes = min(sessoes, Geometria.maximoSessoes)
         self.tocando = tocando
         linhas = min(atividades, Geometria.maximoLinhas)
+        self.apps = apps
         // Sem nada para mostrar, a ilha aberta oferece a bandeja vazia: é o que dá para fazer com ela.
-        bandeja = arquivos > 0 || arrastando || (atividades == 0 && !tocando && sessoes == 0 && !hoje)
+        bandeja = arquivos > 0 || arrastando || (atividades == 0 && !tocando && sessoes == 0 && !hoje && !apps)
     }
 }

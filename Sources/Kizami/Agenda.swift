@@ -194,8 +194,10 @@ final class Agenda {
             case .faltam(let minutos): String(localized: "em \(minutos) min")
             case .comecando: String(localized: "começando agora")
             }
+            // Começando agora passa na frente de tudo: é a hora de entrar na reunião.
             mural.receber(Atividade(id: "agenda-\(lembrete.evento.id)", titulo: lembrete.evento.titulo, detalhe: detalhe,
-                                    simbolo: "calendar", cor: "vermelho", expira: 60))
+                                    simbolo: "calendar", cor: "vermelho", expira: 60,
+                                    prioridade: lembrete.aviso == .comecando ? "urgente" : "alta"))
         }
         // Esquece o que já passou: só eventos ainda na janela podem pedir aviso de novo.
         let ids = Set(eventos.map(\.id))

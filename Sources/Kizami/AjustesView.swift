@@ -13,6 +13,7 @@ final class FormularioAjustes {
 struct AjustesView: View {
     let tempo: Tempo
     let agenda: Agenda
+    let mac: Mac
     @Bindable var formulario: FormularioAjustes
 
     var body: some View {
@@ -47,6 +48,7 @@ struct AjustesView: View {
                     }
                 }
             }
+            AjustesMac(mac: mac)
             Section("Claude Code") {
                 Text("As sessões aparecem na ilha quando os hooks do Claude Code chamam o Kizami (docs/CLAUDE-HOOKS.md).")
             }

@@ -23,13 +23,15 @@ private enum Forma: Equatable {
     let agenda: Agenda
     let tempo: Tempo
     let claude: SessoesClaude
+    let mac: Mac
 }
 
 /// As seções da ilha aberta agora. A janela mede a área do hover com a mesma conta.
 @MainActor func secoesAtuais(_ f: Fontes) -> Secoes {
     Secoes(tocando: f.tocando.app != nil, atividades: f.mural.atividades.count,
            arquivos: f.bandeja.arquivos.count, arrastando: f.bandeja.arrastando,
-           sessoes: f.claude.sessoes.count, hoje: f.agenda.proximo != nil || f.tempo.previsao != nil)
+           sessoes: f.claude.sessoes.count, hoje: f.agenda.proximo != nil || f.tempo.previsao != nil,
+           apps: !f.mac.emblemas.isEmpty || !f.mac.microfone.isEmpty || f.mac.camera || f.mac.bateria != nil)
 }
 
 /// A forma preta presa ao topo. Sempre à vista: sem nada, fica em repouso, só um pouco maior que o notch.
@@ -39,18 +41,20 @@ struct IlhaView: View {
     private var mural: Mural { fontes.mural }
     private var bandeja: Bandeja { fontes.bandeja }
     private var tocando: TocandoAgora { fontes.tocando }
+    /// Microfone ou câmera ligados: como no iPhone, a ilha não fica em repouso escondendo isso.
+    private var privacidade: Bool { !fontes.mac.microfone.isEmpty || fontes.mac.camera }
 
     var body: some View {
         let g = estado.geometria
         let secoes = secoesAtuais(fontes)
         let forma: Forma = estado.aberta ? .aberta
-            : mural.novidade != nil ? .aviso
-            : !mural.atividades.isEmpty || !bandeja.arquivos.isEmpty || tocando.app != nil ? .compacta
+            : !mural.avisos.isEmpty ? .aviso
+            : !mural.atividades.isEmpty || !bandeja.arquivos.isEmpty || tocando.app != nil || privacidade ? .compacta
             : .repouso
         let tamanho = switch forma {
         case .repouso: g.repouso
-        case .compacta: g.compacta
-        case .aviso: g.aviso
+        case .compacta: g.compacta(icones: mural.atividades.isEmpty ? 1 : mural.destaques.count)
+        case .aviso: g.aviso(linhas: mural.avisos.count)
         case .aberta: g.aberta(secoes)
         }
         let contorno = FormaIlha(orelha: forma.orelha, raio: forma.raio)
@@ -64,42 +68,71 @@ struct IlhaView: View {
                 case .compacta:
                     // Atividade tem a vez (foi pedida por alguém); depois o som; por fim a bandeja.
                     let lado = ladoDaAsa(g.notch.height)
-                    if let destaque = mural.destaque {
+                    if let primeira = mural.destaques.first {
+                        // Até três ícones, o mais importante encostado no canto: lado a lado, sem empilhar.
                         Asas(altura: g.notch.height) {
-                            Simbolo(nome: destaque.simbolo ?? "bell.fill", cor: cor(destaque), chegada: destaque.chegada)
+                            HStack(spacing: Geometria.iconeExtra - lado) {
+                                ForEach(mural.destaques) { atividade in
+                                    Simbolo(nome: atividade.simbolo ?? "bell.fill", cor: cor(atividade), chegada: atividade.chegada)
+                                        .frame(width: lado, height: lado)
+                                        .transition(.scale.combined(with: .opacity))
+                                }
+                            }
                         } direita: {
-                            Contador(total: mural.atividades.count, cor: cor(destaque))
+                            HStack(spacing: 4) {
+                                IndicadorPrivacidade(mac: fontes.mac)
+                                Contador(total: mural.atividades.count, cor: cor(primeira))
+                            }
                         }
                     } else if tocando.app != nil {
                         Asas(altura: g.notch.height) {
                             Miniatura(tocando: tocando, lado: lado, raio: lado / 4)
                                 .opacity(tocando.pausado ? 0.55 : 1)
                         } direita: {
+                            IndicadorPrivacidade(mac: fontes.mac)
                             if tocando.pausado {
                                 Image(systemName: "pause.fill").font(.system(size: 10, weight: .bold)).foregroundStyle(.secondary)
                             } else {
                                 Barras(altura: lado * 0.6)
                             }
                         }
+                    } else if bandeja.arquivos.isEmpty {
+                        // Só o microfone ou a câmera: o app que está ouvindo à esquerda, os pontinhos à direita.
+                        Asas(altura: g.notch.height) {
+                            if let app = fontes.mac.microfone.first {
+                                LinhaApps.icone(app).frame(width: lado, height: lado)
+                            } else {
+                                Simbolo(nome: "video.fill", cor: .green, chegada: nil)
+                            }
+                        } direita: {
+                            IndicadorPrivacidade(mac: fontes.mac)
+                        }
                     } else {
                         Asas(altura: g.notch.height) {
                             Simbolo(nome: "tray.full.fill", cor: .white, chegada: nil)
                         } direita: {
-                            Contador(total: bandeja.arquivos.count, cor: .white)
+                            HStack(spacing: 4) {
+                                IndicadorPrivacidade(mac: fontes.mac)
+                                Contador(total: bandeja.arquivos.count, cor: .white)
+                            }
                         }
                     }
                 case .aviso:
-                    if let novidade = mural.novidade {
-                        LinhaDeAviso(atividade: novidade)
-                            .frame(height: Geometria.alturaLinha)
-                            .padding(.top, g.faixaDoTopo)  // a faixa do notch é a câmera: o texto vem abaixo
+                    VStack(spacing: Geometria.espacoLinha) {
+                        ForEach(mural.avisos) { aviso in
+                            LinhaDeAviso(atividade: aviso)
+                                .frame(height: Geometria.alturaLinha)
+                                .transition(.blurReplace)
+                        }
                     }
+                    .padding(.top, g.faixaDoTopo)  // a faixa do notch é a câmera: o texto vem abaixo
                 case .aberta:
                     VStack(spacing: Geometria.espacoSecao) {
                         if secoes.hoje { LinhaHoje(agenda: fontes.agenda, tempo: fontes.tempo) }
                         if secoes.sessoes > 0 { SecaoClaude(sessoes: fontes.claude) }
                         if secoes.tocando { LinhaTocando(tocando: tocando) }
                         if secoes.linhas > 0 { Lista(atividades: mural.atividades) }
+                        if secoes.apps { LinhaApps(mac: fontes.mac) }
                         if secoes.bandeja { FileiraDaBandeja(bandeja: bandeja, alvo: estado.alvo) }
                     }
                     .padding(.top, g.faixaDoTopo + 8)
@@ -122,13 +155,16 @@ struct IlhaView: View {
         .animation(forma == .repouso || forma == .compacta
                    ? .spring(response: 0.34, dampingFraction: 0.92)
                    : .spring(response: 0.44, dampingFraction: 0.74), value: forma)
-        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: mural.atividades.count)
+        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: mural.atividades.map(\.id))
+        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: mural.avisos.map(\.id))
         .animation(.spring(response: 0.4, dampingFraction: 0.85), value: bandeja.arquivos.count)
         .animation(.smooth(duration: 0.2), value: estado.alvo)
         .animation(.spring(response: 0.4, dampingFraction: 0.85), value: tocando.app)
         .animation(.smooth(duration: 0.3), value: tocando.metadados)
         .animation(.spring(response: 0.4, dampingFraction: 0.85), value: fontes.claude.sessoes)
         .animation(.spring(response: 0.4, dampingFraction: 0.85), value: secoes.hoje)
+        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: secoes.apps)
+        .animation(.smooth(duration: 0.25), value: privacidade)
     }
 }
 
@@ -290,7 +326,7 @@ private struct Asas<Esquerda: View, Direita: View>: View {
     var body: some View {
         let lado = ladoDaAsa(altura)
         HStack(spacing: 0) {
-            esquerda.frame(width: lado, height: lado)
+            esquerda.frame(minWidth: lado, maxHeight: lado, alignment: .leading)
             Spacer(minLength: 0)
             direita.frame(minWidth: lado, maxHeight: lado)
         }

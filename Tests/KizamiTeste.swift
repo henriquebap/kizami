@@ -8,6 +8,10 @@ import Foundation
     conferir("notch do MacBook 14\"", mac.notch, CGSize(width: 185, height: 32))
     conferir("compacta centrada no notch", mac.retangulo(mac.compacta), CGRect(x: 621.5, y: 950, width: 269, height: 32))
     conferir("aviso: uma linha abaixo do notch", mac.retangulo(mac.aviso), CGRect(x: 606, y: 914, width: 300, height: 68))
+    conferir("três avisos: três linhas", mac.aviso(linhas: 3), CGSize(width: 300, height: 32 + 3 * 30 + 2 * 4 + 6))
+    conferir("avisos não passam de três linhas", mac.aviso(linhas: 9), mac.aviso(linhas: 3))
+    conferir("três ícones alargam as duas asas", mac.compacta(icones: 3), CGSize(width: 269 + 4 * 22, height: 32))
+    conferir("nenhum ícone conta como um", mac.compacta(icones: 0), mac.compacta)
     conferir("repouso: um pouco maior que o notch", mac.repouso, CGSize(width: 225, height: 32))
     func secoes(_ tocando: Bool, _ atividades: Int, _ arquivos: Int, _ arrastando: Bool = false) -> Secoes {
         Secoes(tocando: tocando, atividades: atividades, arquivos: arquivos, arrastando: arrastando)
@@ -19,7 +23,7 @@ import Foundation
     conferir("lista de 2 e bandeja", mac.aberta(secoes(false, 2, 1)), CGSize(width: 340, height: 192))
     conferir("só tocando, sem bandeja vazia", mac.aberta(secoes(true, 0, 0)), CGSize(width: 340, height: 106))
     conferir("arrastando, a bandeja aparece mesmo tocando", secoes(true, 0, 0, true).bandeja, true)
-    conferir("janela cabe tudo junto e a sombra", mac.janela, CGRect(x: 568, y: 518, width: 376, height: 464))
+    conferir("janela cabe tudo junto e a sombra", mac.janela, CGRect(x: 568, y: 478, width: 376, height: 504))
     conferir("hoje e 2 sessões, sem bandeja vazia",
              mac.aberta(Secoes(tocando: false, atividades: 0, arquivos: 0, arrastando: false, sessoes: 2, hoje: true)),
              CGSize(width: 340, height: 32 + 8 + 40 + 10 + 64 + 14))
@@ -58,6 +62,9 @@ import Foundation
     conferir("opção sem valor", Comando.ler(["enviar", "--titulo"]), nil)
     conferir("expira que não é número", Comando.ler(["enviar", "--titulo", "x", "--expira", "já"]), nil)
     conferir("expira nan", Comando.ler(["enviar", "--titulo", "x", "--expira", "nan"]), nil)
+    conferir("prioridade pela linha de comando",
+             Comando.ler(["enviar", "--titulo", "x", "--id", "a", "--prioridade", "alta"]),
+             .enviar(Atividade(id: "a", titulo: "x", prioridade: "alta")))
     conferir("ajuda não abre o app", Comando.ler(["--help"]), nil)
     conferir("remover", Comando.ler(["remover", "--id", "build"]), .remover("build"))
     conferir("remover sem id", Comando.ler(["remover"]), nil)
@@ -94,12 +101,29 @@ import Foundation
     mural.receber(Atividade(id: "5", titulo: "de novo", expira: 0))
     conferir("mesmo id substitui e sobe", mural.atividades.map(\.id).prefix(2), ["5", "9"])
     conferir("sem duplicata", mural.atividades.filter { $0.id == "5" }.count, 1)
-    conferir("a que chegou vira aviso", mural.novidade?.id, "5")
+    conferir("a que chegou vira aviso", mural.avisos.first?.id, "5")
     mural.remover(id: "5")
-    conferir("removida, o aviso some junto", mural.novidade == nil, true)
+    conferir("removida, sai da pilha de avisos", mural.avisos.contains { $0.id == "5" }, false)
     mural.receber(Atividade(id: "z", titulo: "z", expira: 0))
     mural.limpar()
-    conferir("limpar tira o aviso", mural.novidade == nil, true)
+    conferir("limpar tira o aviso", mural.avisos.isEmpty, true)
+
+    // Prioridade: a fila da ilha.
+    conferir("prioridade desconhecida vira normal", Atividade.validar(Atividade(id: "a", titulo: "x", prioridade: "máxima"))?.peso, 1)
+    conferir("urgente pesa 3", Atividade(id: "a", titulo: "x", prioridade: "urgente").peso, 3)
+    let fila = Mural()
+    fila.receber(Atividade(id: "claude", titulo: "precisa de você", expira: 0, prioridade: "urgente"))
+    for i in 0..<10 { fila.receber(Atividade(id: "n\(i)", titulo: "n", expira: 0)) }
+    conferir("urgente fica na frente das mais novas", fila.atividades.first?.id, "claude")
+    conferir("ilha cheia não derruba a urgente", fila.atividades.count == Mural.maximo && fila.atividades.contains { $0.id == "claude" }, true)
+    conferir("as asas mostram até três", fila.destaques.map(\.id), ["claude", "n9", "n8"])
+    conferir("a pilha de avisos tem até três, a urgente primeiro", fila.avisos.map(\.id), ["claude", "n9", "n8"])
+    fila.limpar()
+    fila.receber(Atividade(id: "silencio", titulo: "baixa", expira: 0, prioridade: "baixa"))
+    conferir("baixa entra sem descer como aviso", [fila.atividades.count, fila.avisos.count], [1, 0])
+    fila.receber(Atividade(id: "alta", titulo: "alta", expira: 0, prioridade: "alta"))
+    fila.receber(Atividade(id: "normal", titulo: "normal", expira: 0))
+    conferir("na pilha, a alta vem antes da normal mais nova", fila.avisos.map(\.id), ["alta", "normal"])
 }
 
 @MainActor func testarBandeja() {
@@ -194,6 +218,7 @@ import Foundation
         testarAgenda()
         testarTempo()
         testarClaude()
+        testarMac()
         if falhas > 0 { exit(1) }
     }
 }
