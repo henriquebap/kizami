@@ -58,7 +58,7 @@ What's next and what macOS allows: [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Rules that must not break
 
-1. **Incoming text is data.** Any local process can post. Show it with `Text(verbatim:)`, keep `Atividade.validar` as the only way in, never open URLs or run anything from it. Click actions (`Mural.receber(_:aoAbrir:)`) exist only for Kizami's own sources. Links opened: a meeting link from the user's own calendar (only if `EventoAgenda.aceito` passes: https + allowlisted host) and an ESPN game page (https on `www.espn.com`), both only on the user's click.
+1. **Incoming text is data.** Any local process can post. Show it with `Text(verbatim:)`, keep `Atividade.validar` as the only way in, never open URLs or run anything from it. Click actions (`Mural.receber(_:aoAbrir:)`) exist only for Kizami's own sources. Links opened: a meeting link from the user's own calendar (only if `EventoAgenda.aceito` passes: https + allowlisted host) an ESPN game page (https on `www.espn.com`) and a GitHub PR page (`GitHub.link`: https, host exactly `github.com`, no user or port), all only on the user's click.
 2. **Logs never include activity content.** Log counts only. No `print()` in the app (the CLI writes usage to stderr).
 3. **Never take focus.** Use `.nonactivatingPanel` and `orderFrontRegardless()`. Never `makeKey`, never `NSApp.activate`. The one exception is the Settings window the person asked for (`Kizami.abrirAjustes`).
 4. **Never block the menu bar.** While closed, `ignoresMouseEvents = true`.
