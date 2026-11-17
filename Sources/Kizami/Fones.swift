@@ -42,7 +42,7 @@ final class Fones {
         guard inscricao == nil else { return }
         let ouvinte = OuvinteDeConexao { [weak self] nome, endereco, classe in self?.conectou(nome: nome, endereco: endereco, classe: classe) }
         registradoEm = .now
-        // Entregue no run loop principal, onde foi registrado.
+        // Chega numa fila de fundo do CoreBluetooth: o `OuvinteDeConexao` passa para o ator principal.
         inscricao = IOBluetoothDevice.register(forConnectNotifications: ouvinte, selector: #selector(OuvinteDeConexao.conectou(_:dispositivo:)))
         self.ouvinte = ouvinte
         if inscricao == nil { registro.notice("fones: registro de conexões falhou") }
@@ -86,19 +86,19 @@ final class Fones {
 /// O alvo Objective-C que o IOBluetooth chama. Só tira do aparelho o nome, o endereço e a classe, e passa adiante.
 @MainActor
 private final class OuvinteDeConexao: NSObject {
-    private let aoConectar: (String?, String?, UInt32) -> Void
+    private let aoConectar: @MainActor @Sendable (String?, String?, UInt32) -> Void
 
-    init(aoConectar: @escaping (String?, String?, UInt32) -> Void) {
+    init(aoConectar: @escaping @MainActor @Sendable (String?, String?, UInt32) -> Void) {
         self.aoConectar = aoConectar
     }
 
-    /// O IOBluetooth chama no run loop principal, onde a inscrição foi feita. O aparelho não é `Sendable`:
-    /// sai dele só texto e número antes de entrar no ator principal.
+    /// O IOBluetooth chama numa fila de fundo do CoreBluetooth, não no run loop principal (visto num crash: o
+    /// `MainActor.assumeIsolated` de antes derrubava o app a cada abertura com um fone já conectado). O aparelho não
+    /// é `Sendable`: sai dele só texto e número aqui, e a conversa com o ator principal vai por uma Task.
     @objc nonisolated func conectou(_ notificacao: IOBluetoothUserNotification, dispositivo: IOBluetoothDevice) {
         let (nome, endereco, classe) = (dispositivo.name, dispositivo.addressString, dispositivo.deviceClassMajor)
-        MainActor.assumeIsolated {
-            aoConectar(nome, endereco, classe)
-        }
+        let acao = aoConectar
+        Task { @MainActor in acao(nome, endereco, classe) }
     }
 }
 
