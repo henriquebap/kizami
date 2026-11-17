@@ -263,3 +263,25 @@
 "estojo %@" = "case %@";
 "Avisar quando um fone Bluetooth conectar" = "Notify when Bluetooth headphones connect";
 "AirPods, Beats e outros fones: o nome e a bateria aparecem na ilha por alguns segundos. O macOS pede acesso ao Bluetooth." = "AirPods, Beats and other headphones: the name and battery show on the island for a few seconds. macOS asks for Bluetooth access.";
+
+/* v0.16: Início em grade */
+"Agora" = "Now";
+"Próximo" = "Next";
+"Reunião" = "Meeting";
+"min" = "min";
+"Entrar na reunião" = "Join meeting";
+"esperando há %@" = "waiting for %@";
+"%@ precisa de você" = "%@ needs you";
+"sessão" = "session";
+"sessões" = "sessions";
+"A seguir" = "Up next";
+"pausado" = "paused";
+"termina às %@" = "ends at %@";
+"Marcar como feito" = "Mark as done";
+"Em %@ até %@" = "In %1$@ until %2$@";
+"%@ em %lld min, depois livre até %@" = "%1$@ in %2$lld min, then free until %3$@";
+"%@ em %lld min" = "%1$@ in %2$lld min";
+"Livre até %@" = "Free until %@";
+"Livre o resto do dia" = "Free for the rest of the day";
+"mais %lld hoje" = "%lld more today";
+"Sem som" = "Muted";

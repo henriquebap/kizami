@@ -46,7 +46,7 @@ struct CartaoClaude: View {
                         Text(verbatim: "Claude Code").estiloRotulo(.orange)
                         // verbatim: o nome da pasta vem de fora.
                         Text(verbatim: String(localized: "\(sessao.pasta) precisa de você")).font(Tipo.titulo)
-                        (Text("esperando há ") + Text(sessao.desde, style: .relative))
+                        Text("esperando há \(Text(sessao.desde, style: .relative))")
                             .font(Tipo.corpo).monospacedDigit().foregroundStyle(.secondary)
                     }
                     .lineLimit(1)

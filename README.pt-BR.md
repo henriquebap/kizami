@@ -71,8 +71,8 @@ Só apps de mídia contam (players e navegadores): o Core Audio diz quais apps e
 
 ## A ilha aberta
 
-Passe o mouse no notch e a ilha abre. A ilha continua preta, para se fundir ao notch; os cartões, chips e botões de dentro são Liquid Glass, e um item que você expande cresce a partir do chip dele. Em **Ajustes… › Ilha › Fundo** dá para deixar a ilha aberta transparente: abaixo de 100%, ela vira vidro escurecido (fechada, continua preta para se fundir ao notch). No topo:
-- **Início**: tudo o que está abaixo (hoje, interesses, sessões do Claude, tocando agora, atividades, apps, bandeja).
+Passe o mouse no notch e a ilha abre. Fechada, ela continua preta para se fundir ao notch; aberta, é vidro escurecido por padrão (**Ajustes… › Ilha › Fundo** vai do vidro ao preto). No topo:
+- **Início**: uma grade de widgets em duas colunas. O mais importante do momento ganha o cartão largo de cima: uma sessão do Claude esperando você, depois uma reunião nos próximos 15 minutos, depois a música (tingida com a cor da capa). Sem nada disso, o dia calmo: a data e a temperatura grandes, "Livre até 14:30", uma régua das 8h às 20h com os eventos na cor do calendário e as horas de chuva provável, e o que ainda falta hoje. Embaixo, os avisos, os widgets aos pares (tempo, próximo evento, sessões do Claude, música, timer, lembretes, próximo jogo, Mac) e a bandeja. O contorno da ilha aberta pega a cor do que está em cima, e a capa voa da asa fechada até o cartão.
 - **Hoje**: o resto da agenda do dia, um evento por linha, com **Entrar** nos que têm link de reunião.
 - **Timer**: atalhos prontos (Foco 25, Pausa 5, 10, 15, Foco 50). Enquanto corre, a ilha fechada mostra a contagem em volta do notch. No fim de um foco, clicar no aviso começa a pausa de 5 minutos, e o aviso da pausa começa o próximo foco. Ainda sem som.
 - **Copiados** (desligado por padrão, Ajustes › Copiados): os últimos 10 textos que você copiou; clique num para colar no app em que você está. Ficam só na memória, nunca em disco, e somem ao fechar o Kizami; o que os gerenciadores de senha marcam como oculto, e o que parece chave ou token, fica de fora.
@@ -85,7 +85,8 @@ Só a aba escolhida mostra o nome; as outras mostram o ícone (o nome aparece co
 
 **No dia a dia:**
 - **Abrir no login:** Ajustes › Geral (o macOS pode pedir para você aprovar em Itens de Início).
-- **Reunião chegando:** de 10 minutos antes até 5 minutos depois de uma reunião começar, a ilha fechada mostra a contagem em volta do notch.
+- **Reunião chegando:** de 10 minutos antes até 5 minutos depois de uma reunião começar, a ilha fechada mostra a contagem em volta do notch, na cor do calendário.
+- **Volume:** quando você muda o volume, a ilha fechada mostra o nível por 1,5 s (o indicador do sistema continua aparecendo).
 - **O timer sobrevive ao reinício:** um timer correndo ou pausado volta quando o Kizami reabre. Se acabou com o Kizami fechado (há menos de uma hora), chega o aviso de fim.
 - **Imagens nos Copiados:** os Copiados guardam também imagens PNG e TIFF (até 10 MB cada, 50 MB no total), só na memória, com miniatura.
 

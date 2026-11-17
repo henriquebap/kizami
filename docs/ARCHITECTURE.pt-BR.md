@@ -46,7 +46,7 @@ Qualquer processo do Mac pode postar, então tudo o que chega é dado:
 
 ## As formas da ilha
 
-As escolhas da pessoa (`Personalizacao`: abas, seções do Início, a ordem das asas) são lidas onde cada decisão já mora (`Cabecalho`, `secoesAtuais`, `asaAtual`), nunca como `if` espalhado pelas views.
+As escolhas da pessoa (`Personalizacao`: abas, seções do Início, a ordem das asas) são lidas onde cada decisão já mora (`Cabecalho`, `painelAtual`, `asaAtual`), nunca como `if` espalhado pelas views.
 
 A `Geometria` é pura. Ela é testada com medidas de telas reais e decide todos os tamanhos:
 
@@ -97,7 +97,7 @@ O SwiftUI desenha a ilha na CPU, e cada quadro de animação redesenha a ilha in
 - o que vem de fora só é lido enquanto está na tela: a posição do player uma vez por segundo só com a música expandida (`Janela.acertarProgresso`), o mês visível só com a agenda expandida (`Agenda.mostrar`);
 - um aviso importante só passa na frente nas asas nos primeiros 2 minutos, virado por uma única Task agendada (`Mural.importante`), sem consulta repetida.
 
-O vidro (`Visual.swift`: `.vidro`, `Movimento`) é desenhado pelo servidor de janelas, e as molas ficam num lugar só. Um item expandido (`EstadoIlha.expandido`, `expansaoAtual`) entra em `tamanhoAberto`, então o desenho e a área do hover continuam vindo da mesma função.
+O Início é uma grade decidida por uma regra pura só, o `Painel` (em `Geometria.swift`): o cartão de destaque, os avisos, os widgets aos pares e a bandeja, com a altura de cada fileira. O `painelAtual` monta a grade a partir das fontes, e tanto o `tamanhoAberto` quanto o `InicioEmGrade` leem dela, então o desenho e a área do hover continuam batendo. Os cartões são preenchimentos, não vidro: como pede o HIG, o Liquid Glass fica para os controles (a pílula da aba, os botões dos atalhos); sobre o preto puro o vidro não tinha o que refletir e virava cinza chapado, e sobre a ilha de vidro seria vidro sobre vidro. O vidro e as molas (`Visual.swift`: `Movimento`, `Tipo`, `.cartao`, `.vidroDeControle`) ficam num lugar só. Um item expandido (`EstadoIlha.expandido`, `expansaoAtual`) entra em `tamanhoAberto`, então o desenho e a área do hover continuam vindo da mesma função.
 
 Para medir: `top -l 7 -s 10 -pid $(pgrep -x Kizami) -stats pid,cpu,idlew,power` e `sample`. Com música e timer ligados: ~0,7% de CPU.
 

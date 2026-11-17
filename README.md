@@ -71,8 +71,8 @@ Only media apps count (players and browsers): Core Audio tells which apps have t
 
 ## The open island
 
-Hover the notch and the island opens. The island stays black, so it blends into the notch; the cards, chips and buttons inside are Liquid Glass, and an item you expand grows out of its chip. In **Settings… › Island › Background** you can make the open island see-through: below 100%, it turns into darkened glass (closed, it stays black to blend into the notch). At the top:
-- **Home**: everything below (today, interests, Claude sessions, now playing, activities, apps, tray).
+Hover the notch and the island opens. Closed, it stays black so it blends into the notch; open, it's darkened glass by default (**Settings… › Island › Background** goes from glass to solid black). At the top:
+- **Home**: a two-column grid of widgets. The most important thing right now gets the full-width card on top: a Claude session waiting for you, then a meeting in the next 15 minutes, then the music (tinted with the album art's colour). With none of those, the calm day: the date and temperature large, "Free until 14:30", a 8 am–8 pm timeline with your events in their calendar colours and the hours rain is likely, and what's left today. Below it, the notices, then widgets in pairs (weather, next event, Claude sessions, music, timer, reminders, next game, Mac) and the tray. The open island's outline takes the colour of what's on top, and the artwork flies from the closed wing into its card.
 - **Today**: the rest of the day's calendar, one event per line, with **Join** on the ones that have a meeting link.
 - **Timer**: presets (Focus 25, Break 5, 10, 15, Focus 50). While it runs, the closed island shows the countdown around the notch. When a focus session ends, clicking the notice starts the 5-minute break, and the break's notice starts the next focus. No sound yet.
 - **Copied** (off by default, Settings › Copied): the last 10 texts you copied, click one to paste it into the app you're in. They stay in memory only, never on disk, and vanish when Kizami quits; whatever password managers mark as concealed, and anything that looks like a key or token, is left out.
@@ -85,7 +85,8 @@ Only the chosen tab shows its name; the others show their icon (hover for the na
 
 **Every day:**
 - **Open at login:** Settings › General (macOS may ask you to approve it in Login Items).
-- **Meeting coming up:** from 10 minutes before a meeting until 5 minutes after it starts, the closed island shows its countdown around the notch.
+- **Meeting coming up:** from 10 minutes before a meeting until 5 minutes after it starts, the closed island shows its countdown around the notch, in the calendar's colour.
+- **Volume:** when you change the volume, the closed island shows the level for 1.5 s (the system indicator still shows too).
 - **The timer survives a restart:** a running or paused timer comes back when Kizami reopens. If it ended while Kizami was closed (less than an hour ago), you get the end notice.
 - **Copied images:** Copied also keeps PNG and TIFF images (up to 10 MB each, 50 MB in all), in memory only, with a thumbnail.
 

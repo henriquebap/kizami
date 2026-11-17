@@ -30,11 +30,12 @@ make install && /Applications/Kizami.app/Contents/MacOS/Kizami enviar --titulo t
 | File | Responsibility |
 |---|---|
 | `KizamiApp.swift` | Entry point (app or CLI), menu bar item, composition (`Kizami.shared`: one `Janela` per display, rebuilt on screen changes) |
-| `Geometria.swift` | Pure: notch size and the sizes of each state (closed, arrived, open) from `NSScreen` measurements |
+| `Geometria.swift` | Pure: notch size and the sizes of each state (closed, arrived, open) from `NSScreen` measurements; `Painel`, the Home grid rule (hero card, notices, widget pairs, tray) |
 | `Janela.swift` | One display's `NSPanel`, hover polling, `ignoresMouseEvents` |
-| `IlhaView.swift` | The notch-shaped outline (`FormaIlha`), the states, which item is expanded (`expansaoAtual`) |
-| `Visual.swift` | The look in one place: the springs (`Movimento`), the glass of cards and buttons (`.vidro`), the staggered entrance |
-| `TocandoView.swift` | Now playing: the open-island row, controls, artwork, the Core Animation equalizer and the expanded player (time, seek bar) |
+| `IlhaView.swift` | The notch-shaped outline (`FormaIlha`), the states, the wings (with the volume wing), which item is expanded (`expansaoAtual`), the Home grid input (`painelAtual`) and the colour of what's on top (`corDoAssunto`) |
+| `InicioView.swift`, `DiaView.swift` | Home as a grid (`InicioEmGrade`), the widget frame (`Quadro`, `Cabeca`); the calm-day card with the 8 am–8 pm timeline (`CartaoDia`) |
+| `Visual.swift` | The look in one place: the springs (`Movimento`), the type scale (`Tipo`), card fills (`.cartao`) and control glass (`.vidroDeControle`), the press style (`EstiloBotao`), haptics (`Haptico`), the staggered entrance |
+| `TocandoView.swift` | Now playing: the hero card and the widget (tinted with the artwork colour), controls, artwork, the Core Animation equalizer and the expanded player (time, seek bar) |
 | `Bandeja.swift` | The file tray: URLs in memory (max 20), dedupe, prune missing files |
 | `Arrasto.swift` | Global mouse monitors + the drag pasteboard: notices a file drag in any app so the closed island opens and accepts the drop |
 | `Atividades.swift` | `Atividade` (wire format + validation) and `Mural` (list, max 8, expiry, the "arrived" line) |

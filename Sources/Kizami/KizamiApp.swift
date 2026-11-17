@@ -211,8 +211,7 @@ final class Kizami {
         if ajustes == nil {
             let raiz = AjustesView(tempo: tempo, agenda: agenda, mac: mac, interesses: interesses, formulario: formulario,
                                    formularioInteresses: formularioInteresses, copiados: copiados,
-                                   downloads: downloads, github: github, lembretes: lembretes,
-                                   downloads: downloads, github: github, fones: fones,
+                                   downloads: downloads, github: github, lembretes: lembretes, fones: fones,
                                    personalizacao: personalizacao, atalhosApple: atalhosApple, login: login)
             let janela = NSWindow(contentViewController: NSHostingController(rootView: raiz))
             janela.title = String(localized: "Ajustes do Kizami")
