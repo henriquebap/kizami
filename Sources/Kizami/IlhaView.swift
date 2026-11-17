@@ -281,22 +281,20 @@ struct IlhaView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .foregroundStyle(.white)
         // Abrir com um pouco de mola, fechar sem: a ilha "cai" do notch e volta para dentro dele sem quicar.
-        .animation(forma == .repouso || forma == .compacta
-                   ? .spring(response: 0.34, dampingFraction: 0.92)
-                   : .spring(response: 0.44, dampingFraction: 0.74), value: forma)
-        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: mural.atividades.map(\.id))
-        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: mural.avisos.map(\.id))
-        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: bandeja.arquivos.count)
-        .animation(.smooth(duration: 0.2), value: estado.alvo)
-        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: tocando.app)
-        .animation(.smooth(duration: 0.3), value: tocando.metadados)
-        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: fontes.claude.sessoes)
-        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: secoes.hoje)
-        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: secoes.apps)
-        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: secoes.interesse)
-        .animation(.spring(response: 0.4, dampingFraction: 0.82), value: estado.aba)
-        .animation(.smooth(duration: 0.25), value: privacidade)
-        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: asa)
+        .animation(Movimento.ou(forma == .repouso || forma == .compacta ? Movimento.fechar : Movimento.abrir), value: forma)
+        .animation(Movimento.ou(Movimento.conteudo), value: mural.atividades.map(\.id))
+        .animation(Movimento.ou(Movimento.conteudo), value: mural.avisos.map(\.id))
+        .animation(Movimento.ou(Movimento.conteudo), value: bandeja.arquivos.count)
+        .animation(Movimento.rapido, value: estado.alvo)
+        .animation(Movimento.ou(Movimento.conteudo), value: tocando.app)
+        .animation(Movimento.rapido, value: tocando.metadados)
+        .animation(Movimento.ou(Movimento.conteudo), value: fontes.claude.sessoes)
+        .animation(Movimento.ou(Movimento.conteudo), value: secoes.hoje)
+        .animation(Movimento.ou(Movimento.conteudo), value: secoes.apps)
+        .animation(Movimento.ou(Movimento.conteudo), value: secoes.interesse)
+        .animation(Movimento.ou(Movimento.conteudo), value: estado.aba)
+        .animation(Movimento.rapido, value: privacidade)
+        .animation(Movimento.ou(Movimento.conteudo), value: asa)
     }
 }
 
@@ -496,7 +494,7 @@ private struct Miniatura: View {
         }
         .frame(width: lado, height: lado)
         .clipShape(.rect(cornerRadius: raio))
-        .animation(.smooth(duration: 0.35), value: tocando.capa)
+        .animation(Movimento.ou(Movimento.conteudo), value: tocando.capa)
     }
 }
 
