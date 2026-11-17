@@ -141,6 +141,10 @@ Events the person follows but doesn't keep in their calendar (Buffalo Bills, F1,
 - Not done: the artwork and the meeting dot moving from the closed wing into the open island (`matchedGeometryEffect`).
 - To test by hand: iTerm2 may start the shell under `iTermServer`, outside the `.app`; if so, the click finds neither the app nor the tab.
 
+### v0.16
+
+- **Headphones connected** (off by default, Settings › Headphones): when AirPods or other Bluetooth headphones connect, the island shows the name and battery ("L 80% · R 78% · case 55%", or the single battery). The connection comes from IOBluetooth's connect notifications, and the battery from one `system_profiler -json SPBluetoothDataType` run (fixed arguments, timeout, size cap). Asks for Bluetooth. Only listens: never connects, disconnects or touches the audio output.
+
 ### Next
 
 Later: Kanji's live mic level (it needs Kanji, which would post a level, never text, on the existing protocol), new screenshots in `docs/`, and focusing a session in VS Code or the Claude app if a link that picks the right window gets documented.

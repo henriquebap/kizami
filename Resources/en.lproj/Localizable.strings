@@ -247,3 +247,12 @@
 "Abrir Itens de Início" = "Open Login Items";
 "Não deu para mudar. Abra o Kizami de /Applications e tente de novo." = "Couldn't change it. Open Kizami from /Applications and try again.";
 "Imagem · %lld×%lld" = "Image · %lld×%lld";
+
+/* Fones */
+"Fones" = "Headphones";
+"Conectado" = "Connected";
+"E %@" = "L %@";
+"D %@" = "R %@";
+"estojo %@" = "case %@";
+"Avisar quando um fone Bluetooth conectar" = "Notify when Bluetooth headphones connect";
+"AirPods, Beats e outros fones: o nome e a bateria aparecem na ilha por alguns segundos. O macOS pede acesso ao Bluetooth." = "AirPods, Beats and other headphones: the name and battery show on the island for a few seconds. macOS asks for Bluetooth access.";

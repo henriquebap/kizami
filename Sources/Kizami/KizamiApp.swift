@@ -97,6 +97,7 @@ final class Kizami {
     let login = Login()
     let downloads: Downloads
     let github: GitHub
+    let fones: Fones
     let formulario = FormularioAjustes()
     let formularioInteresses = FormularioInteresses()
     private var fontes: Fontes { Fontes(mural: mural, bandeja: bandeja, tocando: tocando, agenda: agenda, tempo: tempo, claude: claude, mac: mac,
@@ -117,6 +118,7 @@ final class Kizami {
         cronometro = Cronometro(mural: mural)
         downloads = Downloads(mural: mural)
         github = GitHub(mural: mural)
+        fones = Fones(mural: mural)
         atalhosApple = AtalhosApple(mural: mural)
     }
 
@@ -150,6 +152,7 @@ final class Kizami {
         interesses.iniciar()
         downloads.iniciar()  // só olha a pasta Downloads se a pessoa ligou nos Ajustes
         github.iniciar()  // só chama o gh se a pessoa ligou nos Ajustes
+        fones.iniciar()  // só escuta o Bluetooth se a pessoa ligou nos Ajustes
         copiados.iniciar()  // só vigia a área de transferência se a pessoa ligou nos Ajustes
         agenda.iniciar()  // por último: na primeira vez, o macOS pergunta pelo acesso aos Calendários
         // Sinal de vida ao abrir: diz o que é a ilha que acabou de aparecer.
@@ -204,7 +207,7 @@ final class Kizami {
         if ajustes == nil {
             let raiz = AjustesView(tempo: tempo, agenda: agenda, mac: mac, interesses: interesses, formulario: formulario,
                                    formularioInteresses: formularioInteresses, copiados: copiados,
-                                   downloads: downloads, github: github,
+                                   downloads: downloads, github: github, fones: fones,
                                    personalizacao: personalizacao, atalhosApple: atalhosApple, login: login)
             let janela = NSWindow(contentViewController: NSHostingController(rootView: raiz))
             janela.title = String(localized: "Ajustes do Kizami")

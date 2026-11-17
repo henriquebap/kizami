@@ -18,6 +18,7 @@ Gratuito e open source (Apache 2.0). Não usa API privada nem tem dependências 
 - **Acessibilidade:** os emblemas do Dock, as abas Atalhos e Kanji, o play/pause do navegador e colar dos Copiados.
 - **Câmera:** o espelho, só enquanto está aberto.
 - **Pasta Downloads:** os downloads em andamento, se você ligar.
+- **Bluetooth:** o aviso de fone conectado, se você ligar.
 
 **A rede só vai a serviços que não pedem chave:** Open-Meteo para o tempo, as agendas e placares públicos da ESPN para os jogos que você segue, e os links de calendário que você cola nos Ajustes. Se você ligar o GitHub, o seu próprio `gh` logado pede ao GitHub os seus PRs; o Kizami nunca vê o token. Áudio, arquivos e o que você digita nunca saem do Mac.
 
@@ -99,6 +100,8 @@ Só a aba escolhida mostra o nome; as outras mostram o ícone (o nome aparece co
 **GitHub** (desligado por padrão, Ajustes › GitHub): um aviso quando a CI falha num PR seu aberto ou pedem a sua revisão, pelo `gh` que você já tem logado, a cada 5 minutos, só leitura. O clique abre o PR.
 
 **Downloads** (desligado por padrão, Ajustes › Downloads): um arquivo sendo baixado no Chrome, Safari ou Firefox aparece com o tamanho ou a porcentagem, depois "Download concluído"; o clique mostra o arquivo no Finder. Pede a pasta Downloads.
+
+**Fones** (desligado por padrão, Ajustes › Fones): quando AirPods ou outro fone Bluetooth conecta, a ilha mostra o nome e a bateria por alguns segundos (esquerdo, direito e estojo, ou a bateria única). Pede o Bluetooth; o Kizami só escuta, nunca conecta nem desconecta nada.
 
 **Urgente por cima da tela cheia** (desligado por padrão, Ajustes › Tela cheia): em vídeo ou jogo em tela cheia a ilha some; ligado, ela volta só para a reunião começando ou o Claude pedindo permissão.
 
