@@ -26,6 +26,39 @@ private enum Forma: Equatable {
     let mac: Mac
     let interesses: Interesses
     let kanji: PonteKanji
+    let cronometro: Cronometro
+}
+
+/// O que as asas da ilha fechada mostram. Uma coisa por vez: a primeira da lista em `asaAtual` que tem o que mostrar.
+enum Asa: Equatable {
+    case atividades, timer, placar, tocando, privacidade, bandeja, nada
+}
+
+/// A vez de cada coisa nas asas. O timer correndo é algo que a pessoa ligou e quer ver: só uma atividade alta ou
+/// urgente (reunião, permissão do Claude) passa na frente dele; a chuva ou o fim de jogo esperam na lista.
+/// Pausado, o timer sai da asa (fica na aba). O placar só existe durante o jogo; a música vem depois.
+@MainActor func asaAtual(_ f: Fontes) -> Asa {
+    let correndo = f.cronometro.ativo && !f.cronometro.pausado
+    let importante = f.mural.atividades.contains { $0.peso >= 2 }  // "alta" ou "urgente" (`Atividade.prioridades`)
+    if correndo && !importante { return .timer }
+    if !f.mural.atividades.isEmpty { return .atividades }
+    if f.interesses.aoVivo != nil { return .placar }
+    if f.tocando.app != nil { return .tocando }
+    if !f.mac.microfone.isEmpty || f.mac.camera { return .privacidade }
+    if !f.bandeja.arquivos.isEmpty { return .bandeja }
+    return .nada
+}
+
+/// O tamanho da ilha fechada agora: o aviso, as asas ou o repouso. A janela mede a área do hover com a mesma conta.
+@MainActor func tamanhoFechado(_ g: Geometria, _ f: Fontes) -> CGSize {
+    if !f.mural.avisos.isEmpty { return g.aviso(linhas: f.mural.avisos.count) }
+    return switch asaAtual(f) {
+    case .atividades: g.compacta(icones: f.mural.destaques.count)
+    case .timer: g.compacta(icones: 2)  // "24:59" não cabe na asa de um ícone
+    case .placar: g.compacta(icones: 3)  // "BUF 14" de um lado, "7 KC" do outro
+    case .tocando, .privacidade, .bandeja: g.compacta
+    case .nada: g.repouso
+    }
 }
 
 /// O tamanho da ilha aberta na aba escolhida. A janela mede a área do hover com a mesma conta.
@@ -34,6 +67,8 @@ private enum Forma: Equatable {
     case .inicio: g.aberta(secoesAtuais(f))
     case .atalhos: g.abertaAtalhos
     case .kanji: g.abertaComAba(AbaKanji.altura(skills: f.kanji.skills.count))
+    case .hoje: g.abertaComAba(Geometria.alturaDoDia(eventos: f.agenda.hoje.count))
+    case .timer: g.abertaAtalhos
     }
 }
 
@@ -55,20 +90,17 @@ struct IlhaView: View {
     private var tocando: TocandoAgora { fontes.tocando }
     /// Microfone ou câmera ligados: como no iPhone, a ilha não fica em repouso escondendo isso.
     private var privacidade: Bool { !fontes.mac.microfone.isEmpty || fontes.mac.camera }
+    private var cronometro: Cronometro { fontes.cronometro }
 
     var body: some View {
         let g = estado.geometria
         let secoes = secoesAtuais(fontes)
+        let asa = asaAtual(fontes)
         let forma: Forma = estado.aberta ? .aberta
             : !mural.avisos.isEmpty ? .aviso
-            : !mural.atividades.isEmpty || !bandeja.arquivos.isEmpty || tocando.app != nil || privacidade ? .compacta
+            : asa != .nada ? .compacta
             : .repouso
-        let tamanho = switch forma {
-        case .repouso: g.repouso
-        case .compacta: g.compacta(icones: mural.atividades.isEmpty ? 1 : mural.destaques.count)
-        case .aviso: g.aviso(linhas: mural.avisos.count)
-        case .aberta: tamanhoAberto(g, estado.aba, fontes)
-        }
+        let tamanho = forma == .aberta ? tamanhoAberto(g, estado.aba, fontes) : tamanhoFechado(g, fontes)
         let contorno = FormaIlha(orelha: forma.orelha, raio: forma.raio)
 
         ZStack(alignment: .top) {
@@ -80,7 +112,27 @@ struct IlhaView: View {
                 case .compacta:
                     // Atividade tem a vez (foi pedida por alguém); depois o som; por fim a bandeja.
                     let lado = ladoDaAsa(g.notch.height)
-                    if let primeira = mural.destaques.first {
+                    if asa == .timer {
+                        Asas(altura: g.notch.height) {
+                            Simbolo(nome: cronometro.modo.simbolo, cor: .orange, chegada: nil)
+                        } direita: {
+                            HStack(spacing: 4) {
+                                IndicadorPrivacidade(mac: fontes.mac)  // a câmera ligada não pode sumir atrás do timer
+                                ContagemNaAsa(cronometro: cronometro)
+                            }
+                        }
+                    } else if asa == .placar, let placar = fontes.interesses.aoVivo {
+                        Asas(altura: g.notch.height) {
+                            Text(verbatim: "\(placar.visitante) \(placar.pontosVisitante)")
+                        } direita: {
+                            HStack(spacing: 4) {
+                                IndicadorPrivacidade(mac: fontes.mac)
+                                Text(verbatim: "\(placar.pontosCasa) \(placar.casa)")
+                            }
+                        }
+                        .font(.caption.weight(.bold)).monospacedDigit()
+                        .contentTransition(.numericText())
+                    } else if let primeira = mural.destaques.first {
                         // Até três ícones, o mais importante encostado no canto: lado a lado, sem empilhar.
                         Asas(altura: g.notch.height) {
                             HStack(spacing: Geometria.iconeExtra - lado) {
@@ -143,6 +195,10 @@ struct IlhaView: View {
                         Cabecalho(estado: estado, mural: mural)
                         if estado.aba == .atalhos {
                             GradeDeAtalhos(estado: estado, mural: mural)
+                        } else if estado.aba == .hoje {
+                            AbaHoje(agenda: fontes.agenda)
+                        } else if estado.aba == .timer {
+                            AbaTimer(estado: estado, cronometro: cronometro)
                         } else if estado.aba == .kanji {
                             AbaKanji(estado: estado, kanji: fontes.kanji, mural: mural)
                         } else {
@@ -187,6 +243,7 @@ struct IlhaView: View {
         .animation(.spring(response: 0.4, dampingFraction: 0.85), value: secoes.interesse)
         .animation(.spring(response: 0.4, dampingFraction: 0.82), value: estado.aba)
         .animation(.smooth(duration: 0.25), value: privacidade)
+        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: asa)
     }
 }
 
@@ -224,6 +281,8 @@ private struct Cabecalho: View {
     var body: some View {
         HStack(spacing: 4) {
             aba("Início", "house.fill", .inicio)
+            aba("Hoje", "calendar", .hoje)
+            aba("Timer", "timer", .timer)
             aba("Atalhos", "command", .atalhos)
             aba("Kanji", "waveform", .kanji)
             Spacer(minLength: 0)
@@ -257,16 +316,20 @@ private struct Cabecalho: View {
 
     private func aba(_ nome: LocalizedStringKey, _ simbolo: String, _ valor: EstadoIlha.Aba) -> some View {
         let escolhida = estado.aba == valor
+        // Cinco abas e o Limpar não cabem com nome em 340 pt: só a escolhida mostra o nome, as outras o ícone.
         return Button { estado.aba = valor } label: {
-            Label(nome, systemImage: simbolo)
-                .font(.caption.weight(.semibold))
-                .padding(.horizontal, 10)
-                .frame(height: 22)
-                .background(Capsule().fill(.white.opacity(escolhida ? 0.16 : 0)))
-                .foregroundStyle(escolhida ? .primary : .secondary)
-                .contentShape(.capsule)
+            Group {
+                if escolhida { Label(nome, systemImage: simbolo) } else { Label(nome, systemImage: simbolo).labelStyle(.iconOnly) }
+            }
+            .font(.caption.weight(.semibold))
+            .padding(.horizontal, escolhida ? 10 : 7)
+            .frame(height: 22)
+            .background(Capsule().fill(.white.opacity(escolhida ? 0.16 : 0)))
+            .foregroundStyle(escolhida ? .primary : .secondary)
+            .contentShape(.capsule)
         }
         .buttonStyle(.plain)
+        .help(Text(nome))
     }
 }
 
@@ -309,7 +372,18 @@ private struct LinhaTocando: View {
             if let app = tocando.app, Controle.sabeControlar(app) {
                 Controles(app: app, pausado: tocando.pausado)
             } else {
-                Barras(altura: 16)  // navegador: sem comando público, só o sinal de que há som
+                // Navegador: sem AppleScript para o player, vai a tecla de play/pause do teclado, que o macOS
+                // entrega a quem está tocando (o YouTube no Chrome ou no Safari).
+                HStack(spacing: 6) {
+                    Barras(altura: 16)
+                    Button("Tocar ou pausar", systemImage: "playpause.fill") { TeclaDeMidia.tocarOuPausar() }
+                        .labelStyle(.iconOnly)
+                        .buttonStyle(.plain)
+                        .font(.system(size: 16, weight: .semibold))
+                        .frame(width: 30, height: 30)
+                        .contentShape(.rect)
+                        .help(Text("Tocar ou pausar"))
+                }
             }
         }
         .padding(.horizontal, 14)

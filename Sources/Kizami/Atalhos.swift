@@ -132,3 +132,29 @@ struct GradeDeAtalhos: View {
         .frame(height: Geometria.alturaAtalhos)
     }
 }
+
+/// A tecla de play/pause do teclado, para o player do navegador, que não tem AppleScript. O macOS entrega a tecla
+/// ao app que está tocando ("Tocando agora"). Mandar tecla pede Acessibilidade, a mesma da aba Atalhos.
+enum TeclaDeMidia {
+    /// `NX_KEYTYPE_PLAY` em `IOKit/hidsystem/ev_keymap.h`.
+    private static let play = 16
+
+    @MainActor static func tocarOuPausar() {
+        guard CGPreflightPostEventAccess() else {
+            CGRequestPostEventAccess()
+            registro.notice("mídia: sem permissão para mandar teclas")
+            return
+        }
+        // Tecla de mídia é um evento "definido pelo sistema" (subtipo 8): a tecla nos bits altos de data1 e
+        // 0xA (apertou) ou 0xB (soltou) logo abaixo. Não existe CGEvent público para ela, só o NSEvent.
+        for apertada in [true, false] {
+            let estado = apertada ? 0xA : 0xB
+            let evento = NSEvent.otherEvent(with: .systemDefined, location: .zero,
+                                            modifierFlags: NSEvent.ModifierFlags(rawValue: UInt(estado << 8)),
+                                            timestamp: 0, windowNumber: 0, context: nil, subtype: 8,
+                                            data1: (play << 16) | (estado << 8), data2: -1)
+            evento?.cgEvent?.post(tap: .cghidEventTap)
+        }
+        registro.info("mídia: play/pause enviado")
+    }
+}

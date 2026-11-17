@@ -12,6 +12,8 @@ struct Previsao: Equatable, Sendable {
     let codigo: Int
     let dia: Bool
     let obtida: Date
+    /// Quando a chuva começa, se começa na próxima hora e ainda não está chovendo (`chuvaChegando`).
+    var chuvaAs: Date? = nil
 
     var simbolo: String { Previsao.simbolo(codigo: codigo, dia: dia) }
     var descricao: String? { Previsao.descricao(codigo: codigo) }
@@ -47,6 +49,24 @@ struct Previsao: Equatable, Sendable {
         case 95, 96, 99: String(localized: "Trovoada")
         default: nil
         }
+    }
+
+    /// Um quarto de hora, o passo da série `minutely_15`.
+    static let passo: TimeInterval = 15 * 60
+    /// Até onde olhar: com atualização a cada 15 min, o aviso sai entre 45 e 60 min antes, a tempo de fechar a janela
+    /// ou sair antes; mais longe, a previsão de hora em hora (no Brasil a série de 15 min é interpolada dela) erra demais.
+    static let janelaChuva: TimeInterval = 60 * 60
+    /// 0,2 mm em 15 min (~0,8 mm/h): chuva que molha quem está na rua. Abaixo disso é garoa, ou o resto que a
+    /// interpolação espalha em volta de uma chuva prevista para a hora vizinha; avisaria à toa.
+    static let limiarChuva = 0.2
+
+    /// O início da primeira chuva da próxima hora, ou nil se não vem chuva ou se já está chovendo
+    /// (aí o aviso chega tarde: a pessoa já sabe). Quarto de hora passado ou abaixo do limiar não conta.
+    /// Não supõe a série ordenada.
+    static func chuvaChegando(_ serie: [(inicio: Date, mm: Double)], agora: Date) -> Date? {
+        let molhados = serie.filter { $0.mm >= limiarChuva }.map(\.inicio)
+        if molhados.contains(where: { $0 <= agora && agora < $0 + passo }) { return nil }
+        return molhados.filter { $0 > agora && $0 <= agora + janelaChuva }.min()
     }
 
     /// "23°", arredondado. Sem unidade: a pessoa sabe se mora em lugar de Celsius, e o espaço do chip é pouco.
@@ -85,8 +105,16 @@ enum OpenMeteo {
             let temperature_2m_min: [Double?]
             let precipitation_probability_max: [Int?]?
         }
+        /// De 15 em 15 min. Opcional: a resposta sem ele continua valendo, só sem o aviso de chuva.
+        struct Quinze: Decodable {
+            /// Segundos desde 1970 (`timeformat=unixtime`): o horário local do JSON viria sem fuso.
+            let time: [Double]
+            /// Soma dos 15 min *anteriores* ao horário (documentação do Open-Meteo).
+            let precipitation: [Double?]
+        }
         let current: Atual
         let daily: Diaria
+        let minutely_15: Quinze?
     }
 
     struct RespostaBusca: Decodable {
@@ -114,6 +142,10 @@ enum OpenMeteo {
             // O "hoje" da máxima e da mínima é o dia do lugar, não o do fuso do Mac.
             URLQueryItem(name: "timezone", value: "auto"),
             URLQueryItem(name: "forecast_days", value: "1"),
+            // 8 quartos de hora a partir do atual: cobre a janela de 1 h do aviso de chuva com folga.
+            URLQueryItem(name: "minutely_15", value: "precipitation"),
+            URLQueryItem(name: "forecast_minutely_15", value: "8"),
+            URLQueryItem(name: "timeformat", value: "unixtime"),
         ]
         return c.url
     }
@@ -142,7 +174,19 @@ enum OpenMeteo {
         let chuva = r.daily.precipitation_probability_max?.first ?? nil
         guard chuva.map({ (0...100).contains($0) }) ?? true else { return nil }
         return Previsao(temperatura: r.current.temperature_2m, maxima: maxima, minima: minima, chuva: chuva,
-                        codigo: r.current.weather_code, dia: r.current.is_day == 1, obtida: obtida)
+                        codigo: r.current.weather_code, dia: r.current.is_day == 1, obtida: obtida,
+                        chuvaAs: Previsao.chuvaChegando(serie(r.minutely_15), agora: obtida))
+    }
+
+    /// A série com o início de cada quarto de hora. Vazia se vier torta (tamanhos diferentes, número impossível):
+    /// sem aviso de chuva, mas a temperatura continua. Null vira seco.
+    static func serie(_ quinze: RespostaPrevisao.Quinze?) -> [(inicio: Date, mm: Double)] {
+        guard let quinze, quinze.time.count == quinze.precipitation.count,
+              quinze.time.allSatisfy(\.isFinite),
+              quinze.precipitation.allSatisfy({ $0.map { $0.isFinite && (0...100).contains($0) } ?? true }) else { return [] }
+        return zip(quinze.time, quinze.precipitation).map {
+            (inicio: Date(timeIntervalSince1970: $0 - Previsao.passo), mm: $1 ?? 0)
+        }
     }
 
     /// O primeiro resultado. "Campinas, São Paulo" ajuda a saber que achou a cidade certa; "São Paulo, São Paulo" não.
@@ -183,8 +227,11 @@ enum OpenMeteo {
 /// A temperatura do lugar que a pessoa digitou nos Ajustes. Sem lugar, `previsao` fica nil e o chip some.
 @MainActor @Observable final class Tempo {
     static let chaveLocal = "tempo.local"
-    /// O roadmap pede 30 min: a previsão do Open-Meteo não muda mais rápido que isso.
-    private static let intervalo: Duration = .seconds(30 * 60)
+    static let idChuva = "kizami-chuva"
+    /// A previsão não muda mais rápido que 30 min, mas a janela do aviso de chuva anda com o relógio: de 15 em 15,
+    /// a chuva entra na janela com 45 a 60 min de antecedência, e não com só 30. São 96 pedidos por dia, longe do
+    /// limite do Open-Meteo sem chave.
+    private static let intervalo: Duration = .seconds(15 * 60)
     /// Sem rede por mais tempo que isso, a temperatura de antes já engana mais do que ajuda.
     private static let validade: TimeInterval = 3 * 60 * 60
 
@@ -194,6 +241,27 @@ enum OpenMeteo {
     @ObservationIgnored private var lugar: Lugar?
     @ObservationIgnored private var ciclo: Task<Void, Never>?
     @ObservationIgnored private var despertar: (any NSObjectProtocol)?
+    @ObservationIgnored private let mural: Mural
+    /// O início da chuva já avisada: o episódio só avisa uma vez (`episodio`).
+    // ponytail: só em memória; reabrir o app na mesma hora de chuva avisa de novo. Guardar nos UserDefaults se incomodar.
+    @ObservationIgnored private var avisada: Date?
+
+    init(mural: Mural) {
+        self.mural = mural
+    }
+
+    /// O próximo estado do aviso: a chuva avisada que continua valendo e se publica um aviso novo.
+    /// O episódio é esquecido quando a hora avisada passou e a série não prevê mais chuva (choveu, ou a previsão
+    /// desistiu), ou uma hora depois da hora avisada de qualquer jeito: uma pancada curta entre duas atualizações
+    /// não pode deixar a próxima chuva sem aviso. A previsão que só adia a chuva não avisa de novo.
+    nonisolated static func episodio(chega: Date?, avisada: Date?, agora: Date)
+        -> (avisada: Date?, publicar: Bool) {
+        let vigente = avisada.flatMap { a in
+            (chega != nil || agora < a) && agora < a + Previsao.janelaChuva ? a : nil
+        }
+        guard vigente == nil, let chega else { return (vigente, false) }
+        return (chega, true)
+    }
 
     func iniciar() {
         lugar = UserDefaults.standard.data(forKey: Self.chaveLocal)
@@ -222,6 +290,7 @@ enum OpenMeteo {
         lugar = novo
         local = novo.nome
         previsao = nil  // a temperatura de outra cidade não pode ficar à vista com o nome da nova
+        esquecerChuva()
         agendar(daqui: .zero)
         return true
     }
@@ -232,6 +301,28 @@ enum OpenMeteo {
         lugar = nil
         local = nil
         previsao = nil
+        esquecerChuva()
+    }
+
+    /// A chuva avisada era de outra cidade.
+    private func esquecerChuva() {
+        avisada = nil
+        mural.remover(id: Self.idChuva)
+    }
+
+    private func avisarChuva(_ chega: Date?) {
+        let (vigente, publicar) = Self.episodio(chega: chega, avisada: avisada, agora: .now)
+        avisada = vigente
+        guard publicar, let chega else { return }
+        registro.info("tempo: aviso de chuva publicado")
+        mural.receber(Atividade(id: Self.idChuva, titulo: Self.tituloChuva(chega), detalhe: local,
+                                simbolo: "cloud.rain.fill", cor: "azul", expira: 20 * 60, prioridade: "normal"))
+    }
+
+    /// "Chuva às 14:30" no fuso e no formato do Mac. Hora, e não "em 20 min": o aviso fica na ilha um tempo,
+    /// e a contagem envelheceria parada.
+    static func tituloChuva(_ chega: Date) -> String {
+        String(localized: "Chuva às \(chega.formatted(date: .omitted, time: .shortened))")
     }
 
     private func agendar(daqui espera: Duration) {
@@ -257,6 +348,7 @@ enum OpenMeteo {
         if let nova {
             registro.info("tempo: previsão obtida (\(ContinuousClock.now - inicio, privacy: .public))")
             previsao = nova
+            avisarChuva(nova.chuvaAs)
         } else {
             registro.notice("tempo: previsão indisponível (\(ContinuousClock.now - inicio, privacy: .public))")
             if let velha = previsao, Date.now.timeIntervalSince(velha.obtida) > Self.validade { previsao = nil }

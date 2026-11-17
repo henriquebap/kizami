@@ -80,7 +80,7 @@ struct Geometria: Equatable {
 
     /// Com o cursor em cima: as seções que existem, uma embaixo da outra.
     func aberta(_ secoes: Secoes) -> CGSize {
-        func linhas(_ n: Int) -> CGFloat { n > 0 ? CGFloat(n) * Self.alturaLinha + CGFloat(n - 1) * Self.espacoLinha : 0 }
+        let linhas = Self.alturaLinhas
         let blocos = [
             Self.alturaCabecalho,
             secoes.hoje ? Self.alturaHoje : 0,
@@ -100,6 +100,13 @@ struct Geometria: Equatable {
 
     /// A aba do Kanji: a fileira das ações e, com skills, a fileira delas (44 pt) logo abaixo.
     static func alturaKanji(skills: Int) -> CGFloat { alturaAtalhos + (skills > 0 ? 6 + 44 : 0) }
+
+    /// A aba Hoje: um evento por linha, até `maximoDoDia` (o último vira "mais N"), ou a linha do "nada mais".
+    static let maximoDoDia = 5
+    static func alturaDoDia(eventos: Int) -> CGFloat { alturaLinhas(max(1, min(eventos, maximoDoDia))) }
+
+    /// `n` linhas da lista com o espaço entre elas.
+    static func alturaLinhas(_ n: Int) -> CGFloat { n > 0 ? CGFloat(n) * alturaLinha + CGFloat(n - 1) * espacoLinha : 0 }
 
     /// Uma aba que não é o Início: o cabeçalho e o conteúdo dela (atalhos, Kanji).
     func abertaComAba(_ conteudo: CGFloat) -> CGSize {

@@ -3,6 +3,7 @@ import Foundation
 // Regras puras da agenda: qual evento mostrar, que link abrir e quando lembrar. Sem EventKit nem permissão.
 @MainActor func testarAgenda() {
     let agora = Date(timeIntervalSince1970: 1_800_000_000)
+    testarDoDia()
     func evento(_ id: String, em minutos: Double, dura: Double = 30, diaInteiro: Bool = false, recusado: Bool = false) -> EventoAgenda {
         let inicio = agora.addingTimeInterval(minutos * 60)
         return EventoAgenda(id: id, titulo: id, inicio: inicio, fim: inicio.addingTimeInterval(dura * 60),
@@ -63,4 +64,25 @@ import Foundation
     conferir("o de 15 min avisado não impede o do início", avisos([evento("a", em: 0)], ["a#15"]), [.comecando])
     conferir("dia inteiro e recusado não avisam",
              avisos([evento("d", em: 0, diaInteiro: true), evento("r", em: 10, recusado: true)]), [])
+}
+
+/// A aba Hoje: o resto do dia em São Paulo, dia inteiro primeiro, sem recusados nem o que já acabou.
+@MainActor func testarDoDia() {
+    var sp = Calendar(identifier: .gregorian)
+    sp.timeZone = TimeZone(identifier: "America/Sao_Paulo")!
+    // 15/01/2027 14:00 em São Paulo (UTC-3).
+    let agora = sp.date(from: DateComponents(year: 2027, month: 1, day: 15, hour: 14))!
+    func evento(_ id: String, _ h: Double, _ duracao: Double = 1, diaInteiro: Bool = false, recusado: Bool = false) -> EventoAgenda {
+        let inicio = agora.addingTimeInterval((h - 14) * 3600)
+        return EventoAgenda(id: id, titulo: id, inicio: inicio, fim: inicio.addingTimeInterval(duracao * 3600),
+                            diaInteiro: diaInteiro, recusado: recusado)
+    }
+    let eventos = [evento("tarde", 16), evento("acabou", 10), evento("rolando", 13.5), evento("amanha", 25),
+                   evento("recusado", 15, recusado: true), evento("feriado", 0, 24, diaInteiro: true),
+                   evento("noite", 23.5)]
+    conferir("hoje: ordem e filtro", EventoAgenda.doDia(eventos, agora: agora, calendario: sp).map(\.id),
+             ["feriado", "rolando", "tarde", "noite"])
+    conferir("hoje: vazio", EventoAgenda.doDia([], agora: agora, calendario: sp).map(\.id), [])
+    conferir("hoje: altura vazia = uma linha", Geometria.alturaDoDia(eventos: 0), Geometria.alturaLinha)
+    conferir("hoje: altura com 9 = cinco linhas", Geometria.alturaDoDia(eventos: 9), Geometria.alturaLinhas(5))
 }

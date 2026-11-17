@@ -57,7 +57,7 @@ Only `session_id`, the folder name and the state cross over; never the prompt or
 
 WeatherKit needs a paid developer account, and Core Location would ask for location for a city the person can type once.
 
-### v0.7: Interests (the "external calendar") (done, except live score)
+### v0.7: Interests (the "external calendar") (done)
 
 Events the person follows but doesn't keep in their calendar (Buffalo Bills, F1, a football club):
 
@@ -66,9 +66,9 @@ Events the person follows but doesn't keep in their calendar (Buffalo Bills, F1,
 | Teams and leagues | ESPN's public JSON (`site.api.espn.com/apis/site/v2/sports/{sport}/{league}/teams/{team}/schedule`, F1 at `racing/f1/scoreboard`), no key | Undocumented and could change without notice; one source file, easy to swap. Covers NFL, NBA, F1 and the Brazilian league. |
 | Anything with a feed | ICS URL pasted in Settings; a small `VEVENT` reader (`DTSTART`, `SUMMARY`) | No dependency. |
 | Reminders | The shared schedule: the week's list, the day before, 1 hour before | |
-| Later: live score | Poll the ESPN scoreboard every minute only while a followed game is on | |
+| Live score (v0.10) | The ESPN scoreboard (`?dates=` the game's day) every minute, only in the 5 h after a followed game starts | One game at a time; not F1 |
 
-### v0.8: Apps and the Mac (done: mic, camera, battery, Dock badges; timer and browser media keys still open)
+### v0.8: Apps and the Mac (done; timer and browser media keys in v0.10)
 
 | What | How | Permission |
 |---|---|---|
@@ -89,17 +89,20 @@ Events the person follows but doesn't keep in their calendar (Buffalo Bills, F1,
 - **Clear:** a Clear button for every activity, and a ✕ on the row under the cursor.
 - **Interests side by side:** the next event of each followed source, up to three.
 
+### v0.10: The first ideas (done)
+
+- **Live score** in the closed wings and the Interests row; "Game over" notice at the end.
+- **Rain alert:** Open-Meteo `minutely_15` precipitation, refreshed every 15 min; one notice per rain episode.
+- **Timer / pomodoro:** a Timer tab, the countdown in the closed wings, the focus → break cycle by clicking the notice. No sound yet.
+- **Today tab:** the rest of the day's calendar.
+- **Browser play/pause:** the system media key, for players without AppleScript.
+
 ## Ideas (not scheduled)
 
 Ranked by value for daily use against the work it takes.
 
 | Idea | How | Cost |
 |---|---|---|
-| Live score of a followed game in the closed wings | ESPN scoreboard every minute, only while the game is on | small |
-| Rain alert ("rain in 20 min") | Open-Meteo `minutely_15` precipitation, already the weather source | small |
-| Timer / pomodoro in the closed wings | Kizami's own state, started from a new tab | small |
-| Today tab: the whole day's agenda | EventKit, already allowed | small |
-| Browser media keys (YouTube play/pause) | System media-key events; Accessibility is now granted for Shortcuts | small |
 | Urgent over full screen (meeting starting, Claude permission) | A second panel that joins full-screen Spaces, off by default | medium |
 | Kanji: live level of the microphone while dictating | Kanji posts a level (never text) on the existing protocol | medium (both apps) |
 | GitHub: CI failed / review requested on your PRs | `gh` CLI the person already logged in, polled every few minutes | medium |

@@ -143,3 +143,24 @@
 "Clique de novo quando ele abrir" = "Click again once it opens";
 "Sem atalho livre: escolha um para esta skill no Kanji" = "No free shortcut: pick one for this skill in Kanji";
 "Começa um ditado com esta skill" = "Starts a dictation with this skill";
+
+/* v0.10: aba Hoje, aba Timer, play/pause do navegador */
+"Hoje" = "Today";
+"Timer" = "Timer";
+"Tocar ou pausar" = "Play or pause";
+"Liberar o calendário nos Ajustes" = "Allow calendar access in Settings";
+"Nada mais na agenda hoje" = "Nothing else on today's calendar";
+"Dia inteiro" = "All day";
+"Foco" = "Focus";
+"Pausa" = "Break";
+"Pausado" = "Paused";
+"Continuar" = "Resume";
+"Parar" = "Stop";
+"Foco concluído" = "Focus done";
+"Pausa acabou" = "Break's over";
+"Timer acabou" = "Timer done";
+"Clique para começar a pausa" = "Click to start the break";
+"Clique para voltar ao foco" = "Click to get back to focus";
+"Chuva às %@" = "Rain at %@";
+"Fim de jogo" = "Game over";
+"Ao vivo" = "Live";

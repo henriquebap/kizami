@@ -67,9 +67,17 @@ Only media apps count (players and browsers): Core Audio tells which apps have t
 
 Hover the notch and the island opens. At the top:
 - **Home**: everything below (today, interests, Claude sessions, now playing, activities, apps, tray).
+- **Today**: the rest of the day's calendar, one event per line, with **Join** on the ones that have a meeting link.
+- **Timer**: presets (Focus 25, Break 5, 10, 15, Focus 50). While it runs, the closed island shows the countdown around the notch. When a focus session ends, clicking the notice starts the 5-minute break, and the break's notice starts the next focus. No sound yet.
 - **Shortcuts**: one click for the Mac's shortcuts, with the keys written under each one so you learn them: full screenshot (⇧⌘3), area (⇧⌘4), screenshot and recording (⇧⌘5), Mission Control, emoji (⌃⌘Space) and lock screen (⌃⌘Q). Sending keys needs the Accessibility permission, asked on the first click.
 - **Kanji**: [Kanji](https://github.com/henriquebap/kanji-local-dictation), the dictation app, in one click: dictate, transcribe the Mac's audio, open Kanji, and one button per skill (dictate already rewritten as a LinkedIn reply, an informal message, a prompt…). They are Kanji's own shortcuts, read from its settings, so they change when you change them there. Same Accessibility permission as Shortcuts.
 - **⚙︎**: opens Settings (also in Kizami's menu bar item, or ⌘, with its menu open).
+
+Only the chosen tab shows its name; the others show their icon (hover for the name).
+
+**Live score:** while a game of a team you follow is on, the closed island shows the score around the notch (away team on the left, home team on the right), refreshed every minute from ESPN, and the Interests row shows it with a red dot. At the end, a "Game over" notice with the final score; click it for the ESPN page.
+
+**Browser play/pause:** when a browser is playing (YouTube), the now-playing row gets a play/pause button. It sends the keyboard's play/pause key, which macOS hands to whoever is playing (Accessibility, like Shortcuts).
 
 **Click an activity to open it:** a Claude alert brings its session's app forward, a game opens its ESPN page, a meeting reminder joins the call (or opens Calendar), a Dock badge opens the app. Activities sent by other apps or scripts only show.
 
@@ -77,7 +85,7 @@ Hover the notch and the island opens. At the top:
 
 The open island starts with a strip for the day:
 - **Next event** from your calendars (EventKit), with a reminder 15 minutes before and when it starts. When the event has a Meet, Zoom, Teams, FaceTime or Whereby link, a **Join** button opens it. macOS asks for access to Calendars the first time; say no and the strip just leaves the event out.
-- **Weather** for the city you type in **Settings… › Weather**, from [Open-Meteo](https://open-meteo.com) (no key, no account), refreshed every 30 minutes.
+- **Weather** for the city you type in **Settings… › Weather**, from [Open-Meteo](https://open-meteo.com) (no key, no account), refreshed every 15 minutes. When rain is coming in the next hour (Open-Meteo's 15-minute precipitation), a "Rain at 14:30" notice shows once per rain episode, and the weather chip shows an umbrella with the time. In Brazil that series is interpolated from the hourly forecast, so the time is approximate.
 
 ## Interests
 

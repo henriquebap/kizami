@@ -504,8 +504,14 @@ final class Interesses {
     private(set) var seguidos: [Seguido] = []
     /// O próximo de cada fonte, até três, para a linha da ilha aberta.
     private(set) var proximos: [EventoInteresse] = []
+    /// O placar do jogo seguido que está acontecendo agora (`Placar.swift`); nil fora de jogo.
+    private(set) var aoVivo: Placar?
 
     @ObservationIgnored private let mural: Mural
+    /// Os que já deram "Fim de jogo": não avisam de novo nem voltam a ser consultados. Só da sessão: depois de
+    /// reiniciar, a agenda da ESPN já não traz jogo terminado.
+    @ObservationIgnored private var encerrados: Set<String> = []
+    @ObservationIgnored private var placar: Task<Void, Never>?
     @ObservationIgnored private var porFonte: [Seguido: [EventoInteresse]] = [:]
     @ObservationIgnored private var disparados: [String: Date] = [:]
     @ObservationIgnored private var ciclo: Task<Void, Never>?
@@ -549,6 +555,13 @@ final class Interesses {
                 try? await Task.sleep(for: .seconds(60))
             }
         }
+        placar = Task { [weak self] in
+            while !Task.isCancelled {
+                guard let self else { return }
+                await self.acompanharPlacar()
+                try? await Task.sleep(for: .seconds(60))
+            }
+        }
     }
 
     func adicionar(_ seguido: Seguido) {
@@ -561,6 +574,7 @@ final class Interesses {
     func remover(_ seguido: Seguido) {
         seguidos.removeAll { $0 == seguido }
         porFonte[seguido] = nil
+        if let p = aoVivo, !seguidos.flatMap({ porFonte[$0] ?? [] }).contains(where: p.eDo) { aoVivo = nil }
         salvar()
         conferir()
     }
@@ -631,7 +645,7 @@ final class Interesses {
         var vistos = Set<String>()
         // O mesmo jogo vem duas vezes quando a pessoa segue os dois times.
         let eventos = seguidos.flatMap { porFonte[$0] ?? [] }.filter { vistos.insert($0.id).inserted }
-        let novos = EventoInteresse.proximos(eventos, agora: agora)
+        let novos = Placar.comAoVivo(EventoInteresse.proximos(eventos, agora: agora), eventos: eventos, aoVivo: aoVivo)
         if novos != proximos { proximos = novos }
 
         // No máximo três por minuto, o mais perto de começar primeiro: um calendário com 20 eventos na semana
@@ -658,5 +672,40 @@ final class Interesses {
             UserDefaults.standard.set(disparados.mapValues(\.timeIntervalSince1970), forKey: Self.chaveDisparados)
         }
         if !devidos.isEmpty { registro.info("interesses: \(devidos.count) lembretes de \(eventos.count) eventos") }
+    }
+
+    /// A cada minuto, mas só vai à rede com um jogo seguido na janela do `Placar`. Ao terminar, o resultado vira
+    /// atividade e `aoVivo` zera na hora: o placar final já está nas asas pelo mural, mostrá-lo também ali repetiria.
+    // ponytail: um placar por vez (o jogo que começou antes); dois jogos seguidos ao mesmo tempo ganham os dois
+    // "Fim de jogo", mas só o primeiro aparece ao vivo.
+    private func acompanharPlacar() async {
+        let jogos = Placar.emJogo(seguidos.flatMap { porFonte[$0] ?? [] }, agora: .now, encerrados: encerrados)
+        guard !jogos.isEmpty else {
+            if aoVivo != nil { aoVivo = nil; conferir() }
+            return
+        }
+        guard var placares = await Placar.buscar(jogos) else { return }  // sem rede: o último placar fica
+        // Deixou de seguir o time durante a consulta: o placar dele não volta para a ilha.
+        let seguidosAgora = seguidos.flatMap { porFonte[$0] ?? [] }
+        placares = placares.filter { p in seguidosAgora.contains(where: p.eDo) }
+        // Meia hora depois do início e a ESPN sem placar (jogo adiado ou cancelado, que `ler` recusa): para de
+        // consultar, em vez de bater na ESPN a cada minuto até a janela de 5 h fechar.
+        for e in jogos where Date.now.timeIntervalSince(e.inicio) > 1800 && !placares.contains(where: { $0.eDo(e) }) {
+            if let id = Placar.idESPN(e) { encerrados.insert(id) }
+        }
+        for p in placares where p.encerrado && !encerrados.contains(p.eventoId) {
+            encerrados.insert(p.eventoId)
+            guard let e = jogos.first(where: p.eDo) else { continue }
+            // 10 min: dá para ver o resultado, sem tirar o timer da asa por meia hora (`asaAtual`).
+            mural.receber(Atividade(id: "placar-\(p.eventoId)", titulo: p.texto, detalhe: String(localized: "Fim de jogo"),
+                                    simbolo: e.fonte.simbolo, cor: e.fonte.cor, expira: 600,
+                                    prioridade: "normal")) { [weak self] in self?.abrir(e) }
+        }
+        let novo = placares.first { !$0.encerrado }
+        if novo != aoVivo {
+            aoVivo = novo
+            conferir()
+        }
+        registro.info("interesses: placar de \(jogos.count) jogos, \(placares.count) lidos")
     }
 }

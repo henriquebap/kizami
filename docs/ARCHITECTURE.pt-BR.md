@@ -16,7 +16,8 @@ fontes ──► Mural ──► IlhaView (uma por monitor, dentro de uma Janela
   - as atividades que outros apps e scripts mandam (`Correio`);
   - as sessões do Claude Code (`Claude`);
   - os lembretes da agenda (`Agenda`);
-  - os lembretes dos interesses (`Interesses`);
+  - os lembretes dos interesses e o placar ao vivo (`Interesses`, `Placar`);
+  - o aviso de chuva (`Tempo`) e o fim do timer (`Cronometro`);
   - a bateria e os emblemas do Dock (`Mac`);
   - os avisos dos atalhos (`Atalhos`, `KanjiAba`).
 - **`Mural`** guarda as atividades:
@@ -49,11 +50,11 @@ A `Geometria` é pura. Ela é testada com medidas de telas reais e decide todos 
 | Estado | Forma |
 |---|---|
 | repouso | uma pílula um pouco maior que o notch |
-| fechada (`compacta`) | asas em volta do notch, com até 3 ícones |
+| fechada (`compacta`) | asas em volta do notch: até 3 ícones, a contagem do timer ou o placar ao vivo (`asaAtual` escolhe um) |
 | aviso (`aviso`) | até 3 linhas abaixo do notch |
 | aberta (`aberta`) | o cabeçalho (abas e ⚙︎) e as seções que têm o que mostrar |
 
-A área do hover e a forma desenhada vêm sempre da mesma função, então as duas não se desencontram.
+A área do hover e a forma desenhada vêm sempre das mesmas funções (`tamanhoFechado`, `tamanhoAberto`), então as duas não se desencontram.
 
 ## Tela cheia
 
@@ -67,7 +68,8 @@ O macOS desenha um painel no nível da ilha até num espaço de tela cheia, ent�
 | Próximo evento | Calendários |
 | Emblemas do Dock, aba Atalhos, aba Kanji | Acessibilidade |
 | Tempo | rede: Open-Meteo |
-| Interesses | rede: o JSON público da ESPN e os links ICS que a pessoa cola |
+| Interesses, placar ao vivo | rede: o JSON público da ESPN e os links ICS que a pessoa cola |
+| Play/pause do navegador | Acessibilidade |
 
 Cada uma é opcional, e sem ela o resto continua funcionando. As chamadas de rede usam:
 - só HTTPS, com timeout e teto de tamanho;
