@@ -94,6 +94,21 @@ final class Mural {
     /// As que aparecem nas asas da ilha fechada, até três.
     var destaques: ArraySlice<Atividade> { atividades.prefix(Self.maximoAvisos) }
 
+    /// Há uma atividade alta ou urgente que acabou de chegar: ela passa na frente de tudo nas asas
+    /// (`Personalizacao.asa`). Só muda quando o valor muda, e uma única tarefa a desliga no fim da janela:
+    /// a ilha não consulta o relógio para isso.
+    private(set) var importante = false
+    /// Quanto tempo uma alta ou urgente manda nas asas. Depois disso ela segue na lista (e nas asas, na vez delas)
+    /// até ser tirada: o "Claude precisa de você" preso nas asas parecia não sair nunca.
+    static let tempoNaAsa: TimeInterval = 120
+    @ObservationIgnored private var fimDoImportante: Task<Void, Never>?
+
+    /// Até quando alguma atividade alta ou urgente ainda manda nas asas: `tempoNaAsa` depois da chegada da mais
+    /// recente. Nil se não há nenhuma.
+    static func importanteAte(_ atividades: [Atividade]) -> Date? {
+        atividades.filter { $0.peso >= 2 }.compactMap { $0.chegada?.addingTimeInterval(tempoNaAsa) }.max()
+    }
+
     /// A ordem da ilha: quem vem antes na lista, nas asas e na pilha de avisos.
     static func antes(_ a: Atividade, _ b: Atividade) -> Bool {
         if a.peso != b.peso { return a.peso > b.peso }
@@ -148,6 +163,22 @@ final class Mural {
         acoes = acoes.filter { ficam.contains($0.key) }
         avisos = avisos.filter { ficam.contains($0.id) }
         if avisos.isEmpty { fimDoAviso?.cancel() }
+        reavaliarImportante()
+    }
+
+    /// Acerta `importante` e agenda a única tarefa que o desliga quando a janela da mais recente acabar.
+    private func reavaliarImportante() {
+        fimDoImportante?.cancel()
+        guard let ate = Self.importanteAte(atividades), ate > .now else {
+            if importante { importante = false }
+            return
+        }
+        if !importante { importante = true }
+        fimDoImportante = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(ate.timeIntervalSinceNow))
+            guard !Task.isCancelled else { return }
+            self?.reavaliarImportante()
+        }
     }
 
     /// Baixa prioridade não desce: entra na lista e nas asas em silêncio.

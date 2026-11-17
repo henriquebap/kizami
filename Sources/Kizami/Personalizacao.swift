@@ -101,8 +101,8 @@ final class Personalizacao {
         return ordem
     }
 
-    /// A asa da vez. Atividade alta ou urgente (reunião, permissão do Claude) passa na frente de tudo, seja qual for
-    /// a ordem: é o que não pode esperar. Depois, a primeira da ordem da pessoa que tem o que mostrar.
+    /// A asa da vez. Atividade alta ou urgente (reunião, permissão do Claude) que acabou de chegar passa na frente
+    /// de tudo, seja qual for a ordem: é o que não pode esperar. Depois, a primeira da ordem da pessoa que tem o que mostrar.
     static func asa(ordem: [Asa], importante: Bool, tem: (Asa) -> Bool) -> Asa {
         if importante && tem(.atividades) { return .atividades }
         return (ordem + [.privacidade, .bandeja]).first(where: tem) ?? .nada

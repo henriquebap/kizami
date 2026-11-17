@@ -49,10 +49,10 @@ extension Aba {
 }
 
 /// A vez de cada coisa nas asas, na ordem que a pessoa escolheu (`Personalizacao.asa`). Por padrão o timer correndo
-/// vem primeiro: só uma atividade alta ou urgente passa na frente dele. Pausado, o timer sai da asa (fica na aba).
+/// vem primeiro: só uma atividade alta ou urgente, nos primeiros 2 min (`Mural.importante`), passa na frente dele.
+/// Pausado, o timer sai da asa (fica na aba).
 @MainActor func asaAtual(_ f: Fontes) -> Asa {
-    let importante = f.mural.atividades.contains { $0.peso >= 2 }  // "alta" ou "urgente" (`Atividade.prioridades`)
-    return Personalizacao.asa(ordem: f.personalizacao.asas, importante: importante) { asa in
+    Personalizacao.asa(ordem: f.personalizacao.asas, importante: f.mural.importante) { asa in
         switch asa {
         case .atividades: !f.mural.atividades.isEmpty
         case .timer: f.cronometro.ativo && !f.cronometro.pausado
@@ -733,7 +733,8 @@ private struct Lista: View {
                     }
                     .lineLimit(1)
                     Spacer(minLength: 8)
-                    if estado.linhaSobCursor == atividade.id {
+                    // A alta ou urgente (o "Claude precisa de você") fica até alguém tirar: o ✕ dela não se esconde.
+                    if atividade.peso >= 2 || estado.linhaSobCursor == atividade.id {
                         Button("Tirar da ilha", systemImage: "xmark.circle.fill") { mural.remover(id: atividade.id) }
                             .labelStyle(.iconOnly)
                             .buttonStyle(.plain)
