@@ -17,9 +17,11 @@ Gratuito e open source (Apache 2.0). Não usa API privada nem tem dependências 
 **Toda permissão é opcional**, e cada uma liga uma coisa:
 - **Automação:** a capa e os botões da música que está tocando.
 - **Calendários:** o seu próximo evento.
-- **Acessibilidade:** os emblemas do Dock, a aba Atalhos e a aba Kanji.
+- **Acessibilidade:** os emblemas do Dock, as abas Atalhos e Kanji, o play/pause do navegador e colar dos Copiados.
+- **Câmera:** o espelho, só enquanto está aberto.
+- **Pasta Downloads:** os downloads em andamento, se você ligar.
 
-**A rede só vai a serviços que não pedem chave:** Open-Meteo para o tempo, as agendas públicas da ESPN para os jogos que você segue, e os links de calendário que você cola nos Ajustes. Áudio, arquivos e o que você digita nunca saem do Mac.
+**A rede só vai a serviços que não pedem chave:** Open-Meteo para o tempo, as agendas e placares públicos da ESPN para os jogos que você segue, e os links de calendário que você cola nos Ajustes. Se você ligar o GitHub, o seu próprio `gh` logado pede ao GitHub os seus PRs; o Kizami nunca vê o token. Áudio, arquivos e o que você digita nunca saem do Mac.
 
 ## Compilar
 

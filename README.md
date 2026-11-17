@@ -17,9 +17,11 @@ Free and open source (Apache 2.0). No private APIs and no third-party dependenci
 **Every permission is optional**, and each one turns on one thing:
 - **Automation:** the artwork and media buttons of the song that is playing.
 - **Calendars:** your next event.
-- **Accessibility:** the Dock badges, the Shortcuts tab and the Kanji tab.
+- **Accessibility:** the Dock badges, the Shortcuts and Kanji tabs, browser play/pause and pasting from Copied.
+- **Camera:** the mirror, only while it is open.
+- **Downloads folder:** downloads in progress, if you turn them on.
 
-**The network goes only to services that need no key:** Open-Meteo for the weather, ESPN's public schedules for the games you follow, and the calendar links you paste in Settings. Audio, files and what you type never leave the Mac.
+**The network goes only to services that need no key:** Open-Meteo for the weather, ESPN's public schedules and scores for the games you follow, and the calendar links you paste in Settings. If you turn GitHub on, your own logged-in `gh` asks GitHub for your PRs; Kizami never sees the token. Audio, files and what you type never leave the Mac.
 
 ## Build
 
