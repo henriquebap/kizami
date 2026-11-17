@@ -15,7 +15,8 @@ final class EstadoIlha {
     /// A linha da lista sob o cursor: só ela mostra o ✕ (a view não tem `@State` sem as macros).
     var linhaSobCursor: String?
 
-    enum Aba { case inicio, hoje, timer, atalhos, kanji }
+    /// `espelho` não tem botão no cabeçalho: abre pela aba Atalhos.
+    enum Aba { case inicio, hoje, timer, copiados, atalhos, kanji, espelho }
 
     init(geometria: Geometria) {
         self.geometria = geometria
@@ -41,6 +42,12 @@ final class Janela {
     private let telaQuartz: CGRect
     /// O monitor está num espaço de tela cheia: a ilha sai dele (pedido da pessoa: em vídeo ou jogo, ela atrapalha).
     private(set) var oculta = false
+    /// O painel está na tela. Em tela cheia, só volta para um aviso urgente, se a pessoa ligou isso nos Ajustes.
+    private var visivel = true
+    /// Esta ilha está mostrando o espelho: só a `Janela` liga e desliga a câmera, nunca o ciclo de vida da view
+    /// (um `onAppear` atrasado ligaria a câmera com a ilha já fechada).
+    private var comCamera = false
+    static let chaveUrgenteEmTelaCheia = "ilha.urgenteEmTelaCheia"
 
     init(fontes: Fontes, tela: NSScreen) {
         self.fontes = fontes
@@ -77,18 +84,45 @@ final class Janela {
         let cheia = Geometria.emTelaCheia(tela: telaQuartz, fundos: fundos, mesa: mesa)
         guard cheia != oculta else { return }
         oculta = cheia
-        if cheia {
-            painel.orderOut(nil)
-            estado.aberta = false
-            painel.ignoresMouseEvents = true
-        } else {
-            painel.orderFrontRegardless()
-        }
+        if cheia { recolher() }
+        mostrarOuEsconder()
+    }
+
+    /// Em tela cheia, a ilha some, a não ser que haja um aviso urgente (reunião começando, o Claude pedindo
+    /// permissão) e a pessoa tenha ligado isso: o mesmo painel já é desenhado por cima da tela cheia
+    /// (`.canJoinAllSpaces` neste nível), então basta não escondê-lo. Só o aviso aparece; o hover segue desligado.
+    private func mostrarOuEsconder() {
+        let urgente = UserDefaults.standard.bool(forKey: Self.chaveUrgenteEmTelaCheia)
+            // Só as fontes do próprio Kizami (as que têm ação de clique): um "urgente" mandado pelo `Kizami enviar`
+            // não fura a tela cheia.
+            // ponytail: o "Claude precisa de você" vem do hook, que qualquer processo local também pode imitar; o
+            // texto é fixo e a pasta é limpa, então o pior é um aviso falso de 3,5 s. Exigir sessão antiga se abusarem.
+            && mural.avisos.contains { $0.prioridade == "urgente" && mural.podeAbrir($0.id) }
+        let deveMostrar = !oculta || urgente
+        guard deveMostrar != visivel else { return }
+        visivel = deveMostrar
+        if deveMostrar { painel.orderFrontRegardless() } else { painel.orderOut(nil) }
     }
 
     func fechar() {
         vigia?.cancel()
+        recolher()
         painel.orderOut(nil)
+    }
+
+    /// Fecha a ilha por qualquer caminho (cursor saiu, tela cheia, monitor saiu): volta ao Início e desliga a câmera.
+    private func recolher() {
+        estado.aberta = false
+        painel.ignoresMouseEvents = true
+        estado.aba = .inicio  // abre sempre no início, que é onde está o que chegou
+        acertarCamera()
+    }
+
+    private func acertarCamera() {
+        let quer = estado.aberta && estado.aba == .espelho && !oculta
+        guard quer != comCamera else { return }
+        comCamera = quer
+        if quer { fontes.espelho.ligar() } else { fontes.espelho.desligar() }
     }
 
     // ponytail: consulta a posição do cursor em cada monitor: a cada 50 ms com o cursor perto do topo ou a ilha aberta,
@@ -110,6 +144,7 @@ final class Janela {
         // O monitor global não vê a soltura que cai na própria ilha (nem um arraste cancelado com esc):
         // sem o botão apertado, não há arraste, e a ilha não pode ficar presa aberta sobre a barra de menus.
         if bandeja.arrastando && !botao { bandeja.arrastando = false }
+        mostrarOuEsconder()  // o aviso urgente chega e sai a qualquer momento; a consulta já roda a cada 50–250 ms
         let g = estado.geometria
         // Fechada, a zona tem o tamanho que a ilha desenha agora (aviso, asas do timer, do placar, dos ícones), e as
         // asas no mínimo: arrastando, a ilha em repouso também aceita o arquivo.
@@ -139,15 +174,16 @@ final class Janela {
             dentro && (bandeja.arrastando || Date.now.timeIntervalSince(entrada ?? .now) >= Self.permanencia)
         }
         if aberta != estado.aberta {
-            estado.aberta = aberta
-            painel.ignoresMouseEvents = !aberta  // aberta, o clique fica na ilha em vez de cair na janela de baixo
             if aberta {
+                estado.aberta = true
+                painel.ignoresMouseEvents = false  // aberta, o clique fica na ilha em vez de cair na janela de baixo
                 mural.encerrarAviso()
                 bandeja.podar()
             } else {
-                estado.aba = .inicio  // abre sempre no início, que é onde está o que chegou
+                recolher()
             }
         }
+        acertarCamera()  // entrou ou saiu da aba Espelho com a ilha aberta
         let pertoDoTopo = g.tela.contains(cursor) && cursor.y > g.tela.maxY - 120
         return .milliseconds(estado.aberta || pertoDoTopo ? 50 : 250)
     }

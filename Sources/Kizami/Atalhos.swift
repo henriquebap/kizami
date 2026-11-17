@@ -126,6 +126,19 @@ struct GradeDeAtalhos: View {
                 .buttonStyle(.plain)
                 .help(Text(atalho.ajuda))
             }
+            // Não é tecla: troca a aba pela câmera, para se ver antes de uma chamada. Desliga ao fechar a ilha.
+            Button { estado.aba = .espelho } label: {
+                VStack(spacing: 3) {
+                    Image(systemName: "person.crop.square").font(.system(size: 17, weight: .medium)).frame(height: 22)
+                    Text("Espelho").font(.caption2.weight(.semibold))
+                    Text(verbatim: " ").font(.system(size: 9))
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(RoundedRectangle(cornerRadius: 12).fill(.white.opacity(0.07)))
+                .contentShape(.rect)
+            }
+            .buttonStyle(.plain)
+            .help(Text("Ver a câmera antes de uma chamada"))
         }
         .lineLimit(1)
         .padding(.horizontal, 10)

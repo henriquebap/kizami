@@ -97,18 +97,21 @@ Events the person follows but doesn't keep in their calendar (Buffalo Bills, F1,
 - **Today tab:** the rest of the day's calendar.
 - **Browser play/pause:** the system media key, for players without AppleScript.
 
+### v0.11: The second batch (done)
+
+- **Copied:** clipboard history in memory only (10 texts, password-manager types and key-like text filtered), click to paste. Off by default.
+- **GitHub:** CI failed / review requested on your PRs through the logged-in `gh` (one GraphQL query every 5 min, read only). Not a new service Kizami talks to: `gh` does. Off by default.
+- **Downloads:** `.crdownload` / `.download` / `.part` in `~/Downloads`, size or percentage, then done with a click to reveal. Off by default.
+- **Camera mirror:** `AVCaptureVideoPreviewLayer` in the open island from the Shortcuts tab; video only, off when the island closes.
+- **Urgent over full screen:** the same panel, kept on screen only for an urgent notice from Kizami's own sources. Off by default.
+
 ## Ideas (not scheduled)
 
 Ranked by value for daily use against the work it takes.
 
 | Idea | How | Cost |
 |---|---|---|
-| Urgent over full screen (meeting starting, Claude permission) | A second panel that joins full-screen Spaces, off by default | medium |
 | Kanji: live level of the microphone while dictating | Kanji posts a level (never text) on the existing protocol | medium (both apps) |
-| GitHub: CI failed / review requested on your PRs | `gh` CLI the person already logged in, polled every few minutes | medium |
-| Clipboard: the last copies, click to paste again | Shared with Kanji's clipboard history (it already filters passwords) | medium |
-| Downloads: progress of a file being downloaded | Watch `~/Downloads` for `.download` / `.crdownload` (asks for the Downloads folder) | medium |
-| Camera mirror before a call | AVFoundation preview in the open island (asks for the camera) | medium |
 
 ## Not possible with public APIs
 

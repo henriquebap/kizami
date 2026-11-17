@@ -27,6 +27,8 @@ private enum Forma: Equatable {
     let interesses: Interesses
     let kanji: PonteKanji
     let cronometro: Cronometro
+    let copiados: Copiados
+    let espelho: Espelho
 }
 
 /// O que as asas da ilha fechada mostram. Uma coisa por vez: a primeira da lista em `asaAtual` que tem o que mostrar.
@@ -69,6 +71,8 @@ enum Asa: Equatable {
     case .kanji: g.abertaComAba(AbaKanji.altura(skills: f.kanji.skills.count))
     case .hoje: g.abertaComAba(Geometria.alturaDoDia(eventos: f.agenda.hoje.count))
     case .timer: g.abertaAtalhos
+    case .copiados: g.abertaComAba(Geometria.alturaDaLista(itens: f.copiados.itens.count))
+    case .espelho: g.abertaComAba(AbaEspelho.altura)
     }
 }
 
@@ -199,6 +203,10 @@ struct IlhaView: View {
                             AbaHoje(agenda: fontes.agenda)
                         } else if estado.aba == .timer {
                             AbaTimer(estado: estado, cronometro: cronometro)
+                        } else if estado.aba == .espelho {
+                            AbaEspelho(estado: estado, espelho: fontes.espelho)
+                        } else if estado.aba == .copiados {
+                            AbaCopiados(estado: estado, copiados: fontes.copiados)
                         } else if estado.aba == .kanji {
                             AbaKanji(estado: estado, kanji: fontes.kanji, mural: mural)
                         } else {
@@ -283,6 +291,7 @@ private struct Cabecalho: View {
             aba("Início", "house.fill", .inicio)
             aba("Hoje", "calendar", .hoje)
             aba("Timer", "timer", .timer)
+            aba("Copiados", "doc.on.clipboard", .copiados)
             aba("Atalhos", "command", .atalhos)
             aba("Kanji", "waveform", .kanji)
             Spacer(minLength: 0)
@@ -316,7 +325,7 @@ private struct Cabecalho: View {
 
     private func aba(_ nome: LocalizedStringKey, _ simbolo: String, _ valor: EstadoIlha.Aba) -> some View {
         let escolhida = estado.aba == valor
-        // Cinco abas e o Limpar não cabem com nome em 340 pt: só a escolhida mostra o nome, as outras o ícone.
+        // Seis abas e o Limpar não cabem com nome em 340 pt: só a escolhida mostra o nome, as outras o ícone.
         return Button { estado.aba = valor } label: {
             Group {
                 if escolhida { Label(nome, systemImage: simbolo) } else { Label(nome, systemImage: simbolo).labelStyle(.iconOnly) }

@@ -90,10 +90,15 @@ final class Kizami {
     let interesses: Interesses
     let kanji: PonteKanji
     let cronometro: Cronometro
+    let copiados = Copiados()
+    let espelho = Espelho()
+    let downloads: Downloads
+    let github: GitHub
     let formulario = FormularioAjustes()
     let formularioInteresses = FormularioInteresses()
     private var fontes: Fontes { Fontes(mural: mural, bandeja: bandeja, tocando: tocando, agenda: agenda, tempo: tempo, claude: claude, mac: mac,
-                                       interesses: interesses, kanji: kanji, cronometro: cronometro) }
+                                       interesses: interesses, kanji: kanji, cronometro: cronometro,
+                                       copiados: copiados, espelho: espelho) }
     private var janelas: [Janela] = []
     private var ajustes: NSWindow?
     private var arrasto: Arrasto?
@@ -106,6 +111,8 @@ final class Kizami {
         interesses = Interesses(mural: mural)
         kanji = PonteKanji(mural: mural)
         cronometro = Cronometro(mural: mural)
+        downloads = Downloads(mural: mural)
+        github = GitHub(mural: mural)
     }
 
     func iniciar() {
@@ -136,6 +143,9 @@ final class Kizami {
         claude.iniciar()
         mac.iniciar()
         interesses.iniciar()
+        downloads.iniciar()  // só olha a pasta Downloads se a pessoa ligou nos Ajustes
+        github.iniciar()  // só chama o gh se a pessoa ligou nos Ajustes
+        copiados.iniciar()  // só vigia a área de transferência se a pessoa ligou nos Ajustes
         agenda.iniciar()  // por último: na primeira vez, o macOS pergunta pelo acesso aos Calendários
         // Sinal de vida ao abrir: diz o que é a ilha que acabou de aparecer.
         mural.receber(Atividade(id: "kizami", titulo: String(localized: "Kizami está rodando"),
@@ -188,7 +198,8 @@ final class Kizami {
     func abrirAjustes() {
         if ajustes == nil {
             let raiz = AjustesView(tempo: tempo, agenda: agenda, mac: mac, interesses: interesses, formulario: formulario,
-                                   formularioInteresses: formularioInteresses)
+                                   formularioInteresses: formularioInteresses, copiados: copiados,
+                                   downloads: downloads, github: github)
             let janela = NSWindow(contentViewController: NSHostingController(rootView: raiz))
             janela.title = String(localized: "Ajustes do Kizami")
             janela.styleMask = [.titled, .closable, .miniaturizable, .resizable]
