@@ -59,6 +59,8 @@ Quando um player ou navegador está tocando som, a ilha fechada mostra a capa (o
 
 Com o mouse em cima, o Music e o Spotify ganham os botões **anterior, tocar/pausar e próxima**, pela mesma permissão de Automação. Um player pausado continua na ilha (com o botão de tocar) até parar, fechar ou ficar 15 minutos em pausa. Navegadores não têm comando de mídia público, então mostram só as barras.
 
+**Clique na linha do tocando agora** para expandir: capa grande, tempo decorrido e restante, e uma barra que você arrasta para pular (Music e Spotify; navegador não tem posição). A posição é lida uma vez por segundo, e só enquanto está expandida.
+
 ![controles](docs/controles.png)
 
 Só apps de mídia contam (players e navegadores): o Core Audio diz quais apps estão com a saída de áudio aberta, não se algo audível está tocando, e alguns apps mantêm a saída aberta em silêncio.
@@ -67,7 +69,7 @@ Só apps de mídia contam (players e navegadores): o Core Audio diz quais apps e
 
 ## A ilha aberta
 
-Passe o mouse no notch e a ilha abre. No topo:
+Passe o mouse no notch e a ilha abre. A ilha continua preta, para se fundir ao notch; os cartões, chips e botões de dentro são Liquid Glass, e um item que você expande cresce a partir do chip dele. No topo:
 - **Início**: tudo o que está abaixo (hoje, interesses, sessões do Claude, tocando agora, atividades, apps, bandeja).
 - **Hoje**: o resto da agenda do dia, um evento por linha, com **Entrar** nos que têm link de reunião.
 - **Timer**: atalhos prontos (Foco 25, Pausa 5, 10, 15, Foco 50). Enquanto corre, a ilha fechada mostra a contagem em volta do notch. No fim de um foco, clicar no aviso começa a pausa de 5 minutos, e o aviso da pausa começa o próximo foco. Ainda sem som.
@@ -110,6 +112,8 @@ A ilha aberta começa com uma faixa do dia:
 - **Próximo evento** dos seus calendários (EventKit), com aviso 15 minutos antes e na hora de começar. Quando o evento tem link de Meet, Zoom, Teams, FaceTime ou Whereby, o botão **Entrar** abre a reunião. Na primeira vez o macOS pede acesso aos Calendários; negado, a faixa só deixa o evento de fora.
 - **Tempo** da cidade que você digita em **Ajustes… › Tempo**, do [Open-Meteo](https://open-meteo.com) (sem chave nem conta), atualizado a cada 15 minutos. Quando vem chuva na próxima hora (a precipitação de 15 em 15 minutos do Open-Meteo), um aviso "Chuva às 14:30" aparece uma vez por chuva, e o chip do tempo mostra um guarda-chuva com a hora. No Brasil essa série é interpolada da previsão de hora em hora, então a hora é aproximada.
 
+O chip do tempo mostra a data de hoje ao lado da temperatura, no idioma do Mac. **Clique no chip da agenda** para expandir: uma faixa da semana com um ponto em cada dia que tem evento (ou o mês inteiro), e todos os eventos do dia que você escolher.
+
 ## Interesses
 
 Jogos e corridas que você acompanha mas não tem no calendário. Em **Ajustes › Interesses** (a ⚙︎ na ilha aberta), escolha a liga e busque o time (NFL, NBA, MLB, Brasileirão, Premier League, das agendas públicas da ESPN), ligue a Fórmula 1 ou cole o link de um calendário ICS / webcal. A ilha lembra na semana do evento, na véspera e 1 hora antes, e a ilha aberta mostra o próximo nos 7 dias seguintes. O Buffalo Bills já vem seguido.
@@ -117,6 +121,8 @@ Jogos e corridas que você acompanha mas não tem no calendário. Em **Ajustes �
 ## Sessões do Claude
 
 Os hooks do Claude Code chamam `Kizami claude`, e a ilha aberta lista as sessões rodando: trabalhando, **precisa de você** (um pedido de permissão) ou pronta. Uma sessão que precisa de você também faz a ilha descer com um aviso. Clicar numa sessão traz ela para a frente: no Terminal e no iTerm2, a própria aba (o macOS pede Automação uma vez; negada, vem o app); no VS Code e no app do Claude, o app. Só passam o id da sessão, o nome da pasta e o estado, nunca os seus pedidos nem as respostas do Claude. Como ligar: [docs/CLAUDE-HOOKS.md](docs/CLAUDE-HOOKS.md).
+
+O aviso **precisa de você** tem sempre um ✕. Dispensado, ele só volta quando a sessão muda de estado, e depois de 2 minutos ele sai das asas e fica na lista da ilha aberta.
 
 ## Apps e Mac
 

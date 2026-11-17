@@ -59,6 +59,8 @@ When a player or browser is playing sound, the closed island shows its artwork (
 
 Hovered, Music and Spotify get **previous, play/pause and next** buttons, through the same Automation permission. A paused player stays on the island (with the play button) until it stops, quits or has been paused for 15 minutes. Browsers have no public media commands, so they show only the bars.
 
+**Click the now-playing row** to expand it: large artwork, elapsed and remaining time, and a bar you drag to seek (Music and Spotify; browsers have no position). The position is read once a second, and only while it's expanded.
+
 ![controls](docs/controles.png)
 
 Only media apps count (players and browsers): Core Audio tells which apps have their audio output open, not whether anything audible is playing, and some apps keep it open in silence.
@@ -67,7 +69,7 @@ Only media apps count (players and browsers): Core Audio tells which apps have t
 
 ## The open island
 
-Hover the notch and the island opens. At the top:
+Hover the notch and the island opens. The island stays black, so it blends into the notch; the cards, chips and buttons inside are Liquid Glass, and an item you expand grows out of its chip. At the top:
 - **Home**: everything below (today, interests, Claude sessions, now playing, activities, apps, tray).
 - **Today**: the rest of the day's calendar, one event per line, with **Join** on the ones that have a meeting link.
 - **Timer**: presets (Focus 25, Break 5, 10, 15, Focus 50). While it runs, the closed island shows the countdown around the notch. When a focus session ends, clicking the notice starts the 5-minute break, and the break's notice starts the next focus. No sound yet.
@@ -110,6 +112,8 @@ The open island starts with a strip for the day:
 - **Next event** from your calendars (EventKit), with a reminder 15 minutes before and when it starts. When the event has a Meet, Zoom, Teams, FaceTime or Whereby link, a **Join** button opens it. macOS asks for access to Calendars the first time; say no and the strip just leaves the event out.
 - **Weather** for the city you type in **Settings… › Weather**, from [Open-Meteo](https://open-meteo.com) (no key, no account), refreshed every 15 minutes. When rain is coming in the next hour (Open-Meteo's 15-minute precipitation), a "Rain at 14:30" notice shows once per rain episode, and the weather chip shows an umbrella with the time. In Brazil that series is interpolated from the hourly forecast, so the time is approximate.
 
+The weather chip shows today's date next to the temperature, in your Mac's language. **Click the calendar chip** to expand it: a week strip with a dot on each day that has events (or the whole month), and every event of the day you pick.
+
 ## Interests
 
 Games and races you follow but don't keep in your calendar. In **Settings › Interests** (the ⚙︎ on the open island), pick a league and search a team (NFL, NBA, MLB, Brasileirão, Premier League, from ESPN's public schedules), turn on Formula 1, or paste an ICS / webcal calendar link. The island reminds you during the event's week, the day before and 1 hour before, and the open island shows the next one within 7 days. The Buffalo Bills come followed by default.
@@ -117,6 +121,8 @@ Games and races you follow but don't keep in your calendar. In **Settings › In
 ## Claude sessions
 
 Claude Code hooks call `Kizami claude`, and the open island lists the running sessions: working, **needs you** (a permission prompt) or ready. A session that needs you also drops the island with an alert. Click a session to bring it forward: in Terminal and iTerm2, its own tab (macOS asks once for Automation; denied, the app comes forward); in VS Code and the Claude app, the app. Only the session id, the folder name and the state cross over, never your prompts or Claude's replies. Setup: [docs/CLAUDE-HOOKS.md](docs/CLAUDE-HOOKS.md).
+
+The **needs you** notice always has an ✕. Once dismissed, it only comes back when the session changes state, and after 2 minutes it leaves the wings and stays in the open list.
 
 ## Apps and Mac
 

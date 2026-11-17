@@ -127,18 +127,20 @@ Events the person follows but doesn't keep in their calendar (Buffalo Bills, F1,
 - Two live games at once (the wings alternate every 8 s) and the F1 top 3 from ESPN's scoreboard (`competitors[].order`; driver codes from the surname, since there's no abbreviation field).
 - Energy: measured with `top` and `sample`, Kizami sat at ~33% CPU with music and a timer on. SwiftUI redraws the whole island on the CPU for every animation frame, so the equalizer moved to Core Animation, the closed timer stopped rolling its digits, and the Claude sessions only redraw on a visible change. Now ~0.7% CPU and ~1.5 wakeups/s.
 
-### Next
+### v0.15: UI and motion (done)
 
-**v0.15: UI and motion.**
 - **Glass inside a black island.** The island stays black, because it has to merge with the notch, like the Dynamic Island. The chips, cards and buttons inside become Liquid Glass (`GlassEffectContainer`, `glassEffect`). When an item expands, its glass morphs into the expanded shape (`glassEffectID`).
-- **Motion.** One set of springs for opening, closing, content and expanding, instead of one per view. The artwork and the meeting dot move from the wing into the open island (`matchedGeometryEffect`), and sections come in one after another. Reduce Motion is respected. The v0.14 energy rule still holds: CPU is measured before and after the glass, with the closed island at about 1% or less.
-- **Items that expand in place.** Clicking a chip grows it inside the island, and clicking it again or moving the cursor away collapses it (`EstadoIlha.expandido`).
+- **Motion.** One set of springs for opening, closing, content and expanding (`Movimento`), instead of one per view. The selected tab is a glass pill that slides between tabs, and the Home sections come in one after another. Reduce Motion is respected. The closed island stays at ~0.3% CPU with the glass.
+- **Items that expand in place.** Clicking a chip grows it inside the island; clicking its header collapses it, and closing the island resets it (`EstadoIlha.expandido`).
   - **Calendar:** a week strip with a dot on each day that has events. Clicking a day shows all of its events, and you can switch between Week and Month.
   - **Music:** large artwork, elapsed and remaining time from the player's `player position` and `duration` (Spotify and Music), and a bar you drag to seek. The position is read once a second, and only while the music is expanded.
   - **Lyrics: not now.** Spotify doesn't expose lyrics. Music only has them for tracks that carry them, and an online lyrics service would be a new network service.
 - **Claude notice you can dismiss.** The ✕ is always visible. A dismissed notice only comes back when the session changes state. After 2 min the notice leaves the wing and stays only in the list.
 - **The date next to the temperature** ("Tue, Nov 17 · 24°").
-- **To test by hand:** iTerm2 may start the shell under `iTermServer`, outside the `.app`. If so, the click finds neither the app nor the tab.
+- Not done: the artwork and the meeting dot moving from the closed wing into the open island (`matchedGeometryEffect`).
+- To test by hand: iTerm2 may start the shell under `iTermServer`, outside the `.app`; if so, the click finds neither the app nor the tab.
+
+### Next
 
 Later: Kanji's live mic level (it needs Kanji, which would post a level, never text, on the existing protocol), new screenshots in `docs/`, and focusing a session in VS Code or the Claude app if a link that picks the right window gets documented.
 

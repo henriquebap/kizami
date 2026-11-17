@@ -93,6 +93,11 @@ SwiftUI draws the island on the CPU, and every animation frame redraws all of it
 - what changes every second (the timer in the wings) changes without an animation;
 - a source only writes an observed property when something on screen changes (`SessoesClaude.mesmasNaTela`).
 
+- what is read from outside only while it's on screen: the player position once a second only while the music is expanded (`Janela.acertarProgresso`), the visible month only while the calendar is expanded (`Agenda.mostrar`);
+- an important notice leads the wings for its first 2 minutes only, flipped by one scheduled Task (`Mural.importante`), not by polling.
+
+Glass (`Visual.swift`: `.vidro`, `Movimento`) is drawn by the window server; the springs live in one place. An expanded item (`EstadoIlha.expandido`, `expansaoAtual`) feeds `tamanhoAberto`, so the drawing and the hover zone still come from the same function.
+
 Measure with `top -l 7 -s 10 -pid $(pgrep -x Kizami) -stats pid,cpu,idlew,power` and `sample`. With music and a timer on: ~0.7% CPU.
 
 ## Tests

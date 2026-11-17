@@ -93,6 +93,11 @@ O SwiftUI desenha a ilha na CPU, e cada quadro de animação redesenha a ilha in
 - o que muda todo segundo (o timer nas asas) muda sem animação;
 - uma fonte só escreve numa propriedade observada quando algo na tela muda (`SessoesClaude.mesmasNaTela`).
 
+- o que vem de fora só é lido enquanto está na tela: a posição do player uma vez por segundo só com a música expandida (`Janela.acertarProgresso`), o mês visível só com a agenda expandida (`Agenda.mostrar`);
+- um aviso importante só passa na frente nas asas nos primeiros 2 minutos, virado por uma única Task agendada (`Mural.importante`), sem consulta repetida.
+
+O vidro (`Visual.swift`: `.vidro`, `Movimento`) é desenhado pelo servidor de janelas, e as molas ficam num lugar só. Um item expandido (`EstadoIlha.expandido`, `expansaoAtual`) entra em `tamanhoAberto`, então o desenho e a área do hover continuam vindo da mesma função.
+
 Para medir: `top -l 7 -s 10 -pid $(pgrep -x Kizami) -stats pid,cpu,idlew,power` e `sample`. Com música e timer ligados: ~0,7% de CPU.
 
 ## Testes
