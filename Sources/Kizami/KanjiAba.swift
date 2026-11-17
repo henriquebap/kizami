@@ -51,7 +51,7 @@ struct AbaKanji: View {
                         Text(verbatim: acao.teclas.legenda).font(.system(size: 9)).foregroundStyle(.secondary)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .vidro(raio: 12)
+                    .vidroDeControle(raio: 12)
                     .contentShape(.rect)
                 }
                 .buttonStyle(.plain)
@@ -77,7 +77,7 @@ struct AbaKanji: View {
                         }
                         .padding(.horizontal, 10)
                         .frame(minWidth: 72, maxHeight: .infinity, alignment: .leading)
-                        .vidro(raio: 10)
+                        .vidroDeControle(raio: 10)
                         .contentShape(.rect)
                     }
                     .buttonStyle(.plain)

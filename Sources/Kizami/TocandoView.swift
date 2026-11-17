@@ -26,7 +26,7 @@ struct LinhaTocando: View {
         }
         .padding(.horizontal, 10)
         .frame(height: Geometria.alturaTocando)
-        .vidro(id: "musica", em: espaco)
+        .cartao(id: "musica", em: espaco)
         .contentShape(.rect)
         .onTapGesture(perform: aoClicar)
         .accessibilityAddTraits(.isButton)
@@ -210,7 +210,7 @@ struct MusicaExpandida: View {
         }
         .padding(12)
         .frame(height: Geometria.alturaMusica(barra: barra), alignment: .top)
-        .vidro(id: "musica", em: espaco)
+        .cartao(id: "musica", em: espaco)
         .padding(.horizontal, 4)
     }
 }

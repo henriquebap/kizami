@@ -18,21 +18,85 @@ enum Movimento {
     }
 }
 
-/// O vidro (Liquid Glass) dos chips, cartões e botões de dentro da ilha. A ilha em si continua preta: ela se funde
-/// ao notch, e um vidro ali deixaria a emenda com o recorte da tela à vista.
+/// A escala de tipo da ilha (v0.16). Antes quase tudo ia de 10 a 13 pt e nada saltava aos olhos; agora o número que
+/// importa (a temperatura, a hora, os minutos que faltam) é grande e arredondado, o título é médio e o resto recua.
+enum Tipo {
+    static let destaque = Font.system(size: 34, weight: .semibold, design: .rounded)
+    static let numero = Font.system(size: 28, weight: .semibold, design: .rounded)
+    static let numeroMedio = Font.system(size: 20, weight: .semibold, design: .rounded)
+    static let numeroPequeno = Font.system(size: 17, weight: .semibold, design: .rounded)
+    static let titulo = Font.system(size: 15, weight: .semibold)
+    static let corpo = Font.system(size: 12.5)
+    static let rotulo = Font.system(size: 10, weight: .semibold)
+}
+
 extension View {
-    func vidro(raio: CGFloat = Geometria.raioDoCartao) -> some View {
-        glassEffect(Self.vidroDaIlha, in: .rect(cornerRadius: raio, style: .continuous))
+    /// O rótulo pequeno em caixa alta em cima de cada widget ("AGORA", "PRÓXIMO").
+    func estiloRotulo() -> some View {
+        font(Tipo.rotulo).tracking(0.7).textCase(.uppercase).foregroundStyle(.secondary).lineLimit(1)
     }
 
-    /// Um pouco de branco no vidro: sobre o preto puro, o vidro sozinho quase não aparece.
-    fileprivate static var vidroDaIlha: Glass { .regular.tint(.white.opacity(0.08)) }
+    /// O fundo de um cartão de conteúdo: um preenchimento claro, não vidro. O HIG deixa o Liquid Glass para os
+    /// controles; sobre o preto o vidro não tem cor atrás para refletir e virava uma placa cinza, e sobre a ilha de
+    /// vidro seria vidro sobre vidro. Com `cor`, o canto de cima à esquerda tinge com o assunto (a capa, o calendário).
+    /// `realce`: o cursor está em cima.
+    func cartao(cor: Color? = nil, raio: CGFloat = Geometria.raioDoCartao, realce: Bool = false) -> some View {
+        background { FundoDoCartao(cor: cor, raio: raio, realce: realce) }
+    }
 
-    /// Com um id, o vidro muda de forma para o do mesmo id quando um item expande ou recolhe (`glassEffectID`).
-    /// Os dois precisam estar dentro do mesmo `GlassEffectContainer`.
-    func vidro(raio: CGFloat = Geometria.raioDoCartao, id: String, em espaco: Namespace.ID) -> some View {
-        glassEffect(Self.vidroDaIlha, in: .rect(cornerRadius: raio, style: .continuous))
-            .glassEffectID(id, in: espaco)
+    /// Com um id, o fundo cresce até o do mesmo id quando um item expande ou recolhe (`matchedGeometryEffect`).
+    func cartao(cor: Color? = nil, raio: CGFloat = Geometria.raioDoCartao, id: String, em espaco: Namespace.ID) -> some View {
+        background {
+            FundoDoCartao(cor: cor, raio: raio, realce: false)
+                .matchedGeometryEffect(id: id, in: espaco, properties: .frame)
+        }
+    }
+
+    /// O vidro de verdade, só para controles (a pílula da aba, um botão por cima do conteúdo).
+    func vidroDeControle(raio: CGFloat = Geometria.raioDoCartao) -> some View {
+        glassEffect(.regular.tint(.white.opacity(0.08)), in: .rect(cornerRadius: raio, style: .continuous))
+    }
+
+    /// Guarda qual cartão está sob o cursor, para o realce (sem `@State`, o estado mora na `EstadoIlha`).
+    func realce(_ id: String, _ estado: EstadoIlha) -> some View {
+        onHover { dentro in
+            if dentro { estado.cartaoSobCursor = id } else if estado.cartaoSobCursor == id { estado.cartaoSobCursor = nil }
+        }
+    }
+}
+
+struct FundoDoCartao: View {
+    let cor: Color?
+    let raio: CGFloat
+    let realce: Bool
+
+    var body: some View {
+        let forma = RoundedRectangle(cornerRadius: raio, style: .continuous)
+        ZStack {
+            forma.fill(.white.opacity(realce ? 0.11 : 0.07))
+            if let cor {
+                forma.fill(RadialGradient(colors: [cor.opacity(realce ? 0.5 : 0.42), cor.opacity(0.1), .clear],
+                                          center: .topLeading, startRadius: 0, endRadius: 360))
+            }
+        }
+        .animation(Movimento.rapido, value: realce)
+    }
+}
+
+/// Os botões da ilha encolhem um pouco ao clicar: sem isso, o clique num painel que não vira key parecia não pegar.
+struct EstiloBotao: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.88 : 1)
+            .animation(Movimento.rapido, value: configuration.isPressed)
+    }
+}
+
+/// Um toque no trackpad ao expandir ou recolher. Só se sente com o dedo num trackpad Force Touch, e a Apple pede que
+/// seja resposta a algo que a pessoa fez, nunca um alerta.
+enum Haptico {
+    static func tocar() {
+        NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .now)
     }
 }
 

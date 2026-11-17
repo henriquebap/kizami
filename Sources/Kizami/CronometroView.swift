@@ -32,7 +32,7 @@ struct AbaTimer: View {
                         Text(verbatim: "\(preset.minutos) min").font(.system(size: 9)).foregroundStyle(.secondary)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .vidro(raio: 12)
+                    .vidroDeControle(raio: 12)
                     .contentShape(.rect)
                 }
                 .buttonStyle(.plain)

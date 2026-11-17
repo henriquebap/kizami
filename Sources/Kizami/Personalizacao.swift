@@ -44,6 +44,9 @@ final class Personalizacao {
     static let chaveOpacidade = "ilha.opacidade"
     /// Abaixo disso o texto branco some sobre um fundo claro atrás da ilha.
     static let opacidadeMinima = 0.4
+    /// Sem escolha salva, a ilha aberta é vidro escurecido (v0.16): o papel de parede aparece desfocado atrás, como no
+    /// iOS 27. Os cartões de dentro são preenchimentos, não vidro, para não empilhar vidro sobre vidro.
+    static let opacidadePadrao = 0.7
 
     var abas: [Aba] { didSet { defaults.set(abas.map(\.rawValue), forKey: Self.chaveAbas) } }
     var ocultas: Set<Secao> { didSet { defaults.set(ocultas.map(\.rawValue).sorted(), forKey: Self.chaveOcultas) } }
@@ -87,7 +90,7 @@ final class Personalizacao {
 
     /// A opacidade salva, entre `opacidadeMinima` e 1. Sem nada salvo (ou outro tipo), a ilha preta.
     static func opacidade(_ bruta: Any?) -> Double {
-        guard let valor = bruta as? Double, valor.isFinite else { return 1 }
+        guard let valor = bruta as? Double, valor.isFinite else { return opacidadePadrao }
         return min(max(valor, opacidadeMinima), 1)
     }
 

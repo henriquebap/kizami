@@ -153,7 +153,7 @@ struct AgendaExpandida: View {
         .padding(.vertical, 10)
         .padding(.horizontal, 10)
         .frame(height: Geometria.alturaAgenda(semanas: dias.count / 7, eventos: eventos.count), alignment: .top)
-        .vidro(id: "agenda", em: espaco)
+        .cartao(id: "agenda", em: espaco)
         .padding(.horizontal, 4)
     }
 

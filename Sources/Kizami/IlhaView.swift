@@ -461,7 +461,7 @@ private struct LinhaHoje: View {
             if agenda.proximo != nil {
                 ChipAgenda(agenda: agenda)
                     .padding(.horizontal, 8)
-                    .vidro(id: "agenda", em: espaco)
+                    .cartao(id: "agenda", em: espaco)
                     .contentShape(.rect)
                     .onTapGesture(perform: aoClicar)
                     .accessibilityAddTraits(.isButton)
@@ -669,7 +669,7 @@ private struct Lista: View {
                 }
                 .frame(height: Geometria.alturaLinha)
                 .padding(.horizontal, 6)
-                .vidro(raio: 10)  // um cartão por atividade, como as notificações empilhadas do iPhone
+                .cartao(raio: 10)  // um cartão por atividade, como as notificações empilhadas do iPhone
                 .contentShape(.rect)
                 // Só as do próprio Kizami abrem algo (a sessão do Claude, o jogo, a reunião, o app do emblema).
                 .onTapGesture { mural.abrir(atividade.id) }

@@ -39,7 +39,7 @@ private struct LinhaClaude: View {
         }
         .frame(height: Geometria.alturaLinha)
         .padding(.horizontal, 6)
-        .vidro(raio: 10)
+        .cartao(raio: 10)
         .contentShape(Rectangle())  // o espaço entre o nome e o tempo também recebe o clique
     }
 

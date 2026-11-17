@@ -14,6 +14,8 @@ final class EstadoIlha {
     var recolher = false
     /// A linha da lista sob o cursor: só ela mostra o ✕ (a view não tem `@State` sem as macros).
     var linhaSobCursor: String?
+    /// O cartão do Início sob o cursor: só ele clareia.
+    var cartaoSobCursor: String?
     /// O item do Início que cresceu no lugar (clique no chip da agenda ou na linha do que está tocando). Fechar a
     /// ilha recolhe (`Janela.recolher`).
     var expandido: Expansao?
