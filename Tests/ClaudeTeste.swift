@@ -147,6 +147,18 @@ import Foundation
     conferir("sessão expirada tira o aviso", mural.atividades.map(\.id), [])
     conferir("varredura limpa a lista", sessoes.sessoes.map(\.id), [])
 
+    // Tirado com o ✕, o aviso só volta numa mudança de estado (v0.15).
+    let dispensa = Mural()
+    let dispensadas = SessoesClaude(mural: dispensa)
+    dispensadas.receber(m("x", .trabalhando), agora: t0)
+    dispensadas.receber(m("x", .precisaDeVoce), agora: t0 + 1)
+    dispensa.remover(id: "claude-x")
+    dispensadas.receber(m("x", .precisaDeVoce), agora: t0 + 2)
+    conferir("tirado, um permission_prompt repetido não traz de volta", dispensa.atividades.map(\.id), [])
+    dispensadas.receber(m("x", .trabalhando), agora: t0 + 3)
+    dispensadas.receber(m("x", .precisaDeVoce), agora: t0 + 4)
+    conferir("precisa → trabalhando → precisa avisa de novo", dispensa.atividades.map(\.id), ["claude-x"])
+
     // Esc sem Stop, permissão recusada e eventos atrasados (revisão da v0.6).
     let esperando = SessaoClaude(id: "e", pasta: "e", estado: .precisaDeVoce, desde: t0, visto: t0, app: nil)
     conferir("precisa de você há 14 min continua", SessaoClaude.envelhecidas([esperando], agora: t0 + 14 * 60).map(\.estado), [.precisaDeVoce])

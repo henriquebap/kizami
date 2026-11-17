@@ -55,7 +55,7 @@ struct AbaEspelho: View {
         }
         .padding(12)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(RoundedRectangle(cornerRadius: 12).fill(.white.opacity(0.07)))
+        .vidro(raio: 12)
     }
 }
 

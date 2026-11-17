@@ -49,10 +49,10 @@ extension Aba {
 }
 
 /// A vez de cada coisa nas asas, na ordem que a pessoa escolheu (`Personalizacao.asa`). Por padrão o timer correndo
-/// vem primeiro: só uma atividade alta ou urgente passa na frente dele. Pausado, o timer sai da asa (fica na aba).
+/// vem primeiro: só uma atividade alta ou urgente, nos primeiros 2 min (`Mural.importante`), passa na frente dele.
+/// Pausado, o timer sai da asa (fica na aba).
 @MainActor func asaAtual(_ f: Fontes) -> Asa {
-    let importante = f.mural.atividades.contains { $0.peso >= 2 }  // "alta" ou "urgente" (`Atividade.prioridades`)
-    return Personalizacao.asa(ordem: f.personalizacao.asas, importante: importante) { asa in
+    Personalizacao.asa(ordem: f.personalizacao.asas, importante: f.mural.importante) { asa in
         switch asa {
         case .atividades: !f.mural.atividades.isEmpty
         case .timer: f.cronometro.ativo && !f.cronometro.pausado
@@ -79,15 +79,32 @@ extension Aba {
 }
 
 /// O tamanho da ilha aberta na aba escolhida. A janela mede a área do hover com a mesma conta.
-@MainActor func tamanhoAberto(_ g: Geometria, _ aba: Aba, _ f: Fontes) -> CGSize {
-    switch aba {
-    case .inicio: g.aberta(secoesAtuais(f))
+/// Com um item expandido, o Início é o cabeçalho e ele.
+@MainActor func tamanhoAberto(_ g: Geometria, _ estado: EstadoIlha, _ f: Fontes) -> CGSize {
+    switch estado.aba {
+    case .inicio:
+        switch expansaoAtual(estado, f) {
+        case .agenda: g.abertaComAba(alturaDaAgendaExpandida(estado, f.agenda))
+        case .musica: g.abertaComAba(Geometria.alturaMusica(barra: f.tocando.app.map(Controle.sabeControlar) == true))
+        case nil: g.aberta(secoesAtuais(f))
+        }
     case .atalhos: g.abertaComAba(Geometria.alturaComFileira(f.atalhosApple.escolhidos.count))
     case .kanji: g.abertaComAba(AbaKanji.altura(skills: f.kanji.skills.count))
     case .hoje: g.abertaComAba(Geometria.alturaDoDia(eventos: f.agenda.hoje.count))
     case .timer: g.abertaAtalhos
     case .copiados: g.abertaComAba(Geometria.alturaDaLista(itens: f.copiados.itens.count))
     case .espelho: g.abertaComAba(AbaEspelho.altura)
+    }
+}
+
+/// O item expandido que ainda dá para mostrar: a música parou, a agenda perdeu o acesso ou a pessoa foi para
+/// outra aba, e o Início volta ao normal (a escolha fica para quando voltar).
+@MainActor func expansaoAtual(_ estado: EstadoIlha, _ f: Fontes) -> EstadoIlha.Expansao? {
+    guard estado.aba == .inicio else { return nil }
+    return switch estado.expandido {
+    case .agenda: f.agenda.acesso == .permitido ? .agenda : nil
+    case .musica: f.tocando.app != nil ? .musica : nil
+    case nil: nil
     }
 }
 
@@ -114,6 +131,8 @@ struct IlhaView: View {
     /// Microfone ou câmera ligados: como no iPhone, a ilha não fica em repouso escondendo isso.
     private var privacidade: Bool { !fontes.mac.microfone.isEmpty || fontes.mac.camera }
     private var cronometro: Cronometro { fontes.cronometro }
+    /// O vidro do chip da agenda e da linha do que está tocando muda de forma para o do item expandido.
+    @Namespace private var espaco
 
     var body: some View {
         let g = estado.geometria
@@ -123,11 +142,18 @@ struct IlhaView: View {
             : !mural.avisos.isEmpty ? .aviso
             : asa != .nada ? .compacta
             : .repouso
-        let tamanho = forma == .aberta ? tamanhoAberto(g, estado.aba, fontes) : tamanhoFechado(g, fontes)
+        let tamanho = forma == .aberta ? tamanhoAberto(g, estado, fontes) : tamanhoFechado(g, fontes)
         let contorno = FormaIlha(orelha: forma.orelha, raio: forma.raio)
 
         ZStack(alignment: .top) {
-            contorno.fill(.black)
+            // Fechada (e no aviso) fica sempre preta: ela se funde ao notch, e um vidro em volta dele deixaria o
+            // recorte da tela à vista. Aberta, a pessoa escolhe nos Ajustes quanto de preto fica.
+            let opacidade = forma == .aberta ? fontes.personalizacao.opacidade : 1
+            if opacidade < 1 {
+                Color.clear.glassEffect(.regular.tint(.black.opacity(opacidade)), in: contorno)
+            } else {
+                contorno.fill(.black)
+            }
             Group {
                 switch forma {
                 case .repouso:
@@ -255,13 +281,27 @@ struct IlhaView: View {
                         } else if estado.aba == .kanji {
                             AbaKanji(estado: estado, kanji: fontes.kanji, mural: mural)
                         } else {
-                        if secoes.hoje { LinhaHoje(agenda: fontes.agenda, tempo: fontes.tempo) }
-                        if secoes.interesse { LinhaInteresse(interesses: fontes.interesses) }
-                        if secoes.sessoes > 0 { SecaoClaude(sessoes: fontes.claude) }
-                        if secoes.tocando { LinhaTocando(tocando: tocando) }
-                        if secoes.linhas > 0 { Lista(mural: mural, estado: estado) }
-                        if secoes.apps { LinhaApps(mac: fontes.mac) }
-                        if secoes.bandeja { FileiraDaBandeja(bandeja: bandeja, alvo: estado.alvo) }
+                        GlassEffectContainer {
+                            VStack(spacing: Geometria.espacoSecao) {
+                                switch expansaoAtual(estado, fontes) {
+                                case .agenda:
+                                    AgendaExpandida(estado: estado, agenda: fontes.agenda, espaco: espaco) { alternar(.agenda) }
+                                case .musica:
+                                    MusicaExpandida(estado: estado, tocando: tocando, espaco: espaco) { alternar(.musica) }
+                                case nil:
+                                    if secoes.hoje {
+                                        LinhaHoje(agenda: fontes.agenda, tempo: fontes.tempo, espaco: espaco) { alternar(.agenda) }
+                                            .entrada(0)
+                                    }
+                                    if secoes.interesse { LinhaInteresse(interesses: fontes.interesses).entrada(1) }
+                                    if secoes.sessoes > 0 { SecaoClaude(sessoes: fontes.claude).entrada(2) }
+                                    if secoes.tocando { LinhaTocando(tocando: tocando, espaco: espaco) { alternar(.musica) }.entrada(3) }
+                                    if secoes.linhas > 0 { Lista(mural: mural, estado: estado).entrada(4) }
+                                    if secoes.apps { LinhaApps(mac: fontes.mac).entrada(5) }
+                                    if secoes.bandeja { FileiraDaBandeja(bandeja: bandeja, alvo: estado.alvo).entrada(6) }
+                                }
+                            }
+                        }
                         }
                     }
                     .padding(.top, g.faixaDoTopo + 8)
@@ -281,26 +321,35 @@ struct IlhaView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .foregroundStyle(.white)
         // Abrir com um pouco de mola, fechar sem: a ilha "cai" do notch e volta para dentro dele sem quicar.
-        .animation(forma == .repouso || forma == .compacta
-                   ? .spring(response: 0.34, dampingFraction: 0.92)
-                   : .spring(response: 0.44, dampingFraction: 0.74), value: forma)
-        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: mural.atividades.map(\.id))
-        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: mural.avisos.map(\.id))
-        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: bandeja.arquivos.count)
-        .animation(.smooth(duration: 0.2), value: estado.alvo)
-        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: tocando.app)
-        .animation(.smooth(duration: 0.3), value: tocando.metadados)
-        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: fontes.claude.sessoes)
-        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: secoes.hoje)
-        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: secoes.apps)
-        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: secoes.interesse)
-        .animation(.spring(response: 0.4, dampingFraction: 0.82), value: estado.aba)
-        .animation(.smooth(duration: 0.25), value: privacidade)
-        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: asa)
+        .animation(Movimento.ou(forma == .repouso || forma == .compacta ? Movimento.fechar : Movimento.abrir), value: forma)
+        .animation(Movimento.ou(Movimento.conteudo), value: mural.atividades.map(\.id))
+        .animation(Movimento.ou(Movimento.conteudo), value: mural.avisos.map(\.id))
+        .animation(Movimento.ou(Movimento.conteudo), value: bandeja.arquivos.count)
+        .animation(Movimento.rapido, value: estado.alvo)
+        .animation(Movimento.ou(Movimento.conteudo), value: tocando.app)
+        .animation(Movimento.rapido, value: tocando.metadados)
+        .animation(Movimento.ou(Movimento.conteudo), value: fontes.claude.sessoes)
+        .animation(Movimento.ou(Movimento.conteudo), value: secoes.hoje)
+        .animation(Movimento.ou(Movimento.conteudo), value: secoes.apps)
+        .animation(Movimento.ou(Movimento.conteudo), value: secoes.interesse)
+        .animation(Movimento.ou(Movimento.conteudo), value: estado.aba)
+        .animation(Movimento.rapido, value: privacidade)
+        .animation(Movimento.ou(Movimento.conteudo), value: asa)
     }
 }
 
 extension IlhaView {
+    /// Expande o item, ou recolhe o que já está expandido. A agenda lê o mês só enquanto está expandida.
+    private func alternar(_ item: EstadoIlha.Expansao) {
+        let novo = estado.expandido == item ? nil : item
+        withAnimation(Movimento.ou(Movimento.expandir)) {
+            estado.expandido = novo
+            estado.diaEscolhido = nil
+            estado.mesInteiro = false
+            fontes.agenda.mostrar(novo == .agenda ? Calendario.intervalo(de: .now, calendario: .current) : nil)
+        }
+    }
+
     /// "8 min" até a reunião, ou "agora" quando já começou: cabe na asa.
     static func falta(_ inicio: Date, agora: Date) -> String {
         let minutos = Int((inicio.timeIntervalSince(agora) / 60).rounded(.up))
@@ -339,34 +388,38 @@ private struct Cabecalho: View {
     let estado: EstadoIlha
     let mural: Mural
     let personalizacao: Personalizacao
+    /// A pílula de vidro da aba escolhida tem um id só: trocar de aba faz o vidro deslizar até a nova.
+    @Namespace private var espaco
 
     var body: some View {
-        HStack(spacing: 4) {
-            ForEach(personalizacao.abas, id: \.self) { aba($0) }
-            Spacer(minLength: 0)
-            if estado.aba == .inicio && !mural.atividades.isEmpty {
-                // Duas sessões do Claude terminaram e os avisos ficaram: um clique tira todos.
-                Button { mural.limpar() } label: {
-                    Label("Limpar", systemImage: "xmark.circle.fill")
-                        .font(.caption.weight(.semibold))
-                        .padding(.horizontal, 8)
-                        .frame(height: 22)
-                        .background(Capsule().fill(.white.opacity(0.1)))
-                        .contentShape(.capsule)
+        GlassEffectContainer(spacing: 4) {
+            HStack(spacing: 4) {
+                ForEach(personalizacao.abas, id: \.self) { aba($0) }
+                Spacer(minLength: 0)
+                if estado.aba == .inicio && !mural.atividades.isEmpty {
+                    // Duas sessões do Claude terminaram e os avisos ficaram: um clique tira todos.
+                    Button { mural.limpar() } label: {
+                        Label("Limpar", systemImage: "xmark.circle.fill")
+                            .font(.caption.weight(.semibold))
+                            .padding(.horizontal, 8)
+                            .frame(height: 22)
+                            .glassEffect(.regular, in: .capsule)
+                            .contentShape(.capsule)
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.secondary)
+                    .help(Text("Tirar todos os avisos da ilha"))
+                    .transition(.opacity)
                 }
-                .buttonStyle(.plain)
-                .foregroundStyle(.secondary)
-                .help(Text("Tirar todos os avisos da ilha"))
-                .transition(.opacity)
+                Button("Ajustes", systemImage: "gearshape.fill") { Kizami.shared.abrirAjustes() }
+                    .labelStyle(.iconOnly)
+                    .buttonStyle(.plain)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 26, height: 26)
+                    .contentShape(.rect)
+                    .help(Text("Ajustes"))
             }
-            Button("Ajustes", systemImage: "gearshape.fill") { Kizami.shared.abrirAjustes() }
-                .labelStyle(.iconOnly)
-                .buttonStyle(.plain)
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(.secondary)
-                .frame(width: 26, height: 26)
-                .contentShape(.rect)
-                .help(Text("Ajustes"))
         }
         .padding(.horizontal, 10)
         .frame(height: Geometria.alturaCabecalho)
@@ -384,7 +437,8 @@ private struct Cabecalho: View {
             .font(.caption.weight(.semibold))
             .padding(.horizontal, escolhida ? 10 : 7)
             .frame(height: 22)
-            .background(Capsule().fill(.white.opacity(escolhida ? 0.16 : 0)))
+            .glassEffect(escolhida ? .regular : .identity, in: .capsule)
+            .glassEffectID(escolhida ? "aba" : valor.rawValue, in: espaco)
             .foregroundStyle(escolhida ? .primary : .secondary)
             .contentShape(.capsule)
         }
@@ -398,162 +452,26 @@ private struct Cabecalho: View {
 private struct LinhaHoje: View {
     let agenda: Agenda
     let tempo: Tempo
+    let espaco: Namespace.ID
+    /// Clique no chip: a agenda expande no lugar. O "Entrar" dentro dele continua sendo só o botão.
+    let aoClicar: () -> Void
 
     var body: some View {
         HStack(spacing: 8) {
-            ChipAgenda(agenda: agenda)
+            if agenda.proximo != nil {
+                ChipAgenda(agenda: agenda)
+                    .padding(.horizontal, 8)
+                    .vidro(id: "agenda", em: espaco)
+                    .contentShape(.rect)
+                    .onTapGesture(perform: aoClicar)
+                    .accessibilityAddTraits(.isButton)
+                    .transition(.blurReplace)
+            }
             Spacer(minLength: 0)
             ChipTempo(tempo: tempo).fixedSize()  // a máxima e a mínima não podem virar reticências
         }
         .padding(.horizontal, 14)
         .frame(height: Geometria.alturaHoje)
-    }
-}
-
-/// O que está tocando: a miniatura, o título e o artista (ou o nome do app, quando o player não conta a faixa).
-private struct LinhaTocando: View {
-    let tocando: TocandoAgora
-
-    var body: some View {
-        HStack(spacing: 12) {
-            Miniatura(tocando: tocando, lado: 40, raio: 9)
-            VStack(alignment: .leading, spacing: 1) {
-                // verbatim: título e artista vêm do player e não podem virar Markdown nem chave de tradução.
-                Text(verbatim: tocando.metadados?.titulo ?? tocando.nomeDoApp)
-                    .font(.callout.weight(.semibold))
-                Text(verbatim: tocando.metadados?.titulo == nil
-                     ? String(localized: "Tocando agora")
-                     : [tocando.metadados?.artista, tocando.nomeDoApp].compactMap { $0 }.joined(separator: " · "))
-                    .font(.caption).foregroundStyle(.secondary)
-            }
-            .lineLimit(1)
-            .contentTransition(.opacity)
-            Spacer(minLength: 8)
-            if let app = tocando.app, Controle.sabeControlar(app) {
-                Controles(app: app, pausado: tocando.pausado)
-            } else {
-                // Navegador: sem AppleScript para o player, vai a tecla de play/pause do teclado, que o macOS
-                // entrega a quem está tocando (o YouTube no Chrome ou no Safari).
-                HStack(spacing: 6) {
-                    Barras(altura: 16)
-                    Button("Tocar ou pausar", systemImage: "playpause.fill") { TeclaDeMidia.tocarOuPausar() }
-                        .labelStyle(.iconOnly)
-                        .buttonStyle(.plain)
-                        .font(.system(size: 16, weight: .semibold))
-                        .frame(width: 30, height: 30)
-                        .contentShape(.rect)
-                        .help(Text("Tocar ou pausar"))
-                }
-            }
-        }
-        .padding(.horizontal, 14)
-        .frame(height: Geometria.alturaTocando)
-    }
-}
-
-/// Anterior, tocar ou pausar, próxima. A ilha aberta aceita clique sem ativar o Kizami (painel que não vira key):
-/// o foco continua no app em que a pessoa está.
-private struct Controles: View {
-    let app: String
-    let pausado: Bool
-
-    var body: some View {
-        HStack(spacing: 2) {
-            botao("Anterior", "backward.fill", .anterior, tamanho: 13)
-            botao(pausado ? "Tocar" : "Pausar", pausado ? "play.fill" : "pause.fill", .alternar, tamanho: 18)
-                .contentTransition(.symbolEffect(.replace))
-            botao("Próxima", "forward.fill", .proxima, tamanho: 13)
-        }
-    }
-
-    private func botao(_ nome: LocalizedStringKey, _ simbolo: String, _ acao: Controle.Acao, tamanho: CGFloat) -> some View {
-        Button(nome, systemImage: simbolo) { Controle.enviar(acao, app: app) }
-            .labelStyle(.iconOnly)
-            .buttonStyle(.plain)
-            .font(.system(size: tamanho, weight: .semibold))
-            .frame(width: 30, height: 30)
-            .contentShape(.rect)
-            .help(Text(nome))
-    }
-}
-
-/// A capa, quando o player dá; senão o ícone do app que está tocando.
-private struct Miniatura: View {
-    let tocando: TocandoAgora
-    let lado: CGFloat
-    let raio: CGFloat
-
-    var body: some View {
-        Group {
-            if let capa = tocando.capa {
-                Image(nsImage: capa).resizable().aspectRatio(contentMode: .fill)
-                    .transition(.blurReplace)
-            } else if let icone = tocando.icone {
-                Image(nsImage: icone).resizable().aspectRatio(contentMode: .fit)
-            } else {
-                Image(systemName: "music.note").foregroundStyle(.secondary)
-            }
-        }
-        .frame(width: lado, height: lado)
-        .clipShape(.rect(cornerRadius: raio))
-        .animation(.smooth(duration: 0.35), value: tocando.capa)
-    }
-}
-
-/// Equalizador de enfeite: as barras não leem o som (isso pediria gravar a saída), só mostram que há som.
-/// Animado pelo Core Animation, que roda no servidor de janelas: com um `TimelineView` a 15 quadros por segundo, o
-/// SwiftUI redesenhava a ilha inteira na CPU a cada quadro (capa, texto, sombra), e o Kizami ficava em ~33% de CPU
-/// enquanto qualquer coisa tocava (medido com `top` e `sample`).
-private struct Barras: View {
-    let altura: CGFloat
-
-    var body: some View {
-        CamadaDeBarras(altura: altura).frame(width: 4 * 3 + 3 * 2, height: altura)
-    }
-}
-
-private struct CamadaDeBarras: NSViewRepresentable {
-    let altura: CGFloat
-
-    func makeNSView(context: Context) -> NSView {
-        let vista = NSView()
-        vista.wantsLayer = true
-        let parado = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
-        for i in 0..<4 {
-            let barra = CALayer()
-            barra.backgroundColor = NSColor.white.withAlphaComponent(0.85).cgColor
-            barra.cornerRadius = 1.5
-            barra.transform = CATransform3DMakeScale(1, 0.6, 1)
-            if !parado {
-                // Durações e fases diferentes: as quatro nunca sobem juntas, como o seno de antes.
-                let pulso = CABasicAnimation(keyPath: "transform.scale.y")
-                pulso.fromValue = 0.3
-                pulso.toValue = 1
-                pulso.duration = 0.38 + Double(i) * 0.11
-                pulso.timeOffset = Double(i) * 0.21
-                pulso.autoreverses = true
-                pulso.repeatCount = .infinity
-                pulso.isRemovedOnCompletion = false  // a janela some em tela cheia e volta: a animação continua
-                pulso.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-                barra.add(pulso, forKey: "pulso")
-            }
-            vista.layer?.addSublayer(barra)
-        }
-        posicionar(vista)
-        return vista
-    }
-
-    func updateNSView(_ vista: NSView, context: Context) { posicionar(vista) }
-
-    /// `bounds` e `position` em vez de `frame`, que não vale numa layer com `transform`. Escala a partir do meio.
-    private func posicionar(_ vista: NSView) {
-        CATransaction.begin()
-        CATransaction.setDisableActions(true)
-        for (i, barra) in (vista.layer?.sublayers ?? []).enumerated() {
-            barra.bounds = CGRect(x: 0, y: 0, width: 3, height: altura)
-            barra.position = CGPoint(x: CGFloat(i) * 5 + 1.5, y: altura / 2)
-        }
-        CATransaction.commit()
     }
 }
 
@@ -733,7 +651,8 @@ private struct Lista: View {
                     }
                     .lineLimit(1)
                     Spacer(minLength: 8)
-                    if estado.linhaSobCursor == atividade.id {
+                    // A alta ou urgente (o "Claude precisa de você") fica até alguém tirar: o ✕ dela não se esconde.
+                    if atividade.peso >= 2 || estado.linhaSobCursor == atividade.id {
                         Button("Tirar da ilha", systemImage: "xmark.circle.fill") { mural.remover(id: atividade.id) }
                             .labelStyle(.iconOnly)
                             .buttonStyle(.plain)
@@ -749,6 +668,8 @@ private struct Lista: View {
                     else if estado.linhaSobCursor == atividade.id { estado.linhaSobCursor = nil }
                 }
                 .frame(height: Geometria.alturaLinha)
+                .padding(.horizontal, 6)
+                .vidro(raio: 10)  // um cartão por atividade, como as notificações empilhadas do iPhone
                 .contentShape(.rect)
                 // Só as do próprio Kizami abrem algo (a sessão do Claude, o jogo, a reunião, o app do emblema).
                 .onTapGesture { mural.abrir(atividade.id) }
@@ -758,10 +679,10 @@ private struct Lista: View {
                 Text(String(localized: "mais \(atividades.count - visiveis)"))
                     .font(.caption).foregroundStyle(.secondary)
                     .frame(height: Geometria.alturaLinha)
-                    .padding(.leading, 32)  // alinhado com os títulos, depois da coluna dos ícones
+                    .padding(.leading, 38)  // alinhado com os títulos, depois da coluna dos ícones e da folga do cartão
             }
         }
-        .padding(.horizontal, 14)
+        .padding(.horizontal, 8)
         .frame(maxWidth: .infinity, alignment: .topLeading)
     }
 }

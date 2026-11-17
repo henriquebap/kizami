@@ -32,15 +32,17 @@ make install && /Applications/Kizami.app/Contents/MacOS/Kizami enviar --titulo t
 | `KizamiApp.swift` | Entry point (app or CLI), menu bar item, composition (`Kizami.shared`: one `Janela` per display, rebuilt on screen changes) |
 | `Geometria.swift` | Pure: notch size and the sizes of each state (closed, arrived, open) from `NSScreen` measurements |
 | `Janela.swift` | One display's `NSPanel`, hover polling, `ignoresMouseEvents` |
-| `IlhaView.swift` | The notch-shaped outline (`FormaIlha`), the states and their spring animations |
+| `IlhaView.swift` | The notch-shaped outline (`FormaIlha`), the states, which item is expanded (`expansaoAtual`) |
+| `Visual.swift` | The look in one place: the springs (`Movimento`), the glass of cards and buttons (`.vidro`), the staggered entrance |
+| `TocandoView.swift` | Now playing: the open-island row, controls, artwork, the Core Animation equalizer and the expanded player (time, seek bar) |
 | `Bandeja.swift` | The file tray: URLs in memory (max 20), dedupe, prune missing files |
 | `Arrasto.swift` | Global mouse monitors + the drag pasteboard: notices a file drag in any app so the closed island opens and accepts the drop |
 | `Atividades.swift` | `Atividade` (wire format + validation) and `Mural` (list, max 8, expiry, the "arrived" line) |
 | `Som.swift` | Now playing: Core Audio process list (who has audio output open), media-app allowlist, Music/Spotify notifications, debounce |
-| `Player.swift` | Music and Spotify through `osascript`: media commands (`Controle`), artwork (`Capa`: Music bytes to a temp file, Spotify URL from `*.scdn.co`), the runner with a timeout (`AppleScript`) |
+| `Player.swift` | Music and Spotify through `osascript`: media commands (`Controle`), artwork (`Capa`: Music bytes to a temp file, Spotify URL from `*.scdn.co`), the player position and seeking (`Progresso`), the runner with a timeout (`AppleScript`) |
 | `Correio.swift` | CLI parsing (`Comando`, including `Kizami claude` for Claude Code hooks) and the distributed notifications (`Correio`) |
 | `Claude.swift`, `ClaudeView.swift` | Claude Code sessions: hook events → session states, expiry, the "needs you" alert, the open-island section, the click that selects the session's tab in Terminal / iTerm2 (`AbaDoTerminal`) |
-| `Agenda.swift`, `AgendaView.swift` | Calendar (EventKit): next event, meeting-link allowlist, 15-min / starting reminders, the "Today" chip |
+| `Agenda.swift`, `AgendaView.swift` | Calendar (EventKit): next event, meeting-link allowlist, 15-min / starting reminders, the "Today" chip, the expanded week / month (`Calendario`, `AgendaExpandida`) |
 | `Tempo.swift`, `TempoView.swift` | Weather from Open-Meteo for the city in Settings: fetch + validation, WMO code → symbol, the "Today" chip |
 | `Interesses.swift`, `InteressesView.swift` | Interests: ESPN schedules (teams, F1) and ICS feeds the person adds, the week / day-before / 1-hour reminders, the open-island row and its Settings section |
 | `Placar.swift` | Live scores (up to 2 games) and the F1 top 3: ESPN scoreboard parsing and validation, when to poll, which one the wings show |

@@ -37,7 +37,7 @@ struct LinhaInteresse: View {
                 }
                 .padding(.horizontal, 8)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(RoundedRectangle(cornerRadius: 10).fill(.white.opacity(eventos.count > 1 ? 0.07 : 0)))
+                .glassEffect(eventos.count > 1 ? .regular : .identity, in: .rect(cornerRadius: 10, style: .continuous))
                 .contentShape(.rect)
                 .onTapGesture { interesses.abrir(evento) }  // a página do jogo, com escalação, placar e onde passa
                 .help(evento.link == nil ? "" : String(localized: "Abrir na ESPN"))

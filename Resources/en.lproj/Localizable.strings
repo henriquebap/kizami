@@ -31,6 +31,7 @@
 "Tocar" = "Play";
 "Pausar" = "Pause";
 "Próxima" = "Next";
+"Recolher" = "Collapse";
 
 /* Ajustes */
 "Ajustes…" = "Settings…";
@@ -54,6 +55,10 @@
 "em %lld min" = "in %lld min";
 "começando agora" = "starting now";
 "Sem título" = "Untitled";
+"Ver" = "View";
+"Semana" = "Week";
+"Mês" = "Month";
+"Nada neste dia" = "Nothing on this day";
 
 /* Tempo */
 "Céu limpo" = "Clear sky";
@@ -202,6 +207,10 @@
 "A ilha abre na primeira aba ligada (no Início quando chega um aviso). O Espelho e os Atalhos da Apple ficam na aba Atalhos." = "The island opens on the first tab that is on (on Home when a notice arrives). The Mirror and Apple Shortcuts live in the Shortcuts tab.";
 "O que o Início mostra" = "What Home shows";
 "Ilha fechada: a vez de cada um" = "Closed island: what comes first";
+"Fundo" = "Background";
+"Fundo da ilha aberta" = "Open island background";
+"Preta" = "Black";
+"Em 100%, a ilha preta de sempre. Abaixo disso, ela vira vidro escurecido e deixa ver o que está atrás. Fechada, ela continua preta, para se fundir ao notch." = "At 100%, the usual black island. Below that, it turns into darkened glass and lets what's behind show through. Closed, it stays black to blend into the notch.";
 "Mostra o primeiro da lista que tem algo agora. Reunião começando e o Claude pedindo permissão passam na frente de tudo." = "Shows the first one in the list that has something now. A meeting starting and Claude asking for permission always come first.";
 "Subir" = "Move up";
 "Descer" = "Move down";

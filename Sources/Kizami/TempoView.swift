@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// O tempo à direita da faixa "Hoje": o símbolo, a temperatura agora e, embaixo, uma informação só.
+/// O tempo à direita da faixa "Hoje": o símbolo, a data e a temperatura agora e, embaixo, uma informação só.
 /// Embaixo cabe pouco (~60 pt em caption2): com chuva provável, a chance de chuva, que é o que muda o que a
 /// pessoa faz (levar guarda-chuva); sem, a máxima e a mínima, que dizem como vai ser o resto do dia.
 /// Com chuva chegando na próxima hora, a hora dela vence as duas: é a única coisa que pede ação agora.
@@ -16,20 +16,34 @@ struct ChipTempo: View {
                 Image(systemName: previsao.simbolo)
                     .symbolRenderingMode(.multicolor)
                     .font(.system(size: 20))
-                VStack(alignment: .trailing, spacing: 0) {
-                    Text(verbatim: Previsao.graus(previsao.temperatura))
-                        .font(.system(size: 17, weight: .semibold))
-                        .monospacedDigit()
-                    // Por minuto: o guarda-chuva com a hora sai quando ela passa, sem esperar a próxima previsão.
-                    TimelineView(.everyMinute) { _ in detalhe(previsao) }
-                        .font(.caption2)
-                        .monospacedDigit()
-                        .foregroundStyle(.secondary)
+                // Por minuto: o guarda-chuva com a hora sai quando ela passa, e a data vira à meia-noite, sem esperar
+                // a próxima previsão.
+                TimelineView(.everyMinute) { contexto in
+                    VStack(alignment: .trailing, spacing: 0) {
+                        // A data na linha da temperatura, e não na de baixo: em cima sobra largura (a temperatura é
+                        // mais curta que a máxima e a mínima), então o chip cresce menos e a agenda perde menos.
+                        HStack(alignment: .firstTextBaseline, spacing: 4) {
+                            // Do idioma do Mac: "ter., 17" ou "Tue 17". Sem o mês: com ele o chip passava de 150 pt e o
+                            // evento ao lado ficava em "Da…" e "em…" quando tinha o botão Entrar.
+                            Text(contexto.date, format: .dateTime.weekday(.abbreviated).day())
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            Text(verbatim: "·").font(.caption).foregroundStyle(.tertiary)
+                            Text(verbatim: Previsao.graus(previsao.temperatura))
+                                .font(.system(size: 17, weight: .semibold))
+                        }
+                        detalhe(previsao)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                    .monospacedDigit()
                 }
             }
             .lineLimit(1)
             .foregroundStyle(.white)
-            .frame(maxWidth: 110, maxHeight: Geometria.alturaHoje, alignment: .trailing)
+            // Medido com `NSString.size`: 100 pt com "ter., 17 · 24°" e o símbolo, 112 com "qua., 30 · -12°".
+            // O `LinhaHoje` não deixa o tempo encolher: quem cede é a agenda, que dos 292 pt da faixa fica com ~170.
+            .frame(maxWidth: 118, maxHeight: Geometria.alturaHoje, alignment: .trailing)
             .help(dica(previsao))
         }
     }

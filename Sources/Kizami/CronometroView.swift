@@ -32,7 +32,7 @@ struct AbaTimer: View {
                         Text(verbatim: "\(preset.minutos) min").font(.system(size: 9)).foregroundStyle(.secondary)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(RoundedRectangle(cornerRadius: 12).fill(.white.opacity(0.07)))
+                    .vidro(raio: 12)
                     .contentShape(.rect)
                 }
                 .buttonStyle(.plain)
@@ -63,7 +63,7 @@ struct AbaTimer: View {
         Button(action: acao) {
             Image(systemName: simbolo).font(.system(size: 15, weight: .semibold))
                 .frame(width: 40, height: 40)
-                .background(Circle().fill(.white.opacity(0.1)))
+                .glassEffect(.regular, in: .circle)
                 .contentShape(.circle)
         }
         .buttonStyle(.plain)

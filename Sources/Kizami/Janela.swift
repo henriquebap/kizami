@@ -14,8 +14,19 @@ final class EstadoIlha {
     var recolher = false
     /// A linha da lista sob o cursor: só ela mostra o ✕ (a view não tem `@State` sem as macros).
     var linhaSobCursor: String?
+    /// O item do Início que cresceu no lugar (clique no chip da agenda ou na linha do que está tocando). Fechar a
+    /// ilha recolhe (`Janela.recolher`).
+    var expandido: Expansao?
+    /// O dia escolhido na agenda expandida; `nil` é hoje.
+    var diaEscolhido: Date?
+    /// A agenda expandida mostra o mês em vez da semana.
+    var mesInteiro = false
+    /// Onde a faixa está, lido pela `Janela` só com a música expandida.
+    var progresso: Progresso?
+    /// O dedo na barra da música: a fração em que ela está, até soltar e pular para lá.
+    var arrastandoEm: Double?
 
-
+    enum Expansao: Equatable { case agenda, musica }
 
     init(geometria: Geometria) {
         self.geometria = geometria
@@ -46,6 +57,8 @@ final class Janela {
     /// Esta ilha está mostrando o espelho: só a `Janela` liga e desliga a câmera, nunca o ciclo de vida da view
     /// (um `onAppear` atrasado ligaria a câmera com a ilha já fechada).
     private var comCamera = false
+    /// A leitura da posição da música expandida (`acertarProgresso`).
+    private var leitor: Task<Void, Never>?
     static let chaveUrgenteEmTelaCheia = "ilha.urgenteEmTelaCheia"
 
     init(fontes: Fontes, tela: NSScreen) {
@@ -113,7 +126,44 @@ final class Janela {
     private func recolher() {
         estado.aberta = false
         painel.ignoresMouseEvents = true
+        // Só a ilha que tinha a agenda expandida para de ler o mês: a Agenda é a mesma em todos os monitores.
+        if estado.expandido == .agenda { fontes.agenda.mostrar(nil) }
+        estado.expandido = nil
+        estado.diaEscolhido = nil
+        estado.mesInteiro = false
         acertarCamera()
+        acertarProgresso()
+    }
+
+    /// Lê onde a faixa está uma vez por segundo, só com a música expandida e a ilha aberta e à vista. Liga e desliga
+    /// aqui, como a câmera, e não no ciclo de vida da view: um `onDisappear` atrasado deixaria o `osascript` rodando.
+    private func acertarProgresso() {
+        let quer = estado.aberta && !oculta && expansaoAtual(estado, fontes) == .musica
+            && fontes.tocando.app.map(Controle.sabeControlar) == true
+        guard quer != (leitor != nil) else { return }
+        leitor?.cancel()
+        leitor = nil
+        guard quer else {
+            estado.progresso = nil
+            estado.arrastandoEm = nil
+            return
+        }
+        leitor = Task { [weak self] in
+            while !Task.isCancelled {
+                if let app = self?.fontes.tocando.app, let script = Controle.scriptDaPosicao(app: app) {
+                    let resposta = await AppleScript.rodar(script)
+                    guard let self, !Task.isCancelled else { return }
+                    let lido = resposta.flatMap { Progresso.ler($0, app: app, agora: .now) }
+                    // A leitura que só confirma o relógio local não muda nada na tela.
+                    let mudou = switch (self.estado.progresso, lido) {
+                    case let (atual?, lido?): atual.difere(de: lido)
+                    default: lido != self.estado.progresso
+                    }
+                    if mudou { self.estado.progresso = lido }
+                }
+                try? await Task.sleep(for: .seconds(1))
+            }
+        }
     }
 
     private func acertarCamera() {
@@ -149,7 +199,7 @@ final class Janela {
         let desenhada = tamanhoFechado(g, fontes)
         let fechada = CGSize(width: max(desenhada.width, g.compacta.width), height: desenhada.height)
         let zona = if estado.aberta {
-            g.zona(tamanhoAberto(g, estado.aba, fontes))
+            g.zona(tamanhoAberto(g, estado, fontes))
         } else if bandeja.arrastando {
             g.zona(fechada)  // arrastando, as asas também valem: ninguém clica num menu no meio de um arraste
         } else if !mural.avisos.isEmpty {
@@ -187,6 +237,12 @@ final class Janela {
             }
         }
         acertarCamera()  // entrou ou saiu da aba Espelho com a ilha aberta
+        acertarProgresso()  // expandiu ou recolheu a música
+        // Trocou de aba com a agenda expandida: ela recolhe e o mês para de ser lido, que fora da tela ninguém vê.
+        if estado.expandido == .agenda && expansaoAtual(estado, fontes) != .agenda {
+            fontes.agenda.mostrar(nil)
+            estado.expandido = nil
+        }
         let pertoDoTopo = g.tela.contains(cursor) && cursor.y > g.tela.maxY - 120
         return .milliseconds(estado.aberta || pertoDoTopo ? 50 : 250)
     }

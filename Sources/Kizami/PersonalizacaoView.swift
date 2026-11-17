@@ -25,6 +25,24 @@ struct AjustesIlha: View {
                 .font(.caption).foregroundStyle(.secondary)
         }
 
+        Section {
+            HStack {
+                Slider(value: Binding(get: { personalizacao.opacidade }, set: { personalizacao.opacidade = $0 }),
+                       in: Personalizacao.opacidadeMinima...1, step: 0.05) {
+                    Text("Fundo da ilha aberta")
+                }
+                Text(verbatim: personalizacao.opacidade >= 1 ? String(localized: "Preta")
+                     : "\(Int((personalizacao.opacidade * 100).rounded()))%")
+                    .monospacedDigit()
+                    .frame(width: 44, alignment: .trailing)
+            }
+        } header: {
+            Text("Fundo")
+        } footer: {
+            Text("Em 100%, a ilha preta de sempre. Abaixo disso, ela vira vidro escurecido e deixa ver o que está atrás. Fechada, ela continua preta, para se fundir ao notch.")
+                .font(.caption).foregroundStyle(.secondary)
+        }
+
         Section("O que o Início mostra") {
             ForEach(Personalizacao.Secao.allCases, id: \.self) { secao in
                 Toggle(nome(secao), isOn: Binding(get: { personalizacao.mostra(secao) },

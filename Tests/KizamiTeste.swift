@@ -51,6 +51,13 @@ import Foundation
     conferir("sem notch: o conteúdo aberto começa no topo, sem faixa vazia", externo.aberta(secoes(true, 0, 0)).height, 4 + 8 + 26 + 10 + 52 + 14)
     conferir("com notch: o conteúdo começa abaixo da câmera", mac.faixaDoTopo, 32)
     conferir("sem notch: a pílula em repouso abre", externo.gatilho.contains(CGPoint(x: -1010, y: 1070)), true)
+    conferir("agenda expandida: semana sem eventos", Geometria.alturaAgenda(semanas: 1, eventos: 0), 10 + 24 + 8 + 40 + 8 + 30 + 10)
+    conferir("agenda expandida: mês de 6 semanas, lista cortada em 5 linhas", Geometria.alturaAgenda(semanas: 6, eventos: 9),
+             10 + 24 + 8 + 14 + 6 * 24 + 8 + Geometria.alturaLinhas(5) + 10)
+    conferir("música expandida com e sem a barra", [Geometria.alturaMusica(barra: true), Geometria.alturaMusica(barra: false)],
+             [140, 108])
+    conferir("a janela cabe o mês expandido",
+             mac.janela.height - Geometria.sombra >= mac.abertaComAba(Geometria.alturaAgenda(semanas: 6, eventos: 9)).height, true)
     conferir("áreas auxiliares sem topo seguro não contam como notch",
              Geometria(tela: externo.tela, esquerda: 10, direita: 10, topoSeguro: 0, barraDeMenus: 24).temNotch, false)
 }
@@ -126,6 +133,23 @@ import Foundation
     fila.receber(Atividade(id: "alta", titulo: "alta", expira: 0, prioridade: "alta"))
     fila.receber(Atividade(id: "normal", titulo: "normal", expira: 0))
     conferir("na pilha, a alta vem antes da normal mais nova", fila.avisos.map(\.id), ["alta", "normal"])
+
+    // A alta ou urgente manda nas asas só nos primeiros 2 min (v0.15).
+    conferir("a alta que acabou de chegar manda nas asas", fila.importante, true)
+    fila.remover(id: "alta")
+    conferir("tirada a alta, as asas voltam à ordem", fila.importante, false)
+    let t0 = Date(timeIntervalSinceReferenceDate: 1_000_000)
+    func chegou(_ id: String, _ prioridade: String?, _ chegada: Date) -> Atividade {
+        var a = Atividade(id: id, titulo: id, expira: 0, prioridade: prioridade)
+        a.chegada = chegada
+        return a
+    }
+    let urgente = chegou("u", "urgente", t0)
+    conferir("janela da urgente: 2 min depois da chegada", Mural.importanteAte([urgente]), t0 + 120)
+    conferir("com 1 min, ainda manda", Mural.importanteAte([urgente]).map { $0 > t0 + 60 }, true)
+    conferir("com 2 min, já não manda", Mural.importanteAte([urgente]).map { $0 > t0 + 120 }, false)
+    conferir("normal e baixa nunca mandam", Mural.importanteAte([chegou("n", nil, t0), chegou("b", "baixa", t0)]), nil)
+    conferir("vale a janela da mais recente", Mural.importanteAte([urgente, chegou("a", "alta", t0 + 90)]), t0 + 210)
 }
 
 @MainActor func testarBandeja() {
@@ -201,6 +225,8 @@ import Foundation
              #"if application "Spotify" is running then tell application "Spotify" to next track"#)
     conferir("navegador não tem comando", Controle.script(.alternar, app: "com.google.Chrome"), nil)
 
+    testarProgresso()
+
     var e = Estabilizador()
     conferir("um plim não liga", e.registrar(true), false)
     conferir("dois segundos de som ligam", e.registrar(true), true)
@@ -208,6 +234,43 @@ import Foundation
     _ = e.registrar(true)
     _ = e.registrar(false); _ = e.registrar(false)
     conferir("três de silêncio desligam", e.registrar(false), false)
+}
+
+/// A música expandida: a resposta do player, a unidade da duração do Spotify, o relógio local e o pulo na barra.
+@MainActor func testarProgresso() {
+    let t = Date(timeIntervalSince1970: 1_800_000_000)
+    conferir("Spotify: duração em ms", Progresso.ler("83500\n215000\ntrue", app: Som.spotify, agora: t),
+             Progresso(posicao: 83.5, duracao: 215, tocando: true, lidoEm: t))
+    conferir("Spotify: se um dia vier em segundos", Progresso.ler("83500\n215\ntrue", app: Som.spotify, agora: t)?.duracao, 215)
+    conferir("Spotify: em segundos e passado do que seria ms", Progresso.duracaoDoSpotify(3000, posicao: 600), 3000)
+    conferir("Spotify: em ms no começo da faixa", Progresso.duracaoDoSpotify(3000, posicao: 0), 3)
+    conferir("Music: duração mandada em ms pelo script", Progresso.ler("1000\n200500\nfalse", app: Som.music, agora: t),
+             Progresso(posicao: 1, duracao: 200.5, tocando: false, lidoEm: t))
+    conferir("resposta vazia (player fechado)", Progresso.ler("", app: Som.music, agora: t), nil)
+    conferir("resposta torta", Progresso.ler("1,5\n200\ntrue", app: Som.music, agora: t), nil)
+    conferir("sem duração", Progresso.ler("0\n0\ntrue", app: Som.music, agora: t), nil)
+    conferir("posição além do fim fica no fim", Progresso.ler("300000\n200000\ntrue", app: Som.music, agora: t)?.posicao, 200)
+
+    let p = Progresso(posicao: 10, duracao: 100, tocando: true, lidoEm: t)
+    conferir("tocando, o relógio anda", p.posicao(em: t.addingTimeInterval(5)), 15)
+    conferir("não passa do fim", p.posicao(em: t.addingTimeInterval(500)), 100)
+    conferir("pausado, fica", Progresso(posicao: 10, duracao: 100, tocando: false, lidoEm: t).posicao(em: t.addingTimeInterval(5)), 10)
+    conferir("leitura que confirma o relógio não troca",
+             p.difere(de: Progresso(posicao: 15.4, duracao: 100, tocando: true, lidoEm: t.addingTimeInterval(5))), false)
+    conferir("pulou na faixa troca", p.difere(de: Progresso(posicao: 40, duracao: 100, tocando: true, lidoEm: t.addingTimeInterval(5))), true)
+    conferir("pausou troca", p.difere(de: Progresso(posicao: 15, duracao: 100, tocando: false, lidoEm: t.addingTimeInterval(5))), true)
+    conferir("outra faixa troca", p.difere(de: Progresso(posicao: 15, duracao: 180, tocando: true, lidoEm: t.addingTimeInterval(5))), true)
+    conferir("tempo: minutos", Progresso.tempo(65.9), "1:05")
+    conferir("tempo: horas", Progresso.tempo(3725), "1:02:05")
+    conferir("tempo: nunca negativo", Progresso.tempo(-3), "0:00")
+
+    conferir("pular: inteiro dentro da faixa", Controle.scriptParaIr(app: Som.spotify, segundos: 83.7, duracao: 215),
+             #"if application "Spotify" is running then tell application "Spotify" to set player position to 83"#)
+    conferir("pular: além do fim vai ao fim", Controle.scriptParaIr(app: Som.music, segundos: 999, duracao: 215)?.hasSuffix(" to 215"), true)
+    conferir("pular: antes do começo vai ao zero", Controle.scriptParaIr(app: Som.music, segundos: -4, duracao: 215)?.hasSuffix(" to 0"), true)
+    conferir("pular: número inválido não vira script", Controle.scriptParaIr(app: Som.music, segundos: .nan, duracao: 215), nil)
+    conferir("pular: navegador não", Controle.scriptParaIr(app: "com.google.Chrome", segundos: 1, duracao: 215), nil)
+    conferir("posição: navegador não tem script", Controle.scriptDaPosicao(app: "com.google.Chrome"), nil)
 }
 
 @main struct Teste {
