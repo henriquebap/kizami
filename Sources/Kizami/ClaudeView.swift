@@ -13,7 +13,7 @@ struct SecaoClaude: View {
                     .transition(.blurReplace)
             }
         }
-        .padding(.horizontal, 14)
+        .padding(.horizontal, 8)
         .frame(maxWidth: .infinity, alignment: .topLeading)
     }
 }
@@ -38,6 +38,8 @@ private struct LinhaClaude: View {
             Text(sessao.desde, style: .relative).font(.caption2).monospacedDigit().foregroundStyle(.tertiary)
         }
         .frame(height: Geometria.alturaLinha)
+        .padding(.horizontal, 6)
+        .vidro(raio: 10)
         .contentShape(Rectangle())  // o espaço entre o nome e o tempo também recebe o clique
     }
 

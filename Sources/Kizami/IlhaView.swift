@@ -284,13 +284,14 @@ struct IlhaView: View {
                                 case nil:
                                     if secoes.hoje {
                                         LinhaHoje(agenda: fontes.agenda, tempo: fontes.tempo, espaco: espaco) { alternar(.agenda) }
+                                            .entrada(0)
                                     }
-                                    if secoes.interesse { LinhaInteresse(interesses: fontes.interesses) }
-                                    if secoes.sessoes > 0 { SecaoClaude(sessoes: fontes.claude) }
-                                    if secoes.tocando { LinhaTocando(tocando: tocando, espaco: espaco) { alternar(.musica) } }
-                                    if secoes.linhas > 0 { Lista(mural: mural, estado: estado) }
-                                    if secoes.apps { LinhaApps(mac: fontes.mac) }
-                                    if secoes.bandeja { FileiraDaBandeja(bandeja: bandeja, alvo: estado.alvo) }
+                                    if secoes.interesse { LinhaInteresse(interesses: fontes.interesses).entrada(1) }
+                                    if secoes.sessoes > 0 { SecaoClaude(sessoes: fontes.claude).entrada(2) }
+                                    if secoes.tocando { LinhaTocando(tocando: tocando, espaco: espaco) { alternar(.musica) }.entrada(3) }
+                                    if secoes.linhas > 0 { Lista(mural: mural, estado: estado).entrada(4) }
+                                    if secoes.apps { LinhaApps(mac: fontes.mac).entrada(5) }
+                                    if secoes.bandeja { FileiraDaBandeja(bandeja: bandeja, alvo: estado.alvo).entrada(6) }
                                 }
                             }
                         }
@@ -660,6 +661,8 @@ private struct Lista: View {
                     else if estado.linhaSobCursor == atividade.id { estado.linhaSobCursor = nil }
                 }
                 .frame(height: Geometria.alturaLinha)
+                .padding(.horizontal, 6)
+                .vidro(raio: 10)  // um cartão por atividade, como as notificações empilhadas do iPhone
                 .contentShape(.rect)
                 // Só as do próprio Kizami abrem algo (a sessão do Claude, o jogo, a reunião, o app do emblema).
                 .onTapGesture { mural.abrir(atividade.id) }
@@ -669,10 +672,10 @@ private struct Lista: View {
                 Text(String(localized: "mais \(atividades.count - visiveis)"))
                     .font(.caption).foregroundStyle(.secondary)
                     .frame(height: Geometria.alturaLinha)
-                    .padding(.leading, 32)  // alinhado com os títulos, depois da coluna dos ícones
+                    .padding(.leading, 38)  // alinhado com os títulos, depois da coluna dos ícones e da folga do cartão
             }
         }
-        .padding(.horizontal, 14)
+        .padding(.horizontal, 8)
         .frame(maxWidth: .infinity, alignment: .topLeading)
     }
 }

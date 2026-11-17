@@ -32,3 +32,15 @@ extension View {
             .glassEffectID(id, in: espaco)
     }
 }
+
+extension View {
+    /// As seções do Início entram uma depois da outra, descendo 6 pt: a ilha abre como uma lista que se desdobra.
+    /// Com "Reduzir movimento", só o esmaecer, sem deslocamento nem espera.
+    func entrada(_ ordem: Int) -> some View {
+        let reduzir = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+        let chegada: AnyTransition = reduzir ? .opacity
+            : .opacity.combined(with: .offset(y: -6))
+                .animation(Movimento.conteudo.delay(Double(ordem) * Movimento.escalonamento))
+        return transition(.asymmetric(insertion: chegada, removal: .opacity))
+    }
+}
