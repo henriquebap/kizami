@@ -14,6 +14,8 @@ struct Previsao: Equatable, Sendable {
     let obtida: Date
     /// Quando a chuva começa, se começa na próxima hora e ainda não está chovendo (`chuvaChegando`).
     var chuvaAs: Date? = nil
+    /// As horas de hoje no lugar, para a linha do tempo do cartão do dia. Vazia se a série veio torta.
+    var horas: [HoraPrevista] = []
 
     var simbolo: String { Previsao.simbolo(codigo: codigo, dia: dia) }
     var descricao: String? { Previsao.descricao(codigo: codigo) }
@@ -69,8 +71,46 @@ struct Previsao: Equatable, Sendable {
         return molhados.filter { $0 > agora && $0 <= agora + janelaChuva }.min()
     }
 
+    /// Chance a partir da qual a hora ganha a faixa listrada: metade ou mais, "deve chover".
+    static let limiarFaixa = 50
+
+    /// As faixas de chuva da linha do tempo de `dia`, das 8 h às 20 h no `calendario`: horas seguidas com chance
+    /// de pelo menos `limiarFaixa`, cortadas na janela, com a maior chance de cada uma. A chance de uma hora vale
+    /// para a hora *anterior* ao horário (documentação do Open-Meteo), como a chuva de 15 min.
+    static func faixasDeChuva(_ horas: [HoraPrevista], dia: Date, calendario: Calendar) -> [FaixaDeChuva] {
+        guard let abre = calendario.date(bySettingHour: 8, minute: 0, second: 0, of: dia),
+              let fecha = calendario.date(bySettingHour: 20, minute: 0, second: 0, of: dia) else { return [] }
+        var faixas: [FaixaDeChuva] = []
+        for hora in horas.sorted(by: { $0.hora < $1.hora }) {
+            guard let chance = hora.chuva, chance >= limiarFaixa else { continue }
+            let inicio = max(hora.hora - 3600, abre), fim = min(hora.hora, fecha)
+            guard inicio < fim else { continue }
+            if let ultima = faixas.last, ultima.fim == inicio {
+                faixas[faixas.count - 1] = FaixaDeChuva(inicio: ultima.inicio, fim: fim, maxima: max(ultima.maxima, chance))
+            } else {
+                faixas.append(FaixaDeChuva(inicio: inicio, fim: fim, maxima: chance))
+            }
+        }
+        return faixas
+    }
+
     /// "23°", arredondado. Sem unidade: a pessoa sabe se mora em lugar de Celsius, e o espaço do chip é pouco.
     static func graus(_ valor: Double) -> String { "\(Int(valor.rounded()))°" }
+}
+
+/// Uma hora da série `hourly`: a temperatura no horário e a chance de chuva da hora que termina nele.
+struct HoraPrevista: Equatable, Sendable {
+    let hora: Date
+    let temperatura: Double
+    /// 0 a 100. Nil quando o Open-Meteo não tem o dado para o lugar.
+    let chuva: Int?
+}
+
+/// Um trecho listrado da linha do tempo: chuva provável de `inicio` a `fim`, com a maior chance dele.
+struct FaixaDeChuva: Equatable, Sendable {
+    let inicio: Date
+    let fim: Date
+    let maxima: Int
 }
 
 /// O lugar escolhido nos Ajustes, como fica guardado no `UserDefaults`.
@@ -89,7 +129,7 @@ struct Lugar: Codable, Equatable, Sendable {
 enum OpenMeteo {
     static let hostPrevisao = "api.open-meteo.com"
     static let hostBusca = "geocoding-api.open-meteo.com"
-    /// A resposta de verdade tem menos de 1 KB; o teto só existe para um servidor errado não encher a memória.
+    /// A resposta de verdade tem uns 2 KB; o teto só existe para um servidor errado não encher a memória.
     static let tamanhoMaximo = 200_000
     static let temperaturas = -90.0...60.0
 
@@ -112,9 +152,16 @@ enum OpenMeteo {
             /// Soma dos 15 min *anteriores* ao horário (documentação do Open-Meteo).
             let precipitation: [Double?]
         }
+        /// De hora em hora, só o dia de hoje (`forecast_days=1`). Opcional como a de 15 min.
+        struct Horaria: Decodable {
+            let time: [Double]
+            let temperature_2m: [Double?]
+            let precipitation_probability: [Int?]?
+        }
         let current: Atual
         let daily: Diaria
         let minutely_15: Quinze?
+        let hourly: Horaria?
     }
 
     struct RespostaBusca: Decodable {
@@ -142,6 +189,8 @@ enum OpenMeteo {
             // O "hoje" da máxima e da mínima é o dia do lugar, não o do fuso do Mac.
             URLQueryItem(name: "timezone", value: "auto"),
             URLQueryItem(name: "forecast_days", value: "1"),
+            // As 24 horas do dia do lugar (o `forecast_days` acima), para a linha do tempo do cartão do dia.
+            URLQueryItem(name: "hourly", value: "temperature_2m,precipitation_probability"),
             // 8 quartos de hora a partir do atual: cobre a janela de 1 h do aviso de chuva com folga.
             URLQueryItem(name: "minutely_15", value: "precipitation"),
             URLQueryItem(name: "forecast_minutely_15", value: "8"),
@@ -175,7 +224,21 @@ enum OpenMeteo {
         guard chuva.map({ (0...100).contains($0) }) ?? true else { return nil }
         return Previsao(temperatura: r.current.temperature_2m, maxima: maxima, minima: minima, chuva: chuva,
                         codigo: r.current.weather_code, dia: r.current.is_day == 1, obtida: obtida,
-                        chuvaAs: Previsao.chuvaChegando(serie(r.minutely_15), agora: obtida))
+                        chuvaAs: Previsao.chuvaChegando(serie(r.minutely_15), agora: obtida), horas: horas(r.hourly))
+    }
+
+    /// As horas da série. Vazia se vier torta (tamanhos diferentes, número impossível): sem linha do tempo, mas a
+    /// temperatura continua. Hora sem temperatura fica de fora; chance nula vira "sem dado".
+    static func horas(_ horaria: RespostaPrevisao.Horaria?) -> [HoraPrevista] {
+        guard let horaria else { return [] }
+        let chances = horaria.precipitation_probability ?? Array(repeating: nil, count: horaria.time.count)
+        guard horaria.time.count == horaria.temperature_2m.count, horaria.time.count == chances.count,
+              horaria.time.allSatisfy(\.isFinite),
+              horaria.temperature_2m.allSatisfy({ $0.map { $0.isFinite && temperaturas.contains($0) } ?? true }),
+              chances.allSatisfy({ $0.map { (0...100).contains($0) } ?? true }) else { return [] }
+        return zip(horaria.time, zip(horaria.temperature_2m, chances)).compactMap { tempo, valores in
+            valores.0.map { HoraPrevista(hora: Date(timeIntervalSince1970: tempo), temperatura: $0, chuva: valores.1) }
+        }
     }
 
     /// A série com o início de cada quarto de hora. Vazia se vier torta (tamanhos diferentes, número impossível):

@@ -112,6 +112,9 @@ import Foundation
     conferir("previsão no host fixo, por HTTPS", url.hasPrefix("https://api.open-meteo.com/v1/forecast?"), true)
     conferir("URL pede a série de 15 min", url.contains("minutely_15=precipitation&forecast_minutely_15=8&timeformat=unixtime"), true)
 
+    conferir("URL pede as horas do dia", url.contains("hourly=temperature_2m,precipitation_probability"), true)
+    testarHoras()
+
     let resposta = { (url: String, status: Int) in
         HTTPURLResponse(url: URL(string: url)!, statusCode: status, httpVersion: nil, headerFields: nil)!
     }
@@ -120,4 +123,64 @@ import Foundation
     conferir("redirecionada para outro host", OpenMeteo.aceitar(Data("{}".utf8), resposta("https://open-meteo.com.evil.example/", 200)), false)
     conferir("HTTP sem S", OpenMeteo.aceitar(Data("{}".utf8), resposta("http://api.open-meteo.com/v1/forecast", 200)), false)
     conferir("grande demais", OpenMeteo.aceitar(Data(count: 300_000), resposta("https://api.open-meteo.com/v1/forecast", 200)), false)
+}
+
+/// A série de hora em hora (forma da resposta real de São Paulo, 17/11/2026) e as faixas de chuva da linha do tempo.
+@MainActor func testarHoras() {
+    var sp = Calendar(identifier: .gregorian)
+    sp.timeZone = TimeZone(identifier: "America/Sao_Paulo")!
+    let meiaNoite = Date(timeIntervalSince1970: 1_794_884_400)  // 17/11/2026 0 h em São Paulo
+    let h = { (hora: Double) in meiaNoite.addingTimeInterval(hora * 3600) }
+    func resposta(_ horaria: String) -> String {
+        """
+        {"current":{"time":1794950100,"interval":900,"temperature_2m":22.3,"weather_code":2,"is_day":1},
+        "hourly_units":{"time":"unixtime","temperature_2m":"°C","precipitation_probability":"%"},
+        "hourly":\(horaria),
+        "daily":{"time":[1794884400],"temperature_2m_max":[28.0],"temperature_2m_min":[18.1],"precipitation_probability_max":[4]}}
+        """
+    }
+    func horas(_ horaria: String) -> [HoraPrevista]? {
+        OpenMeteo.previsao(de: Data(resposta(horaria).utf8), obtida: meiaNoite)?.horas
+    }
+    let real = #"{"time":[1794884400,1794888000,1794891600],"temperature_2m":[18.3,18.1,18.2],"precipitation_probability":[0,null,60]}"#
+    conferir("horas: lê a série", horas(real), [
+        HoraPrevista(hora: h(0), temperatura: 18.3, chuva: 0), HoraPrevista(hora: h(1), temperatura: 18.1, chuva: nil),
+        HoraPrevista(hora: h(2), temperatura: 18.2, chuva: 60),
+    ])
+    conferir("horas: temperatura nula fica de fora",
+             horas(#"{"time":[1794884400,1794888000],"temperature_2m":[null,18.1],"precipitation_probability":[0,0]}"#)?.map(\.hora), [h(1)])
+    conferir("horas: sem chance de chuva, só a temperatura",
+             horas(#"{"time":[1794884400],"temperature_2m":[18.3]}"#), [HoraPrevista(hora: h(0), temperatura: 18.3, chuva: nil)])
+    conferir("horas: tamanhos diferentes = vazia, com temperatura",
+             OpenMeteo.previsao(de: Data(resposta(#"{"time":[1794884400],"temperature_2m":[18.3,1],"precipitation_probability":[0]}"#).utf8),
+                                obtida: meiaNoite).map { [$0.horas.isEmpty, $0.temperatura == 22.3] }, [true, true])
+    conferir("horas: 900° = vazia",
+             horas(#"{"time":[1794884400],"temperature_2m":[900],"precipitation_probability":[0]}"#), [])
+    conferir("horas: chance de 150% = vazia",
+             horas(#"{"time":[1794884400],"temperature_2m":[18],"precipitation_probability":[150]}"#), [])
+    conferir("horas: resposta sem hourly ainda vale", horas("null"), [])
+
+    // Faixas: a chance de cada horário vale para a hora que termina nele.
+    func serie(_ chances: [Int?]) -> [HoraPrevista] {
+        chances.enumerated().map { HoraPrevista(hora: h(Double($0.offset)), temperatura: 20, chuva: $0.element) }
+    }
+    func faixas(_ chances: [Int?]) -> [FaixaDeChuva] { Previsao.faixasDeChuva(serie(chances), dia: h(12), calendario: sp) }
+    var chances = [Int?](repeating: 0, count: 24)
+    conferir("faixas: dia seco", faixas(chances), [])
+    chances[14] = 50; chances[15] = 80; chances[16] = 60; chances[18] = 70
+    conferir("faixas: horas seguidas viram uma, com a maior chance", faixas(chances), [
+        FaixaDeChuva(inicio: h(13), fim: h(16), maxima: 80), FaixaDeChuva(inicio: h(17), fim: h(18), maxima: 70),
+    ])
+    chances = [Int?](repeating: 0, count: 24)
+    chances[13] = 49; chances[14] = nil
+    conferir("faixas: abaixo de 50 e sem dado não listram", faixas(chances), [])
+    chances = [Int?](repeating: 90, count: 24)
+    conferir("faixas: cortada nas 8 h e nas 20 h", faixas(chances), [FaixaDeChuva(inicio: h(8), fim: h(20), maxima: 90)])
+    chances = [Int?](repeating: 0, count: 24)
+    chances[8] = 95; chances[9] = 55; chances[20] = 60; chances[21] = 100
+    conferir("faixas: o que cai fora da janela não entra nem na máxima", faixas(chances), [
+        FaixaDeChuva(inicio: h(8), fim: h(9), maxima: 55), FaixaDeChuva(inicio: h(19), fim: h(20), maxima: 60),
+    ])
+    conferir("faixas: fora de ordem", Previsao.faixasDeChuva(serie([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 70, 70]).reversed(), dia: h(12), calendario: sp),
+             [FaixaDeChuva(inicio: h(9), fim: h(11), maxima: 70)])
 }

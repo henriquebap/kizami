@@ -6,6 +6,7 @@ import Foundation
     testarDoDia()
     testarReuniaoNaAsa()
     testarCalendario()
+    testarResumoDoDia()
     func evento(_ id: String, em minutos: Double, dura: Double = 30, diaInteiro: Bool = false, recusado: Bool = false) -> EventoAgenda {
         let inicio = agora.addingTimeInterval(minutos * 60)
         return EventoAgenda(id: id, titulo: id, inicio: inicio, fim: inicio.addingTimeInterval(dura * 60),
@@ -167,4 +168,41 @@ import Foundation
     conferir("lista: cabem todos", Calendario.visiveis(5, maximo: 5), 5)
     conferir("lista: com um a mais, a última vira \"mais 2\"", Calendario.visiveis(6, maximo: 5), 4)
     conferir("lista: vazia", Calendario.visiveis(0, maximo: 5), 0)
+}
+
+/// A linha do cartão do dia: em reunião, a próxima chegando, livre até, ou livre o resto do dia; e quantos ainda vêm.
+@MainActor func testarResumoDoDia() {
+    let agora = Date(timeIntervalSince1970: 1_800_000_000)
+    let m = { (minutos: Double) in agora.addingTimeInterval(minutos * 60) }
+    func evento(_ id: String, _ de: Double, _ ate: Double, diaInteiro: Bool = false, recusado: Bool = false) -> EventoAgenda {
+        EventoAgenda(id: id, titulo: id, inicio: m(de), fim: m(ate), diaInteiro: diaInteiro, recusado: recusado)
+    }
+    func resumo(_ eventos: [EventoAgenda]) -> ResumoDoDia { EventoAgenda.resumo(eventos, agora: agora) }
+    let feriado = evento("feriado", -600, 840, diaInteiro: true)
+
+    conferir("resumo: nada hoje", resumo([]), ResumoDoDia(estado: .livreORestoDoDia, depois: 0))
+    conferir("resumo: só dia inteiro = livre", resumo([feriado]), ResumoDoDia(estado: .livreORestoDoDia, depois: 0))
+    conferir("resumo: em reunião, mais 2 depois",
+             resumo([evento("daily", -10, 15), evento("almoço", 120, 180), evento("1:1", 270, 300), feriado]),
+             ResumoDoDia(estado: .emReuniao(titulo: "daily", ate: m(15)), depois: 2))
+    conferir("resumo: começando agora já é reunião", resumo([evento("a", 0, 30)]).estado, .emReuniao(titulo: "a", ate: m(30)))
+    conferir("resumo: acabando agora já acabou", resumo([evento("velha", -30, 0)]).estado, .livreORestoDoDia)
+    conferir("resumo: duas ao mesmo tempo, a que acaba primeiro",
+             resumo([evento("oficina", -60, 120), evento("standup", -5, 10)]).estado, .emReuniao(titulo: "standup", ate: m(10)))
+    conferir("resumo: chegando, depois livre até",
+             resumo([evento("design", 8, 38), evento("almoço", 270, 330)]),
+             ResumoDoDia(estado: .chegando(titulo: "design", minutos: 8, livreAte: m(270)), depois: 1))
+    conferir("resumo: chegando e nada mais hoje",
+             resumo([evento("design", 7.5, 38)]), ResumoDoDia(estado: .chegando(titulo: "design", minutos: 8, livreAte: nil), depois: 0))
+    conferir("resumo: sobrepostas e grudadas viram um bloco",
+             resumo([evento("a", 10, 40), evento("b", 30, 60), evento("c", 60, 90), evento("d", 200, 230)]).estado,
+             .chegando(titulo: "a", minutos: 10, livreAte: m(200)))
+    conferir("resumo: bloco até o fim do dia, sem livre até",
+             resumo([evento("a", 10, 40), evento("b", 40, 600)]).estado, .chegando(titulo: "a", minutos: 10, livreAte: nil))
+    conferir("resumo: a 60 min ainda chega", resumo([evento("a", 60, 90)]).estado, .chegando(titulo: "a", minutos: 60, livreAte: nil))
+    conferir("resumo: a 61 min é livre até, e conta no mais",
+             resumo([evento("a", 61, 90), evento("b", 300, 330)]), ResumoDoDia(estado: .livreAte(m(61)), depois: 2))
+    conferir("resumo: recusado não ocupa", resumo([evento("não vou", -10, 20, recusado: true)]).estado, .livreORestoDoDia)
+    conferir("resumo: mesmo início, desempata pelo título",
+             resumo([evento("b", 5, 20), evento("a", 5, 30)]).estado, .chegando(titulo: "a", minutos: 5, livreAte: nil))
 }
