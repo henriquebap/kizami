@@ -79,6 +79,12 @@ Hover the notch and the island opens. At the top:
 
 Only the chosen tab shows its name; the others show their icon (hover for the name).
 
+**Every day:**
+- **Open at login:** Settings › General (macOS may ask you to approve it in Login Items).
+- **Meeting coming up:** from 10 minutes before a meeting until 5 minutes after it starts, the closed island shows its countdown around the notch.
+- **The timer survives a restart:** a running or paused timer comes back when Kizami reopens. If it ended while Kizami was closed (less than an hour ago), you get the end notice.
+- **Copied images:** Copied also keeps PNG and TIFF images (up to 10 MB each, 50 MB in all), in memory only, with a thumbnail.
+
 **Make it yours** (Settings › Island tabs and below):
 - **Tabs:** turn each tab on or off and change their order; the island opens on the first one. Home always stays.
 - **Home:** hide the sections you don't want (next event and weather, interests, Claude sessions, now playing, apps and Mac, the file tray).

@@ -4,6 +4,7 @@ import Foundation
 @MainActor func testarAgenda() {
     let agora = Date(timeIntervalSince1970: 1_800_000_000)
     testarDoDia()
+    testarReuniaoNaAsa()
     func evento(_ id: String, em minutos: Double, dura: Double = 30, diaInteiro: Bool = false, recusado: Bool = false) -> EventoAgenda {
         let inicio = agora.addingTimeInterval(minutos * 60)
         return EventoAgenda(id: id, titulo: id, inicio: inicio, fim: inicio.addingTimeInterval(dura * 60),
@@ -67,6 +68,20 @@ import Foundation
 }
 
 /// A aba Hoje: o resto do dia em São Paulo, dia inteiro primeiro, sem recusados nem o que já acabou.
+@MainActor func testarReuniaoNaAsa() {
+    let agora = Date(timeIntervalSince1970: 1_800_000_000)
+    func em(_ minutos: Double, diaInteiro: Bool = false) -> EventoAgenda {
+        let inicio = agora.addingTimeInterval(minutos * 60)
+        return EventoAgenda(id: "r", titulo: "r", inicio: inicio, fim: inicio.addingTimeInterval(1800), diaInteiro: diaInteiro)
+    }
+    conferir("asa: reunião em 10 min entra", EventoAgenda.naAsa(em(10), agora: agora) != nil, true)
+    conferir("asa: em 11 min ainda não", EventoAgenda.naAsa(em(11), agora: agora) != nil, false)
+    conferir("asa: começou há 4 min fica", EventoAgenda.naAsa(em(-4), agora: agora) != nil, true)
+    conferir("asa: começou há 5 min sai", EventoAgenda.naAsa(em(-5), agora: agora) != nil, false)
+    conferir("asa: dia inteiro não", EventoAgenda.naAsa(em(2, diaInteiro: true), agora: agora) != nil, false)
+    conferir("asa: sem evento", EventoAgenda.naAsa(nil, agora: agora) != nil, false)
+}
+
 @MainActor func testarDoDia() {
     var sp = Calendar(identifier: .gregorian)
     sp.timeZone = TimeZone(identifier: "America/Sao_Paulo")!

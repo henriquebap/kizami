@@ -23,10 +23,11 @@ enum Aba: String, CaseIterable, Sendable {
 
 /// O que as asas da ilha fechada mostram. Uma coisa por vez: a primeira que tem o que mostrar (`Personalizacao.asa`).
 enum Asa: String, CaseIterable, Sendable {
-    case atividades, timer, placar, tocando, privacidade, bandeja, nada
+    case reuniao, atividades, timer, placar, tocando, privacidade, bandeja, nada
 
-    /// As que a pessoa ordena. Microfone/câmera e bandeja vêm sempre depois, e nada por último.
-    static let ordenaveis: [Asa] = [.timer, .atividades, .placar, .tocando]
+    /// As que a pessoa ordena, na ordem padrão. Microfone/câmera e bandeja vêm sempre depois, e nada por último.
+    /// A reunião chegando vem primeiro: é a única com hora marcada.
+    static let ordenaveis: [Asa] = [.reuniao, .timer, .atividades, .placar, .tocando]
 }
 
 /// O que a pessoa escolheu para a ilha: as abas e a ordem delas, as seções do Início e a vez de cada coisa nas
@@ -87,12 +88,17 @@ final class Personalizacao {
         return validas.contains(.inicio) ? validas : [.inicio] + validas
     }
 
-    /// A ordem das asas salva, validada: as ordenáveis conhecidas, sem repetidos, e as que faltarem no fim, na
-    /// ordem padrão (uma versão nova com uma asa nova não some para quem já tinha salvo uma ordem).
+    /// A ordem das asas salva, validada: as ordenáveis conhecidas, sem repetidos. Uma que falta (uma asa nova numa
+    /// versão nova, como a reunião) entra logo depois da que vem antes dela na ordem padrão, ou no começo: no fim,
+    /// a reunião ficaria atrás da música e não apareceria para quem já tinha salvo uma ordem.
     static func asas(de brutos: [String]?) -> [Asa] {
         var vistas = Set<Asa>()
-        let salvas = (brutos ?? []).compactMap(Asa.init).filter { Asa.ordenaveis.contains($0) && vistas.insert($0).inserted }
-        return salvas + Asa.ordenaveis.filter { !vistas.contains($0) }
+        var ordem = (brutos ?? []).compactMap(Asa.init).filter { Asa.ordenaveis.contains($0) && vistas.insert($0).inserted }
+        for (i, asa) in Asa.ordenaveis.enumerated() where !vistas.contains(asa) {
+            let anterior = Asa.ordenaveis[..<i].last(where: ordem.contains)
+            ordem.insert(asa, at: anterior.flatMap { ordem.firstIndex(of: $0) }.map { $0 + 1 } ?? 0)
+        }
+        return ordem
     }
 
     /// A asa da vez. Atividade alta ou urgente (reunião, permissão do Claude) passa na frente de tudo, seja qual for

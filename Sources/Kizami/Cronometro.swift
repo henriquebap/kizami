@@ -3,9 +3,11 @@ import Observation
 
 /// O timer da ilha, com o pomodoro: foco e pausa com os minutos dos Ajustes, e o clique no aviso de fim começa o passo seguinte.
 /// Guarda a hora do fim, não um contador: a contagem na tela sai de `restante(agora:)`, e dormir o Mac não a atrasa.
+/// O estado vai para o disco (`chaveEstado`) a cada mudança: reiniciar o app, ou ele cair, não perde o timer.
 @MainActor @Observable
 final class Cronometro {
-    enum Modo: Hashable, Sendable {
+    /// O valor cru é o que vai para o disco: renomear um caso faz o estado salvo antes ser descartado como lixo.
+    enum Modo: String, Codable, Hashable, Sendable {
         case foco, pausa, livre
 
         var nome: String {
@@ -43,6 +45,7 @@ final class Cronometro {
     static let chaveFoco = "timer.foco"
     static let chavePausa = "timer.pausa"
     static let chaveLivres = "timer.livres"
+    static let chaveEstado = "timer.estado"
     static let focoPadrao = 25
     static let pausaPadrao = 5
     static let livresPadrao = [10, 15]
@@ -54,6 +57,28 @@ final class Cronometro {
     static let idAviso = "kizami-timer"
     /// O aviso de fim fica um pouco na ilha: dá tempo de voltar ao Mac e clicar para o próximo passo.
     static let expiraAviso: Double = 120
+    /// Fim que passou com o app fechado: até 1 h depois ainda avisa (o app caiu ou reiniciou no meio do foco e a pessoa
+    /// quer saber que acabou); depois disso o aviso, e o convite para a pausa de um ciclo de horas atrás, só atrapalham.
+    static let janelaAvisoAtrasado: TimeInterval = 3600
+    /// Nenhum preset passa do maior timer livre: mais que isso no disco é lixo (ou o relógio do Mac voltou muito).
+    static let maximoSalvo = TimeInterval(faixaLivre.upperBound * 60)
+
+    /// O que fica no disco: o modo e o fim (rodando) ou o restante (pausado), nunca os dois.
+    struct Salvo: Codable, Equatable, Sendable {
+        var modo: Modo
+        var fim: Date?
+        var restante: TimeInterval?
+    }
+
+    /// O que fazer com o estado salvo ao abrir o app.
+    enum Restauro: Equatable, Sendable {
+        case rodar(Modo, fim: Date)
+        case pausado(Modo, restante: TimeInterval)
+        /// Acabou com o app fechado, há pouco: publica o aviso de fim.
+        case terminou(Modo)
+        /// Nada salvo, lixo, ou fim antigo demais: só limpa.
+        case nada
+    }
 
     /// Rodando: quando chega a zero.
     private(set) var fim: Date?
@@ -88,6 +113,58 @@ final class Cronometro {
         let livres = Self.limpar(padroes.array(forKey: Self.chaveLivres) as? [Int] ?? Self.livresPadrao)
         self.livres = livres
         textoLivres = Self.texto(livres: livres)
+        restaurarEstado(agora: .now)
+    }
+
+    private func restaurarEstado(agora: Date) {
+        let restauro = Self.restaurar(Self.decodificar(padroes.data(forKey: Self.chaveEstado)), agora: agora)
+        switch restauro {
+        case .rodar(let modo, let fim):
+            self.modo = modo
+            rodar(por: fim.timeIntervalSince(agora), agora: agora)
+        case .pausado(let modo, let restante):
+            self.modo = modo
+            restantePausado = restante
+        case .terminou(let modo):
+            self.modo = modo
+            terminar()  // publica o aviso e limpa o disco
+        case .nada:
+            padroes.removeObject(forKey: Self.chaveEstado)
+        }
+        if restauro != .nada { registro.info("timer restaurado do disco") }
+    }
+
+    /// Chamado a cada mudança de estado. Parado não deixa nada no disco.
+    private func guardarEstado() {
+        let salvo: Salvo? = fim.map { Salvo(modo: modo, fim: $0) } ?? restantePausado.map { Salvo(modo: modo, restante: $0) }
+        guard let dados = salvo.flatMap(Self.codificar) else {
+            padroes.removeObject(forKey: Self.chaveEstado)
+            return
+        }
+        padroes.set(dados, forKey: Self.chaveEstado)
+    }
+
+    static func codificar(_ salvo: Salvo) -> Data? {
+        try? JSONEncoder().encode(salvo)
+    }
+
+    /// Lixo ou modo desconhecido (o `Modo` não decodifica) viram nil.
+    static func decodificar(_ dados: Data?) -> Salvo? {
+        dados.flatMap { try? JSONDecoder().decode(Salvo.self, from: $0) }
+    }
+
+    /// Rodando com o fim no futuro volta a correr; pausado volta pausado; fim que passou avisa só se foi há pouco.
+    static func restaurar(_ salvo: Salvo?, agora: Date) -> Restauro {
+        switch (salvo?.modo, salvo?.fim, salvo?.restante) {
+        case let (modo?, fim?, nil):
+            let falta = fim.timeIntervalSince(agora)
+            if falta > 0 { return falta <= maximoSalvo ? .rodar(modo, fim: fim) : .nada }
+            return -falta <= janelaAvisoAtrasado ? .terminou(modo) : .nada
+        case let (modo?, nil, restante?) where restante > 0 && restante <= maximoSalvo:
+            return .pausado(modo, restante: restante)
+        default:
+            return .nada
+        }
     }
 
     /// Confirma o campo dos Ajustes: guarda só o que passou nas regras e mostra no campo o que ficou.
@@ -118,6 +195,7 @@ final class Cronometro {
         vigia?.cancel()
         restantePausado = max(fim.timeIntervalSince(agora), 0)
         self.fim = nil
+        guardarEstado()
     }
 
     func continuar(agora: Date = .now) {
@@ -130,6 +208,7 @@ final class Cronometro {
         vigia?.cancel()
         fim = nil
         restantePausado = nil
+        guardarEstado()
     }
 
     func restante(agora: Date) -> TimeInterval {
@@ -141,6 +220,7 @@ final class Cronometro {
     private func rodar(por segundos: TimeInterval, agora: Date) {
         vigia?.cancel()
         fim = agora.addingTimeInterval(segundos)
+        guardarEstado()
         vigia = Task { [weak self] in
             // Task.sleep(for:) usa o ContinuousClock, que conta o tempo com o Mac dormindo, como o `fim` em Date.
             try? await Task.sleep(for: .seconds(segundos))
@@ -155,6 +235,7 @@ final class Cronometro {
         vigia?.cancel()
         fim = nil
         restantePausado = nil
+        guardarEstado()
         let proximo = Self.proximo(depois: modo, foco: minutosFoco, pausa: minutosPausa)
         let aviso = Atividade(id: Self.idAviso, titulo: Self.titulo(modo), detalhe: proximo.map(Self.convite),
                               simbolo: modo == .foco ? "checkmark.circle.fill" : "timer", cor: modo.cor,

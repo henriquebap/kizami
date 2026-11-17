@@ -43,6 +43,13 @@ struct EventoAgenda: Equatable, Identifiable, Sendable {
             .sorted { ($0.diaInteiro ? 0 : 1, $0.inicio, $0.titulo) < ($1.diaInteiro ? 0 : 1, $1.inicio, $1.titulo) }
     }
 
+    /// A reunião que vai para as asas da ilha fechada: começa em até 10 min ou começou há menos de 5. Dia inteiro não.
+    static func naAsa(_ e: EventoAgenda?, agora: Date) -> EventoAgenda? {
+        guard let e, !e.diaInteiro, !e.recusado else { return nil }
+        let falta = e.inicio.timeIntervalSince(agora)
+        return falta <= 10 * 60 && falta > -5 * 60 ? e : nil
+    }
+
     // MARK: Link da reunião
 
     /// Só serviços de videochamada conhecidos, e só https: o link vem de convites de qualquer pessoa,
@@ -130,6 +137,8 @@ final class Agenda {
     private(set) var proximo: EventoAgenda?
     /// O resto do dia, para a aba "Hoje".
     private(set) var hoje: [EventoAgenda] = []
+    /// A reunião chegando, para as asas (`EventoAgenda.naAsa`). Recalculada a cada minuto com o resto.
+    private(set) var emBreve: EventoAgenda?
     private(set) var acesso: Acesso = .naoPedido
 
     @ObservationIgnored private let mural: Mural
@@ -198,6 +207,11 @@ final class Agenda {
         let eventos = loja.events(matching: predicado).map(EventoAgenda.init)
         let novo = EventoAgenda.proximo(eventos, agora: agora)
         if novo != proximo { proximo = novo }
+        // Qualquer evento, não só o `proximo`: com uma reunião começada há 7 min (ainda o "próximo") e outra em 1 min,
+        // a asa mostra a que chega.
+        // ponytail: recalcula a cada minuto com o resto; a asa entra e sai até 1 min fora da hora exata.
+        let chegando = eventos.compactMap { EventoAgenda.naAsa($0, agora: agora) }.min { $0.inicio < $1.inicio }
+        if chegando != emBreve { emBreve = chegando }
         let doDia = EventoAgenda.doDia(eventos, agora: agora)
         if doDia != hoje { hoje = doDia }
         let devidos = EventoAgenda.lembretes(eventos, agora: agora, avisados: avisados)

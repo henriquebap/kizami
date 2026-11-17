@@ -13,8 +13,14 @@ import Foundation
     conferir("negativo vira zero", Cronometro.texto(-5), "0:00")
     conferir("NaN vira zero", Cronometro.texto(.nan), "0:00")
 
+    // Ajustes e estado numa suíte só do teste: o domínio do app (e o do executável de teste) fica intocado.
+    let suite = "io.github.henriquebap.kizami.teste-cronometro"
+    let padroes = UserDefaults(suiteName: suite)!
+    padroes.removePersistentDomain(forName: suite)
+    defer { padroes.removePersistentDomain(forName: suite) }
+
     // Pausar depois da hora (o Mac acordou antes da tarefa): termina em vez de ficar "Pausado 0:00".
-    let atrasado = Cronometro(mural: Mural())
+    let atrasado = Cronometro(mural: Mural(), padroes: padroes)
     let inicio = Date(timeIntervalSince1970: 1_800_000_000)
     atrasado.iniciar(minutos: 1, modo: .foco, agora: inicio)
     atrasado.pausar(agora: inicio.addingTimeInterval(61))
@@ -38,11 +44,6 @@ import Foundation
     conferir("presets: foco e pausa na faixa", Cronometro.presets(foco: 999, pausa: 0, livres: []),
              [Preset(minutos: 180, modo: .foco), Preset(minutos: 1, modo: .pausa)])
 
-    // Ajustes numa suíte só do teste: o domínio do app fica intocado.
-    let suite = "io.github.henriquebap.kizami.teste-cronometro"
-    let padroes = UserDefaults(suiteName: suite)!
-    padroes.removePersistentDomain(forName: suite)
-    defer { padroes.removePersistentDomain(forName: suite) }
     let padrao = Cronometro(mural: Mural(), padroes: padroes)
     conferir("padrões: 25, 5 e [10, 15]", [padrao.minutosFoco, padrao.minutosPausa] + padrao.livres, [25, 5, 10, 15])
     conferir("padrões: texto do campo", padrao.textoLivres, "10, 15")
@@ -110,4 +111,51 @@ import Foundation
     cronometro.terminar()
     conferir("timer livre: aviso sem clique", [mural.atividades.count == 1, mural.podeAbrir(Cronometro.idAviso)], [true, false])
     cronometro.parar()
+
+    testarEstadoSalvo(padroes)
+}
+
+/// O timer sobrevive a reiniciar o app: a regra pura sobre o que veio do disco e o ciclo guardar → reabrir.
+@MainActor private func testarEstadoSalvo(_ padroes: UserDefaults) {
+    typealias Salvo = Cronometro.Salvo
+    let t0 = Date(timeIntervalSinceReferenceDate: 800_000_000)
+    conferir("estado: ida e volta", Cronometro.decodificar(Cronometro.codificar(Salvo(modo: .pausa, restante: 90))), Salvo(modo: .pausa, restante: 90))
+    conferir("estado: lixo vira nil", Cronometro.decodificar(Data("lixo".utf8)), nil)
+    conferir("estado: modo desconhecido vira nil", Cronometro.decodificar(Data(#"{"modo":"sono","restante":60}"#.utf8)), nil)
+    conferir("restaurar: nada salvo", Cronometro.restaurar(nil, agora: t0), .nada)
+    conferir("restaurar: fim no futuro volta a correr", Cronometro.restaurar(Salvo(modo: .foco, fim: t0 + 600), agora: t0), .rodar(.foco, fim: t0 + 600))
+    conferir("restaurar: pausado volta pausado", Cronometro.restaurar(Salvo(modo: .livre, restante: 300), agora: t0), .pausado(.livre, restante: 300))
+    conferir("restaurar: fim há 10 min avisa", Cronometro.restaurar(Salvo(modo: .foco, fim: t0 - 600), agora: t0), .terminou(.foco))
+    conferir("restaurar: fim há 2 h só limpa", Cronometro.restaurar(Salvo(modo: .foco, fim: t0 - 7200), agora: t0), .nada)
+    conferir("restaurar: fim e restante juntos é lixo", Cronometro.restaurar(Salvo(modo: .foco, fim: t0 + 60, restante: 60), agora: t0), .nada)
+    conferir("restaurar: restante zero é lixo", Cronometro.restaurar(Salvo(modo: .foco, restante: 0), agora: t0), .nada)
+    conferir("restaurar: fim a um dia é lixo", Cronometro.restaurar(Salvo(modo: .livre, fim: t0 + 86_400), agora: t0), .nada)
+
+    padroes.removePersistentDomain(forName: "io.github.henriquebap.kizami.teste-cronometro")
+    let antes = Cronometro(mural: Mural(), padroes: padroes)
+    antes.iniciar(minutos: 25, modo: .foco)
+    let depois = Cronometro(mural: Mural(), padroes: padroes)
+    conferir("reabriu rodando: mesmo fim e modo", [depois.fim == antes.fim, depois.modo == .foco, depois.pausado], [true, true, false])
+    depois.pausar()
+    let pausado = Cronometro(mural: Mural(), padroes: padroes)
+    conferir("reabriu pausado", [pausado.pausado, pausado.restante(agora: .now) == depois.restante(agora: .now)], [true, true])
+    antes.parar()
+    pausado.parar()
+    conferir("parar limpa o disco", padroes.data(forKey: Cronometro.chaveEstado), nil)
+    conferir("reabriu parado", Cronometro(mural: Mural(), padroes: padroes).ativo, false)
+
+    let mural = Mural()
+    padroes.set(Cronometro.codificar(Salvo(modo: .foco, fim: .now - 600)), forKey: Cronometro.chaveEstado)
+    let recente = Cronometro(mural: mural, padroes: padroes)
+    conferir("fim recente com o app fechado: parado, com aviso", [recente.ativo, mural.podeAbrir(Cronometro.idAviso)], [false, true])
+    conferir("fim recente: disco limpo", padroes.data(forKey: Cronometro.chaveEstado), nil)
+
+    let muralVelho = Mural()
+    padroes.set(Cronometro.codificar(Salvo(modo: .foco, fim: .now - 7200)), forKey: Cronometro.chaveEstado)
+    conferir("fim antigo: parado", Cronometro(mural: muralVelho, padroes: padroes).ativo, false)
+    conferir("fim antigo: sem aviso, disco limpo", [muralVelho.atividades.isEmpty, padroes.data(forKey: Cronometro.chaveEstado) == nil], [true, true])
+
+    padroes.set(Data("lixo".utf8), forKey: Cronometro.chaveEstado)
+    conferir("lixo no disco: parado", Cronometro(mural: Mural(), padroes: padroes).ativo, false)
+    conferir("lixo no disco: limpo", padroes.data(forKey: Cronometro.chaveEstado), nil)
 }
