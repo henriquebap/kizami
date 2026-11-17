@@ -45,6 +45,12 @@ import Foundation
     conferir("salva: a seção escondida", relida.mostra(.bandeja), false)
     conferir("salva: a ordem das asas", relida.asas, [.reuniao, .timer, .atividades, .tocando, .placar])
     conferir("abre na primeira aba", relida.abaInicial, .inicio)
+    conferir("opacidade: sem nada salvo, a ilha preta", Personalizacao.opacidade(nil), 1)
+    conferir("opacidade: abaixo do mínimo sobe para o mínimo", Personalizacao.opacidade(0.1), Personalizacao.opacidadeMinima)
+    conferir("opacidade: acima de 1 fica em 1", Personalizacao.opacidade(3.0), 1)
+    conferir("opacidade: valor do meio fica", Personalizacao.opacidade(0.7), 0.7)
+    conferir("opacidade: outro tipo salvo vira a ilha preta", Personalizacao.opacidade("0.5"), 1)
+    conferir("opacidade: NaN vira a ilha preta", Personalizacao.opacidade(Double.nan), 1)
     defaults.removePersistentDomain(forName: suite)
 
     conferir("bandeja escondida: ilha vazia não oferece a bandeja",

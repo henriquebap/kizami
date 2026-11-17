@@ -69,7 +69,7 @@ Só apps de mídia contam (players e navegadores): o Core Audio diz quais apps e
 
 ## A ilha aberta
 
-Passe o mouse no notch e a ilha abre. A ilha continua preta, para se fundir ao notch; os cartões, chips e botões de dentro são Liquid Glass, e um item que você expande cresce a partir do chip dele. No topo:
+Passe o mouse no notch e a ilha abre. A ilha continua preta, para se fundir ao notch; os cartões, chips e botões de dentro são Liquid Glass, e um item que você expande cresce a partir do chip dele. Em **Ajustes… › Ilha › Fundo** dá para deixar a ilha aberta transparente: abaixo de 100%, ela vira vidro escurecido (fechada, continua preta para se fundir ao notch). No topo:
 - **Início**: tudo o que está abaixo (hoje, interesses, sessões do Claude, tocando agora, atividades, apps, bandeja).
 - **Hoje**: o resto da agenda do dia, um evento por linha, com **Entrar** nos que têm link de reunião.
 - **Timer**: atalhos prontos (Foco 25, Pausa 5, 10, 15, Foco 50). Enquanto corre, a ilha fechada mostra a contagem em volta do notch. No fim de um foco, clicar no aviso começa a pausa de 5 minutos, e o aviso da pausa começa o próximo foco. Ainda sem som.

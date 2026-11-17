@@ -69,7 +69,7 @@ Only media apps count (players and browsers): Core Audio tells which apps have t
 
 ## The open island
 
-Hover the notch and the island opens. The island stays black, so it blends into the notch; the cards, chips and buttons inside are Liquid Glass, and an item you expand grows out of its chip. At the top:
+Hover the notch and the island opens. The island stays black, so it blends into the notch; the cards, chips and buttons inside are Liquid Glass, and an item you expand grows out of its chip. In **Settings… › Island › Background** you can make the open island see-through: below 100%, it turns into darkened glass (closed, it stays black to blend into the notch). At the top:
 - **Home**: everything below (today, interests, Claude sessions, now playing, activities, apps, tray).
 - **Today**: the rest of the day's calendar, one event per line, with **Join** on the ones that have a meeting link.
 - **Timer**: presets (Focus 25, Break 5, 10, 15, Focus 50). While it runs, the closed island shows the countdown around the notch. When a focus session ends, clicking the notice starts the 5-minute break, and the break's notice starts the next focus. No sound yet.

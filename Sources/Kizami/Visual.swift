@@ -22,13 +22,16 @@ enum Movimento {
 /// ao notch, e um vidro ali deixaria a emenda com o recorte da tela à vista.
 extension View {
     func vidro(raio: CGFloat = Geometria.raioDoCartao) -> some View {
-        glassEffect(.regular, in: .rect(cornerRadius: raio, style: .continuous))
+        glassEffect(Self.vidroDaIlha, in: .rect(cornerRadius: raio, style: .continuous))
     }
+
+    /// Um pouco de branco no vidro: sobre o preto puro, o vidro sozinho quase não aparece.
+    fileprivate static var vidroDaIlha: Glass { .regular.tint(.white.opacity(0.08)) }
 
     /// Com um id, o vidro muda de forma para o do mesmo id quando um item expande ou recolhe (`glassEffectID`).
     /// Os dois precisam estar dentro do mesmo `GlassEffectContainer`.
     func vidro(raio: CGFloat = Geometria.raioDoCartao, id: String, em espaco: Namespace.ID) -> some View {
-        glassEffect(.regular, in: .rect(cornerRadius: raio, style: .continuous))
+        glassEffect(Self.vidroDaIlha, in: .rect(cornerRadius: raio, style: .continuous))
             .glassEffectID(id, in: espaco)
     }
 }

@@ -41,10 +41,15 @@ final class Personalizacao {
     static let chaveAbas = "ilha.abas"
     static let chaveOcultas = "ilha.secoesOcultas"
     static let chaveAsas = "ilha.asas"
+    static let chaveOpacidade = "ilha.opacidade"
+    /// Abaixo disso o texto branco some sobre um fundo claro atrás da ilha.
+    static let opacidadeMinima = 0.4
 
     var abas: [Aba] { didSet { defaults.set(abas.map(\.rawValue), forKey: Self.chaveAbas) } }
     var ocultas: Set<Secao> { didSet { defaults.set(ocultas.map(\.rawValue).sorted(), forKey: Self.chaveOcultas) } }
     var asas: [Asa] { didSet { defaults.set(asas.map(\.rawValue), forKey: Self.chaveAsas) } }
+    /// Quanto de preto a ilha aberta tem: 1 é a ilha preta de sempre; abaixo disso, vidro escurecido nessa medida.
+    var opacidade: Double { didSet { defaults.set(opacidade, forKey: Self.chaveOpacidade) } }
 
     @ObservationIgnored private let defaults: UserDefaults
 
@@ -53,6 +58,7 @@ final class Personalizacao {
         abas = Self.abas(de: defaults.stringArray(forKey: Self.chaveAbas))
         ocultas = Set((defaults.stringArray(forKey: Self.chaveOcultas) ?? []).compactMap(Secao.init))
         asas = Self.asas(de: defaults.stringArray(forKey: Self.chaveAsas))
+        opacidade = Self.opacidade(defaults.object(forKey: Self.chaveOpacidade))
     }
 
     /// A aba em que a ilha abre: a primeira da lista.
@@ -78,6 +84,12 @@ final class Personalizacao {
     }
 
     // MARK: Regras puras
+
+    /// A opacidade salva, entre `opacidadeMinima` e 1. Sem nada salvo (ou outro tipo), a ilha preta.
+    static func opacidade(_ bruta: Any?) -> Double {
+        guard let valor = bruta as? Double, valor.isFinite else { return 1 }
+        return min(max(valor, opacidadeMinima), 1)
+    }
 
     /// As abas salvas, validadas: nomes conhecidos, sem repetidos, sem o espelho (não tem botão) e com o Início
     /// sempre (é onde as atividades aparecem). Sem nada salvo, a ordem padrão.

@@ -146,7 +146,14 @@ struct IlhaView: View {
         let contorno = FormaIlha(orelha: forma.orelha, raio: forma.raio)
 
         ZStack(alignment: .top) {
-            contorno.fill(.black)
+            // Fechada (e no aviso) fica sempre preta: ela se funde ao notch, e um vidro em volta dele deixaria o
+            // recorte da tela à vista. Aberta, a pessoa escolhe nos Ajustes quanto de preto fica.
+            let opacidade = forma == .aberta ? fontes.personalizacao.opacidade : 1
+            if opacidade < 1 {
+                Color.clear.glassEffect(.regular.tint(.black.opacity(opacidade)), in: contorno)
+            } else {
+                contorno.fill(.black)
+            }
             Group {
                 switch forma {
                 case .repouso:
