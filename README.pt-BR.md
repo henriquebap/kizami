@@ -12,6 +12,8 @@ Uma pequena ilha em volta do notch do MacBook que mostra o que outros apps e scr
 
 Gratuito e open source (Apache 2.0). Não usa API privada nem tem dependências de terceiros.
 
+**Por que existe.** O Kizami é um projeto pessoal de estudo: fiz para aprender e aplicar desenvolvimento nativo para macOS construindo algo que uso todo dia. Ele passa por AppKit e SwiftUI compilados só com o `swiftc`, concorrência estrita do Swift 6, EventKit, Core Audio, AVFoundation, as APIs de Acessibilidade e notificações entre processos. Não é um produto comercial, e não foi feito para usar em entrevistas, provas ou avaliações. O próprio Kizami não captura a tela, não grava áudio e não manda nada a um modelo de IA; tudo o que ele mostra fica à vista, no notch. A aba Kanji só aperta os atalhos do [Kanji](https://github.com/henriquebap/kanji-local-dictation), o meu app de ditado.
+
 **Toda permissão é opcional**, e cada uma liga uma coisa:
 - **Automação:** a capa e os botões da música que está tocando.
 - **Calendários:** o seu próximo evento.
