@@ -111,6 +111,9 @@ final class TocandoAgora {
     private(set) var icone: NSImage?
     private(set) var metadados: Metadados?
     private(set) var capa: NSImage?
+    /// A cor da capa pronta para destaque sobre o preto (`Capa.destaque`), em sRGB de 0 a 1. nil sem capa
+    /// (o ícone do app não tinge) ou com capa acinzentada.
+    private(set) var cor: SIMD3<Double>?
     /// Sem som, ou o player disse que pausou: a ilha mostra o botão de tocar e para as barras.
     private(set) var pausado = false
 
@@ -185,7 +188,7 @@ final class TocandoAgora {
             nomeDoApp = url.flatMap { Bundle(url: $0)?.object(forInfoDictionaryKey: "CFBundleName") as? String }
                 ?? url?.deletingPathExtension().lastPathComponent ?? ""
             icone = url.map { NSWorkspace.shared.icon(forFile: $0.path) }
-            capa = nil
+            trocarCapa(nil)
             capaPedida = nil
         }
         let lidos = dosPlayers[app]
@@ -197,13 +200,20 @@ final class TocandoAgora {
     private func pedirCapa(app: String, chave: String?) {
         guard let chave, chave != capaPedida, Capa.sabeBuscar(app) else { return }
         capaPedida = chave
-        capa = nil
+        trocarCapa(nil)
         Task { [weak self] in
             let imagem = await Capa.buscar(app: app, faixa: chave)
             // A faixa pode ter mudado enquanto a capa chegava.
             guard let self, self.capaPedida == chave else { return }
-            self.capa = imagem
+            self.trocarCapa(imagem)
         }
+    }
+
+    /// A cor é calculada uma vez por capa, e só escrita quando muda: a ilha não redesenha à toa.
+    private func trocarCapa(_ imagem: NSImage?) {
+        capa = imagem
+        let nova = imagem.flatMap(Capa.media).flatMap(Capa.destaque)
+        if nova != cor { cor = nova }
     }
 
     private func limpar() {
@@ -215,7 +225,7 @@ final class TocandoAgora {
         nomeDoApp = ""
         icone = nil
         metadados = nil
-        capa = nil
+        trocarCapa(nil)
         capaPedida = nil
     }
 

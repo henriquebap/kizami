@@ -236,6 +236,8 @@ import Foundation
     conferir("navegador não tem comando", Controle.script(.alternar, app: "com.google.Chrome"), nil)
 
     testarProgresso()
+    testarDestaque()
+    testarVolume()
 
     var e = Estabilizador()
     conferir("um plim não liga", e.registrar(true), false)

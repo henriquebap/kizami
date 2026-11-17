@@ -83,6 +83,7 @@ final class Kizami {
     let mural = Mural()
     let bandeja = Bandeja()
     let tocando = TocandoAgora()
+    let volume = Volume()
     let agenda: Agenda
     let tempo: Tempo
     let claude: SessoesClaude
@@ -145,6 +146,7 @@ final class Kizami {
         }
         Correio.ouvir(mural)
         tocando.iniciar()
+        volume.iniciar()  // só lê o volume da saída padrão
         tempo.iniciar()
         claude.iniciar()
         mac.iniciar()
