@@ -31,6 +31,7 @@
 "Tocar" = "Play";
 "Pausar" = "Pause";
 "Próxima" = "Next";
+"Recolher" = "Collapse";
 
 /* Ajustes */
 "Ajustes…" = "Settings…";
@@ -54,6 +55,10 @@
 "em %lld min" = "in %lld min";
 "começando agora" = "starting now";
 "Sem título" = "Untitled";
+"Ver" = "View";
+"Semana" = "Week";
+"Mês" = "Month";
+"Nada neste dia" = "Nothing on this day";
 
 /* Tempo */
 "Céu limpo" = "Clear sky";
