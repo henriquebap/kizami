@@ -494,22 +494,58 @@ private struct Miniatura: View {
 }
 
 /// Equalizador de enfeite: as barras não leem o som (isso pediria gravar a saída), só mostram que há som.
+/// Animado pelo Core Animation, que roda no servidor de janelas: com um `TimelineView` a 15 quadros por segundo, o
+/// SwiftUI redesenhava a ilha inteira na CPU a cada quadro (capa, texto, sombra), e o Kizami ficava em ~33% de CPU
+/// enquanto qualquer coisa tocava (medido com `top` e `sample`).
 private struct Barras: View {
     let altura: CGFloat
 
     var body: some View {
-        // Enfeite: 15 quadros por segundo bastam e custam metade de 30, em cada monitor.
-        TimelineView(.animation(minimumInterval: 1 / 15)) { contexto in
-            let t = contexto.date.timeIntervalSinceReferenceDate
-            HStack(alignment: .center, spacing: 2) {
-                ForEach(0..<4, id: \.self) { i in
-                    Capsule()
-                        .frame(width: 3, height: altura * (0.3 + 0.7 * abs(sin(t * (2.6 + Double(i) * 0.7) + Double(i) * 1.3))))
-                }
+        CamadaDeBarras(altura: altura).frame(width: 4 * 3 + 3 * 2, height: altura)
+    }
+}
+
+private struct CamadaDeBarras: NSViewRepresentable {
+    let altura: CGFloat
+
+    func makeNSView(context: Context) -> NSView {
+        let vista = NSView()
+        vista.wantsLayer = true
+        let parado = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+        for i in 0..<4 {
+            let barra = CALayer()
+            barra.backgroundColor = NSColor.white.withAlphaComponent(0.85).cgColor
+            barra.cornerRadius = 1.5
+            barra.transform = CATransform3DMakeScale(1, 0.6, 1)
+            if !parado {
+                // Durações e fases diferentes: as quatro nunca sobem juntas, como o seno de antes.
+                let pulso = CABasicAnimation(keyPath: "transform.scale.y")
+                pulso.fromValue = 0.3
+                pulso.toValue = 1
+                pulso.duration = 0.38 + Double(i) * 0.11
+                pulso.timeOffset = Double(i) * 0.21
+                pulso.autoreverses = true
+                pulso.repeatCount = .infinity
+                pulso.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+                barra.add(pulso, forKey: "pulso")
             }
-            .frame(height: altura)
+            vista.layer?.addSublayer(barra)
         }
-        .foregroundStyle(.white.opacity(0.85))
+        posicionar(vista)
+        return vista
+    }
+
+    func updateNSView(_ vista: NSView, context: Context) { posicionar(vista) }
+
+    /// `bounds` e `position` em vez de `frame`, que não vale numa layer com `transform`. Escala a partir do meio.
+    private func posicionar(_ vista: NSView) {
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        for (i, barra) in (vista.layer?.sublayers ?? []).enumerated() {
+            barra.bounds = CGRect(x: 0, y: 0, width: 3, height: altura)
+            barra.position = CGPoint(x: CGFloat(i) * 5 + 1.5, y: altura / 2)
+        }
+        CATransaction.commit()
     }
 }
 
