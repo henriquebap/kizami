@@ -92,7 +92,7 @@ Only the chosen tab shows its name; the others show their icon (hover for the na
 - **Timer:** the focus and break minutes, and up to 3 free timers.
 - **Apple Shortcuts:** pick up to 6 shortcuts from the Shortcuts app; they become buttons in the Shortcuts tab, run with `shortcuts run`.
 
-**Live score:** while a game of a team you follow is on, the closed island shows the score around the notch (away team on the left, home team on the right), refreshed every minute from ESPN, and the Interests row shows it with a red dot. At the end, a "Game over" notice with the final score; click it for the ESPN page.
+**Live score:** while a game of a team you follow is on, the closed island shows the score around the notch (away team on the left, home team on the right), refreshed every minute from ESPN, and the Interests row shows it with a red dot. Two games at once: the row shows both and the wings alternate every 8 s. At the end, a "Game over" notice with the final score; click it for the ESPN page. During a Formula 1 race you follow, the top 3 ("1 NOR · 2 VER · 3 HAD"), and at the end a notice with the podium.
 
 **GitHub** (off by default, Settings › GitHub): a notice when CI fails on one of your open PRs or someone requests your review, through the `gh` you already have logged in, every 5 minutes, read only. Clicking opens the PR.
 
@@ -102,7 +102,7 @@ Only the chosen tab shows its name; the others show their icon (hover for the na
 
 **Browser play/pause:** when a browser is playing (YouTube), the now-playing row gets a play/pause button. It sends the keyboard's play/pause key, which macOS hands to whoever is playing (Accessibility, like Shortcuts).
 
-**Click an activity to open it:** a Claude alert brings its session's app forward, a game opens its ESPN page, a meeting reminder joins the call (or opens Calendar), a Dock badge opens the app. Activities sent by other apps or scripts only show.
+**Click an activity to open it:** a Claude alert brings its session forward, a game opens its ESPN page, a meeting reminder joins the call (or opens Calendar), a Dock badge opens the app. Activities sent by other apps or scripts only show.
 
 ## Today
 
@@ -116,7 +116,7 @@ Games and races you follow but don't keep in your calendar. In **Settings › In
 
 ## Claude sessions
 
-Claude Code hooks call `Kizami claude`, and the open island lists the running sessions: working, **needs you** (a permission prompt) or ready. A session that needs you also drops the island with an alert. Click a session to bring its app forward. Only the session id, the folder name and the state cross over, never your prompts or Claude's replies. Setup: [docs/CLAUDE-HOOKS.md](docs/CLAUDE-HOOKS.md).
+Claude Code hooks call `Kizami claude`, and the open island lists the running sessions: working, **needs you** (a permission prompt) or ready. A session that needs you also drops the island with an alert. Click a session to bring it forward: in Terminal and iTerm2, its own tab (macOS asks once for Automation; denied, the app comes forward); in VS Code and the Claude app, the app. Only the session id, the folder name and the state cross over, never your prompts or Claude's replies. Setup: [docs/CLAUDE-HOOKS.md](docs/CLAUDE-HOOKS.md).
 
 ## Apps and Mac
 

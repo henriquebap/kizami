@@ -39,11 +39,11 @@ make install && /Applications/Kizami.app/Contents/MacOS/Kizami enviar --titulo t
 | `Som.swift` | Now playing: Core Audio process list (who has audio output open), media-app allowlist, Music/Spotify notifications, debounce |
 | `Player.swift` | Music and Spotify through `osascript`: media commands (`Controle`), artwork (`Capa`: Music bytes to a temp file, Spotify URL from `*.scdn.co`), the runner with a timeout (`AppleScript`) |
 | `Correio.swift` | CLI parsing (`Comando`, including `Kizami claude` for Claude Code hooks) and the distributed notifications (`Correio`) |
-| `Claude.swift`, `ClaudeView.swift` | Claude Code sessions: hook events → session states, expiry, the "needs you" alert, the open-island section |
+| `Claude.swift`, `ClaudeView.swift` | Claude Code sessions: hook events → session states, expiry, the "needs you" alert, the open-island section, the click that selects the session's tab in Terminal / iTerm2 (`AbaDoTerminal`) |
 | `Agenda.swift`, `AgendaView.swift` | Calendar (EventKit): next event, meeting-link allowlist, 15-min / starting reminders, the "Today" chip |
 | `Tempo.swift`, `TempoView.swift` | Weather from Open-Meteo for the city in Settings: fetch + validation, WMO code → symbol, the "Today" chip |
 | `Interesses.swift`, `InteressesView.swift` | Interests: ESPN schedules (teams, F1) and ICS feeds the person adds, the week / day-before / 1-hour reminders, the open-island row and its Settings section |
-| `Placar.swift` | Live score: ESPN scoreboard parsing and validation, when to poll, the live game in the Interests row |
+| `Placar.swift` | Live scores (up to 2 games) and the F1 top 3: ESPN scoreboard parsing and validation, when to poll, which one the wings show |
 | `Cronometro.swift`, `CronometroView.swift` | Timer / pomodoro: the countdown, the focus → break cycle, the Timer tab and the countdown in the closed wings |
 | `Personalizacao.swift`, `PersonalizacaoView.swift` | The person's choices: tabs and order, hidden Home sections, the order of the wings (`Aba`, `Asa`); the Settings section |
 | `AtalhosApple.swift`, `AtalhosAppleView.swift` | Apple Shortcuts chosen in Settings, run with `/usr/bin/shortcuts run -- <name>`; the row in the Shortcuts tab |
@@ -79,4 +79,5 @@ Same as Kanji:
 - UI localized pt-BR + en: the Portuguese text is the key in `Resources/en.lproj/Localizable.strings`. Never localize the wire format or CLI options.
 - Comments explain the why.
 - `// ponytail:` marks a deliberate simplification and its ceiling.
+- Energy: nothing animates forever in the closed island (use a Core Animation layer), and sources only write observed state on a visible change. See [ARCHITECTURE](docs/ARCHITECTURE.md#energy).
 - Commits: `type: description`.

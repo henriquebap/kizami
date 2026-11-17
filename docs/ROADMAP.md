@@ -116,14 +116,20 @@ Events the person follows but doesn't keep in their calendar (Buffalo Bills, F1,
 ### v0.13: Daily use (done)
 
 - Open at login with `SMAppService.mainApp` (Settings › General).
-- The meeting countdown in the closed wings (`Asa.reuniao`, first by default; a saved order gets it at the end).
+- The meeting countdown in the closed wings (`Asa.reuniao`, first by default; a saved order gets it at its default place).
 - The timer saved in `timer.estado` and restored on launch; an end missed by less than 1 h still notifies.
 - Images in Copied (PNG/TIFF, memory only, 10 MB each, 50 MB in all).
 - Still open: new screenshots in `docs/` (they need the Screen Recording permission).
 
+### v0.14: Depth (done)
+
+- Opening the exact Claude session: the hook sends the tab's tty (`ttys003`, validated) and the click selects that tab in Terminal or iTerm2 through AppleScript. VS Code and the Claude app get the app only: their documented links don't pick the right window.
+- Two live games at once (the wings alternate every 8 s) and the F1 top 3 from ESPN's scoreboard (`competitors[].order`; driver codes from the surname, since there's no abbreviation field).
+- Energy: measured with `top` and `sample`, Kizami sat at ~33% CPU with music and a timer on. SwiftUI redraws the whole island on the CPU for every animation frame, so the equalizer moved to Core Animation, the closed timer stopped rolling its digits, and the Claude sessions only redraw on a visible change. Now ~0.7% CPU and ~1.5 wakeups/s.
+
 ### Next
 
-- **v0.14, depth:** Kanji's live mic level (needs Kanji), opening the exact Claude session, two live games and F1 positions, energy profiling.
+- **v0.15:** Kanji's live mic level (needs Kanji: it posts a level, never text, on the existing protocol), new screenshots in `docs/`, per-session focus in VS Code and the Claude app if a link that picks the right window gets documented.
 
 ## Ideas (not scheduled)
 
