@@ -39,11 +39,11 @@ make install && /Applications/Kizami.app/Contents/MacOS/Kizami enviar --titulo t
 | `Som.swift` | Now playing: Core Audio process list (who has audio output open), media-app allowlist, Music/Spotify notifications, debounce |
 | `Player.swift` | Music and Spotify through `osascript`: media commands (`Controle`), artwork (`Capa`: Music bytes to a temp file, Spotify URL from `*.scdn.co`), the runner with a timeout (`AppleScript`) |
 | `Correio.swift` | CLI parsing (`Comando`, including `Kizami claude` for Claude Code hooks) and the distributed notifications (`Correio`) |
-| `Claude.swift`, `ClaudeView.swift` | Claude Code sessions: hook events → session states, expiry, the "needs you" alert, the open-island section |
+| `Claude.swift`, `ClaudeView.swift` | Claude Code sessions: hook events → session states, expiry, the "needs you" alert, the open-island section, the click that selects the session's tab in Terminal / iTerm2 (`AbaDoTerminal`) |
 | `Agenda.swift`, `AgendaView.swift` | Calendar (EventKit): next event, meeting-link allowlist, 15-min / starting reminders, the "Today" chip |
 | `Tempo.swift`, `TempoView.swift` | Weather from Open-Meteo for the city in Settings: fetch + validation, WMO code → symbol, the "Today" chip |
 | `Interesses.swift`, `InteressesView.swift` | Interests: ESPN schedules (teams, F1) and ICS feeds the person adds, the week / day-before / 1-hour reminders, the open-island row and its Settings section |
-| `Placar.swift` | Live score: ESPN scoreboard parsing and validation, when to poll, the live game in the Interests row |
+| `Placar.swift` | Live scores (up to 2 games) and the F1 top 3: ESPN scoreboard parsing and validation, when to poll, which one the wings show |
 | `Cronometro.swift`, `CronometroView.swift` | Timer / pomodoro: the countdown, the focus → break cycle, the Timer tab and the countdown in the closed wings |
 | `Personalizacao.swift`, `PersonalizacaoView.swift` | The person's choices: tabs and order, hidden Home sections, the order of the wings (`Aba`, `Asa`); the Settings section |
 | `AtalhosApple.swift`, `AtalhosAppleView.swift` | Apple Shortcuts chosen in Settings, run with `/usr/bin/shortcuts run -- <name>`; the row in the Shortcuts tab |
@@ -66,7 +66,7 @@ What's next and what macOS allows: [docs/ROADMAP.md](docs/ROADMAP.md).
 3. **Never take focus.** Use `.nonactivatingPanel` and `orderFrontRegardless()`. Never `makeKey`, never `NSApp.activate`. The one exception is the Settings window the person asked for (`Kizami.abrirAjustes`).
 4. **Never block the menu bar.** While closed, `ignoresMouseEvents = true`.
 5. **Public APIs only.** No MediaRemote, no SkyLight: they break between macOS versions.
-6. **Permissions stay optional.** Automation (artwork, media buttons), Calendars (next event) and Accessibility (Dock badges, off by default; the Shortcuts and Kanji tabs, browser play/pause and pasting from Copied, asked on first use), Camera (the mirror, asked when opened) and Files and Folders (Downloads, opt-in). Denied, everything else keeps working. Track titles, event titles, session folders, the city, followed teams, app names and badge counts are content: never in logs.
+6. **Permissions stay optional.** Automation (artwork, media buttons, the Claude session's tab in Terminal / iTerm2), Calendars (next event) and Accessibility (Dock badges, off by default; the Shortcuts and Kanji tabs, browser play/pause and pasting from Copied, asked on first use), Camera (the mirror, asked when opened) and Files and Folders (Downloads, opt-in). Denied, everything else keeps working. Track titles, event titles, session folders, the city, followed teams, app names and badge counts are content: never in logs.
 7. **No third-party dependencies.**
 8. **Network only to named services that need no key**, over HTTPS with a timeout, a size cap and the redirect target checked: today Open-Meteo and ESPN's public JSON (`site.api.espn.com`), plus ICS feeds whose link the person pastes in Settings. A new service is a decision written in the ROADMAP. GitHub goes through the person's own `gh` CLI (fixed arguments, timeout, output cap), never a token in Kizami.
 9. **Opt-in for what reads more of the Mac:** Copied (clipboard, memory only), Downloads, GitHub and urgent-over-full-screen start off. Only Kizami's own sources (the ones with a click action) may show over full screen.
@@ -79,4 +79,5 @@ Same as Kanji:
 - UI localized pt-BR + en: the Portuguese text is the key in `Resources/en.lproj/Localizable.strings`. Never localize the wire format or CLI options.
 - Comments explain the why.
 - `// ponytail:` marks a deliberate simplification and its ceiling.
+- Energy: nothing animates forever in the closed island (use a Core Animation layer), and sources only write observed state on a visible change. See [ARCHITECTURE](docs/ARCHITECTURE.md#energy).
 - Commits: `type: description`.

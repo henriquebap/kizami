@@ -86,6 +86,15 @@ Content never goes to the log: titles, folder names, the city, teams, app names 
 
 Copied text stays in memory only. Copied, Downloads, GitHub and urgent-over-full-screen are off until the person turns them on.
 
+## Energy
+
+SwiftUI draws the island on the CPU, and every animation frame redraws all of it (text, artwork, the outline). So:
+- nothing animates forever while the island is closed: a continuous decoration (the equalizer) is a Core Animation layer, which runs in the window server;
+- what changes every second (the timer in the wings) changes without an animation;
+- a source only writes an observed property when something on screen changes (`SessoesClaude.mesmasNaTela`).
+
+Measure with `top -l 7 -s 10 -pid $(pgrep -x Kizami) -stats pid,cpu,idlew,power` and `sample`. With music and a timer on: ~0.7% CPU.
+
 ## Tests
 
 `make teste` builds `Tests/*.swift` with the pure parts of the sources into one executable that prints `ok` / `FALHA`. The pure parts are:

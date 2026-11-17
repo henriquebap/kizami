@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// As sessões do Claude Code na ilha aberta, uma por linha, as que pedem atenção primeiro.
-/// O clique traz para frente o app onde a sessão roda.
+/// O clique traz para frente o app onde a sessão roda e, no Terminal e no iTerm2, a aba dela.
 struct SecaoClaude: View {
     let sessoes: SessoesClaude
 

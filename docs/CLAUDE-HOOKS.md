@@ -1,8 +1,8 @@
 # Claude Code sessions on the island
 
-Kizami shows your running Claude Code sessions on the open island: the folder, the state (working, needs you, ready) and for how long. When a session starts waiting for a permission, it also lands in the island's list until you answer. Clicking a session brings its app (Terminal, VS Code, the Claude app…) to the front.
+Kizami shows your running Claude Code sessions on the open island: the folder, the state (working, needs you, ready) and for how long. When a session starts waiting for a permission, it also lands in the island's list until you answer. Clicking a session brings it to the front: its own tab in Terminal and iTerm2, the app in VS Code and the Claude app.
 
-It works through [Claude Code hooks](https://code.claude.com/docs/en/hooks): at each event, Claude Code runs `Kizami claude` with the event's JSON on stdin. Kizami's own binary reads it, keeps three fields and posts them to the running app.
+It works through [Claude Code hooks](https://code.claude.com/docs/en/hooks): at each event, Claude Code runs `Kizami claude` with the event's JSON on stdin. Kizami's own binary reads it, keeps a few fields and posts them to the running app.
 
 ## Install
 
@@ -79,14 +79,15 @@ New sessions pick it up; running ones need a restart.
 | `pasta` | the last path component of `cwd` (the folder name, not the full path) |
 | `evento` | `hook_event_name`, plus `notification_type` and whether `agent_id` is present |
 | `app` | the bundle id of the first app among the hook's parent processes (Terminal, VS Code, Claude…), so a click can bring it to the front |
+| `tty` | the terminal device of the session (`ttys003`), so a click can select that tab in Terminal or iTerm2. Absent when the session has no terminal |
 
 **Never sent:** the prompt, Claude's replies (`last_assistant_message`), the notification text (`message`, `title`), tool names, inputs and outputs, the transcript path, the full working directory. Nothing leaves the Mac: the message goes to the Kizami app through a local distributed notification.
 
-Any process on the Mac can post that notification, so the app treats it as data: it accepts at most 4 KB, an id of letters, digits, `-` and `_` (48 characters at most), a cleaned and shortened folder name, a known event, and a well-formed bundle id. It shows the folder name as plain text and only ever uses the bundle id to activate an app that is already running.
+Any process on the Mac can post that notification, so the app treats it as data: it accepts at most 4 KB, an id of letters, digits, `-` and `_` (48 characters at most), a cleaned and shortened folder name, a known event, a well-formed bundle id and a tty of the form `ttys` plus 1 to 4 digits. It shows the folder name as plain text, only ever uses the bundle id to activate an app that is already running, and the tty is the only outside text in the AppleScript that selects the tab.
 
 The app logs counts and states, never folder names.
 
 ## Not possible
 
 - **Answering a permission prompt from the island.** Claude Code has no public way in; the click brings the session's app to the front so you can answer there.
-- **Jumping to the exact window or tab.** The click activates the app, not the session's window. A deep link to a session in the Claude app is still to be validated.
+- **The exact window in VS Code and the Claude app.** Terminal and iTerm2 get the session's tab (Automation, asked on the first click; denied, the app comes forward). VS Code's documented link opens in whichever window has focus, and the Claude app documents no link to an existing session, so both get the app.

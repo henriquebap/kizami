@@ -92,7 +92,7 @@ Só a aba escolhida mostra o nome; as outras mostram o ícone (o nome aparece co
 - **Timer:** os minutos do foco e da pausa, e até 3 timers livres.
 - **Atalhos da Apple:** escolha até 6 atalhos do app Atalhos; eles viram botões na aba Atalhos e rodam com `shortcuts run`.
 
-**Placar ao vivo:** durante um jogo de um time que você segue, a ilha fechada mostra o placar em volta do notch (visitante à esquerda, mandante à direita), atualizado a cada minuto pela ESPN, e a linha dos Interesses mostra o placar com um ponto vermelho. No fim, um aviso "Fim de jogo" com o placar final; o clique abre a página da ESPN.
+**Placar ao vivo:** durante um jogo de um time que você segue, a ilha fechada mostra o placar em volta do notch (visitante à esquerda, mandante à direita), atualizado a cada minuto pela ESPN, e a linha dos Interesses mostra o placar com um ponto vermelho. Dois jogos ao mesmo tempo: a linha mostra os dois e as asas alternam a cada 8 s. No fim, um aviso "Fim de jogo" com o placar final; o clique abre a página da ESPN. Numa corrida de Fórmula 1 que você segue, os 3 primeiros ("1 NOR · 2 VER · 3 HAD"), e no fim um aviso com o pódio.
 
 **GitHub** (desligado por padrão, Ajustes › GitHub): um aviso quando a CI falha num PR seu aberto ou pedem a sua revisão, pelo `gh` que você já tem logado, a cada 5 minutos, só leitura. O clique abre o PR.
 
@@ -102,7 +102,7 @@ Só a aba escolhida mostra o nome; as outras mostram o ícone (o nome aparece co
 
 **Play/pause do navegador:** quando um navegador está tocando (YouTube), a linha do que está tocando ganha um botão de tocar ou pausar. Ele manda a tecla de play/pause do teclado, que o macOS entrega a quem está tocando (Acessibilidade, como os Atalhos).
 
-**Clique numa atividade para abrir:** o aviso do Claude traz o app da sessão para a frente, um jogo abre a página dele na ESPN, o lembrete de reunião entra na chamada (ou abre o Calendário), um emblema do Dock abre o app. As atividades mandadas por outros apps ou scripts só aparecem.
+**Clique numa atividade para abrir:** o aviso do Claude traz a sessão para a frente, um jogo abre a página dele na ESPN, o lembrete de reunião entra na chamada (ou abre o Calendário), um emblema do Dock abre o app. As atividades mandadas por outros apps ou scripts só aparecem.
 
 ## Hoje
 
@@ -116,7 +116,7 @@ Jogos e corridas que você acompanha mas não tem no calendário. Em **Ajustes �
 
 ## Sessões do Claude
 
-Os hooks do Claude Code chamam `Kizami claude`, e a ilha aberta lista as sessões rodando: trabalhando, **precisa de você** (um pedido de permissão) ou pronta. Uma sessão que precisa de você também faz a ilha descer com um aviso. Clicar numa sessão traz o app dela para a frente. Só passam o id da sessão, o nome da pasta e o estado, nunca os seus pedidos nem as respostas do Claude. Como ligar: [docs/CLAUDE-HOOKS.md](docs/CLAUDE-HOOKS.md).
+Os hooks do Claude Code chamam `Kizami claude`, e a ilha aberta lista as sessões rodando: trabalhando, **precisa de você** (um pedido de permissão) ou pronta. Uma sessão que precisa de você também faz a ilha descer com um aviso. Clicar numa sessão traz ela para a frente: no Terminal e no iTerm2, a própria aba (o macOS pede Automação uma vez; negada, vem o app); no VS Code e no app do Claude, o app. Só passam o id da sessão, o nome da pasta e o estado, nunca os seus pedidos nem as respostas do Claude. Como ligar: [docs/CLAUDE-HOOKS.md](docs/CLAUDE-HOOKS.md).
 
 ## Apps e Mac
 

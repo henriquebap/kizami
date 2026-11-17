@@ -57,7 +57,7 @@ extension Aba {
         case .atividades: !f.mural.atividades.isEmpty
         case .timer: f.cronometro.ativo && !f.cronometro.pausado
         case .reuniao: f.agenda.emBreve != nil
-        case .placar: f.interesses.aoVivo != nil
+        case .placar: !f.interesses.aoVivo.isEmpty
         case .tocando: f.tocando.app != nil
         case .privacidade: !f.mac.microfone.isEmpty || f.mac.camera
         case .bandeja: !f.bandeja.arquivos.isEmpty
@@ -72,7 +72,7 @@ extension Aba {
     return switch asaAtual(f) {
     case .atividades: g.compacta(icones: f.mural.destaques.count)
     case .timer, .reuniao: g.compacta(icones: 2)  // "24:59" ou "10 min" não cabe na asa de um ícone
-    case .placar: g.compacta(icones: 3)  // "BUF 14" de um lado, "7 KC" do outro
+    case .placar: g.compacta(icones: 3)  // "BUF 14" de um lado, "7 KC" do outro; na F1, "1 NOR" e "2 VER": cabe qualquer um da vez
     case .tocando, .privacidade, .bandeja: g.compacta
     case .nada: g.repouso
     }
@@ -158,17 +158,24 @@ struct IlhaView: View {
                                 ContagemNaAsa(cronometro: cronometro)
                             }
                         }
-                    } else if asa == .placar, let placar = fontes.interesses.aoVivo {
-                        Asas(altura: g.notch.height) {
-                            Text(verbatim: "\(placar.visitante) \(placar.pontosVisitante)")
-                        } direita: {
-                            HStack(spacing: 4) {
-                                IndicadorPrivacidade(mac: fontes.mac)
-                                Text(verbatim: "\(placar.pontosCasa) \(placar.casa)")
+                    } else if asa == .placar {
+                        // Dois ao vivo: um de cada vez, trocando a cada 8 s só pelo relógio, sem consulta a mais. Com um só,
+                        // o relógio quase não bate: nada muda na tela, e cada tique redesenharia a ilha.
+                        let vez = fontes.interesses.aoVivo.count > 1 ? Placar.vezNaAsa : 3600
+                        TimelineView(.periodic(from: Date(timeIntervalSinceReferenceDate: 0), by: vez)) { contexto in
+                            if let lados = Placar.daVez(fontes.interesses.aoVivo, agora: contexto.date)?.asa {
+                                Asas(altura: g.notch.height) {
+                                    Text(verbatim: lados.esquerda)  // verbatim: siglas e pontos vêm da ESPN
+                                } direita: {
+                                    HStack(spacing: 4) {
+                                        IndicadorPrivacidade(mac: fontes.mac)
+                                        Text(verbatim: lados.direita)
+                                    }
+                                }
+                                .font(.caption.weight(.bold)).monospacedDigit()
+                                .contentTransition(.numericText())
                             }
                         }
-                        .font(.caption.weight(.bold)).monospacedDigit()
-                        .contentTransition(.numericText())
                     } else if asa == .atividades, let primeira = mural.destaques.first {
                         // Até três ícones, o mais importante encostado no canto: lado a lado, sem empilhar.
                         Asas(altura: g.notch.height) {
@@ -494,22 +501,59 @@ private struct Miniatura: View {
 }
 
 /// Equalizador de enfeite: as barras não leem o som (isso pediria gravar a saída), só mostram que há som.
+/// Animado pelo Core Animation, que roda no servidor de janelas: com um `TimelineView` a 15 quadros por segundo, o
+/// SwiftUI redesenhava a ilha inteira na CPU a cada quadro (capa, texto, sombra), e o Kizami ficava em ~33% de CPU
+/// enquanto qualquer coisa tocava (medido com `top` e `sample`).
 private struct Barras: View {
     let altura: CGFloat
 
     var body: some View {
-        // Enfeite: 15 quadros por segundo bastam e custam metade de 30, em cada monitor.
-        TimelineView(.animation(minimumInterval: 1 / 15)) { contexto in
-            let t = contexto.date.timeIntervalSinceReferenceDate
-            HStack(alignment: .center, spacing: 2) {
-                ForEach(0..<4, id: \.self) { i in
-                    Capsule()
-                        .frame(width: 3, height: altura * (0.3 + 0.7 * abs(sin(t * (2.6 + Double(i) * 0.7) + Double(i) * 1.3))))
-                }
+        CamadaDeBarras(altura: altura).frame(width: 4 * 3 + 3 * 2, height: altura)
+    }
+}
+
+private struct CamadaDeBarras: NSViewRepresentable {
+    let altura: CGFloat
+
+    func makeNSView(context: Context) -> NSView {
+        let vista = NSView()
+        vista.wantsLayer = true
+        let parado = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+        for i in 0..<4 {
+            let barra = CALayer()
+            barra.backgroundColor = NSColor.white.withAlphaComponent(0.85).cgColor
+            barra.cornerRadius = 1.5
+            barra.transform = CATransform3DMakeScale(1, 0.6, 1)
+            if !parado {
+                // Durações e fases diferentes: as quatro nunca sobem juntas, como o seno de antes.
+                let pulso = CABasicAnimation(keyPath: "transform.scale.y")
+                pulso.fromValue = 0.3
+                pulso.toValue = 1
+                pulso.duration = 0.38 + Double(i) * 0.11
+                pulso.timeOffset = Double(i) * 0.21
+                pulso.autoreverses = true
+                pulso.repeatCount = .infinity
+                pulso.isRemovedOnCompletion = false  // a janela some em tela cheia e volta: a animação continua
+                pulso.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+                barra.add(pulso, forKey: "pulso")
             }
-            .frame(height: altura)
+            vista.layer?.addSublayer(barra)
         }
-        .foregroundStyle(.white.opacity(0.85))
+        posicionar(vista)
+        return vista
+    }
+
+    func updateNSView(_ vista: NSView, context: Context) { posicionar(vista) }
+
+    /// `bounds` e `position` em vez de `frame`, que não vale numa layer com `transform`. Escala a partir do meio.
+    private func posicionar(_ vista: NSView) {
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        for (i, barra) in (vista.layer?.sublayers ?? []).enumerated() {
+            barra.bounds = CGRect(x: 0, y: 0, width: 3, height: altura)
+            barra.position = CGPoint(x: CGFloat(i) * 5 + 1.5, y: altura / 2)
+        }
+        CATransaction.commit()
     }
 }
 

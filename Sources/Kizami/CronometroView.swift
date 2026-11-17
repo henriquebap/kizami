@@ -46,7 +46,7 @@ struct AbaTimer: View {
             VStack(alignment: .leading, spacing: 0) {
                 Text(verbatim: cronometro.pausado ? String(localized: "Pausado") : cronometro.modo.nome)
                     .font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
-                TextoDaContagem(cronometro: cronometro, fonte: .system(size: 28, weight: .bold, design: .rounded))
+                TextoDaContagem(cronometro: cronometro, fonte: .system(size: 28, weight: .bold, design: .rounded), animado: true)
                     .opacity(cronometro.pausado ? 0.5 : 1)
             }
             Spacer(minLength: 0)
@@ -109,7 +109,7 @@ struct ContagemNaAsa: View {
     }
 
     var body: some View {
-        TextoDaContagem(cronometro: cronometro, fonte: .caption.weight(.bold))
+        TextoDaContagem(cronometro: cronometro, fonte: .caption.weight(.bold), animado: false)
             .opacity(cronometro.pausado ? 0.5 : 1)
     }
 }
@@ -118,6 +118,10 @@ struct ContagemNaAsa: View {
 private struct TextoDaContagem: View {
     let cronometro: Cronometro
     let fonte: Font
+    /// Na asa, sem animação: o SwiftUI redesenha a ilha inteira na CPU a cada quadro de animação, e o número rolando
+    /// todo segundo deixava o Kizami em ~15% de CPU durante o timer inteiro (medido com `top` e `sample`). Na aba
+    /// aberta, que fica à vista por pouco tempo, o número rola.
+    let animado: Bool
 
     var body: some View {
         // Os tiques caem 20 ms depois de cada segundo inteiro do fim: com o texto arredondado para cima,
@@ -127,8 +131,8 @@ private struct TextoDaContagem: View {
             let texto = Cronometro.texto(cronometro.restante(agora: contexto.date))
             Text(verbatim: texto)
                 .font(fonte).monospacedDigit()
-                .contentTransition(.numericText(countsDown: true))
-                .animation(.snappy, value: texto)
+                .contentTransition(animado ? .numericText(countsDown: true) : .identity)
+                .animation(animado ? .snappy : nil, value: texto)
         }
     }
 }

@@ -86,6 +86,15 @@ Conteúdo nunca vai para o log: títulos, nomes de pasta, a cidade, times, nomes
 
 O texto copiado fica só na memória. Copiados, Downloads, GitHub e o urgente por cima da tela cheia ficam desligados até a pessoa ligar.
 
+## Energia
+
+O SwiftUI desenha a ilha na CPU, e cada quadro de animação redesenha a ilha inteira (texto, capa, contorno). Por isso:
+- nada anima sem parar com a ilha fechada: um enfeite contínuo (o equalizador) é uma layer do Core Animation, que roda no servidor de janelas;
+- o que muda todo segundo (o timer nas asas) muda sem animação;
+- uma fonte só escreve numa propriedade observada quando algo na tela muda (`SessoesClaude.mesmasNaTela`).
+
+Para medir: `top -l 7 -s 10 -pid $(pgrep -x Kizami) -stats pid,cpu,idlew,power` e `sample`. Com música e timer ligados: ~0,7% de CPU.
+
 ## Testes
 
 O `make teste` junta `Tests/*.swift` com as partes puras das fontes num executável que imprime `ok` ou `FALHA`. As partes puras são:
