@@ -23,8 +23,9 @@ struct ChipTempo: View {
                         // A data na linha da temperatura, e não na de baixo: em cima sobra largura (a temperatura é
                         // mais curta que a máxima e a mínima), então o chip cresce menos e a agenda perde menos.
                         HStack(alignment: .firstTextBaseline, spacing: 4) {
-                            // Do idioma do Mac: "ter., 17 de nov." ou "Tue, Nov 17".
-                            Text(contexto.date, format: .dateTime.weekday(.abbreviated).day().month(.abbreviated))
+                            // Do idioma do Mac: "ter., 17" ou "Tue 17". Sem o mês: com ele o chip passava de 150 pt e o
+                            // evento ao lado ficava em "Da…" e "em…" quando tinha o botão Entrar.
+                            Text(contexto.date, format: .dateTime.weekday(.abbreviated).day())
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                             Text(verbatim: "·").font(.caption).foregroundStyle(.tertiary)
@@ -40,10 +41,9 @@ struct ChipTempo: View {
             }
             .lineLimit(1)
             .foregroundStyle(.white)
-            // Medido com o `ImageRenderer`: 149 pt com "ter., 17 de nov. · 24°" e o sol, 159 com "-12°" e o símbolo
-            // mais largo (em inglês, 133 a 143). O `LinhaHoje` não deixa o tempo encolher: quem cede é a agenda,
-            // que dos 312 pt da faixa fica com ~155 (antes, 200).
-            .frame(maxWidth: 160, maxHeight: Geometria.alturaHoje, alignment: .trailing)
+            // Medido com `NSString.size`: 100 pt com "ter., 17 · 24°" e o símbolo, 112 com "qua., 30 · -12°".
+            // O `LinhaHoje` não deixa o tempo encolher: quem cede é a agenda, que dos 292 pt da faixa fica com ~170.
+            .frame(maxWidth: 118, maxHeight: Geometria.alturaHoje, alignment: .trailing)
             .help(dica(previsao))
         }
     }

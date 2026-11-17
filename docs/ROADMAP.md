@@ -136,7 +136,7 @@ Events the person follows but doesn't keep in their calendar (Buffalo Bills, F1,
   - **Music:** large artwork, elapsed and remaining time from the player's `player position` and `duration` (Spotify and Music), and a bar you drag to seek. The position is read once a second, and only while the music is expanded.
   - **Lyrics: not now.** Spotify doesn't expose lyrics. Music only has them for tracks that carry them, and an online lyrics service would be a new network service.
 - **Claude notice you can dismiss.** The ✕ is always visible. A dismissed notice only comes back when the session changes state. After 2 min the notice leaves the wing and stays only in the list.
-- **The date next to the temperature** ("Tue, Nov 17 · 24°").
+- **The date next to the temperature** ("Tue 17 · 24°").
 - Not done: the artwork and the meeting dot moving from the closed wing into the open island (`matchedGeometryEffect`).
 - To test by hand: iTerm2 may start the shell under `iTermServer`, outside the `.app`; if so, the click finds neither the app nor the tab.
 
