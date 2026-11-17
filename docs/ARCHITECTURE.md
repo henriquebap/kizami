@@ -16,7 +16,8 @@ sources ──► Mural ──► IlhaView (one per display, inside a Janela)
   - activities sent by other apps and scripts (`Correio`);
   - Claude Code sessions (`Claude`);
   - calendar reminders (`Agenda`);
-  - interests reminders (`Interesses`);
+  - interests reminders and the live score (`Interesses`, `Placar`);
+  - the rain alert (`Tempo`) and the timer's end (`Cronometro`);
   - battery and Dock badges (`Mac`);
   - the shortcut prompts (`Atalhos`, `KanjiAba`).
 - **`Mural`** keeps the activities:
@@ -49,11 +50,11 @@ Any local process can post, so everything that arrives is data:
 | State | Shape |
 |---|---|
 | resting | a pill slightly larger than the notch |
-| closed (`compacta`) | wings around the notch with up to 3 icons |
+| closed (`compacta`) | wings around the notch: up to 3 icons, the timer's countdown or the live score (`asaAtual` picks one) |
 | notice (`aviso`) | up to 3 lines below the notch |
 | open (`aberta`) | the header (tabs and ⚙︎), then the sections that have something to show |
 
-The hover area and the drawn shape always come from the same function, so they can't drift apart.
+The hover area and the drawn shape always come from the same functions (`tamanhoFechado`, `tamanhoAberto`), so they can't drift apart.
 
 ## Full screen
 
@@ -67,7 +68,8 @@ macOS draws a panel at the island's level even on a full-screen Space, so Kizami
 | Next event | Calendars |
 | Dock badges, Shortcuts tab, Kanji tab | Accessibility |
 | Weather | network: Open-Meteo |
-| Interests | network: ESPN's public JSON, plus the ICS links the person pastes |
+| Interests, live score | network: ESPN's public JSON, plus the ICS links the person pastes |
+| Browser play/pause | Accessibility |
 
 Each one is optional, and the rest keeps working without it. Network calls use:
 - HTTPS only, with a timeout and a size cap;

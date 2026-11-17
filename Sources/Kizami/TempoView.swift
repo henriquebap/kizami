@@ -3,6 +3,7 @@ import SwiftUI
 /// O tempo à direita da faixa "Hoje": o símbolo, a temperatura agora e, embaixo, uma informação só.
 /// Embaixo cabe pouco (~60 pt em caption2): com chuva provável, a chance de chuva, que é o que muda o que a
 /// pessoa faz (levar guarda-chuva); sem, a máxima e a mínima, que dizem como vai ser o resto do dia.
+/// Com chuva chegando na próxima hora, a hora dela vence as duas: é a única coisa que pede ação agora.
 /// O resto (descrição, as duas coisas, a cidade) fica na dica.
 struct ChipTempo: View {
     let tempo: Tempo
@@ -19,7 +20,8 @@ struct ChipTempo: View {
                     Text(verbatim: Previsao.graus(previsao.temperatura))
                         .font(.system(size: 17, weight: .semibold))
                         .monospacedDigit()
-                    detalhe(previsao)
+                    // Por minuto: o guarda-chuva com a hora sai quando ela passa, sem esperar a próxima previsão.
+                    TimelineView(.everyMinute) { _ in detalhe(previsao) }
                         .font(.caption2)
                         .monospacedDigit()
                         .foregroundStyle(.secondary)
@@ -32,8 +34,18 @@ struct ChipTempo: View {
         }
     }
 
+    /// A hora da chuva só enquanto ela ainda não chegou: depois a previsão seguinte já diz que está chovendo.
+    private func chuvaChegando(_ previsao: Previsao) -> Date? {
+        previsao.chuvaAs.flatMap { $0 > .now ? $0 : nil }
+    }
+
     @ViewBuilder private func detalhe(_ previsao: Previsao) -> some View {
-        if let chuva = previsao.chuva, chuva >= Self.chuvaProvavel {
+        if let chega = chuvaChegando(previsao) {
+            HStack(spacing: 2) {
+                Image(systemName: "umbrella.fill")
+                Text(chega, format: .dateTime.hour().minute())
+            }
+        } else if let chuva = previsao.chuva, chuva >= Self.chuvaProvavel {
             HStack(spacing: 2) {
                 Image(systemName: "drop.fill")
                 Text(verbatim: "\(chuva)%")
@@ -50,6 +62,7 @@ struct ChipTempo: View {
 
     private func dica(_ previsao: Previsao) -> String {
         [
+            chuvaChegando(previsao).map(Tempo.tituloChuva),
             previsao.descricao,
             String(localized: "máx \(Previsao.graus(previsao.maxima)) · mín \(Previsao.graus(previsao.minima))"),
             previsao.chuva.map { chuva in

@@ -223,6 +223,8 @@ import Foundation
         testarMac()
         testarInteresses()
         testarKanjiAba()
+        testarPlacar()
+        testarCronometro()
         if falhas > 0 { exit(1) }
     }
 }

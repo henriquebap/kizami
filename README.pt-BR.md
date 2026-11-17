@@ -67,9 +67,17 @@ Só apps de mídia contam (players e navegadores): o Core Audio diz quais apps e
 
 Passe o mouse no notch e a ilha abre. No topo:
 - **Início**: tudo o que está abaixo (hoje, interesses, sessões do Claude, tocando agora, atividades, apps, bandeja).
+- **Hoje**: o resto da agenda do dia, um evento por linha, com **Entrar** nos que têm link de reunião.
+- **Timer**: atalhos prontos (Foco 25, Pausa 5, 10, 15, Foco 50). Enquanto corre, a ilha fechada mostra a contagem em volta do notch. No fim de um foco, clicar no aviso começa a pausa de 5 minutos, e o aviso da pausa começa o próximo foco. Ainda sem som.
 - **Atalhos**: os atalhos do Mac num clique, com as teclas escritas embaixo de cada um para você ir aprendendo: captura da tela (⇧⌘3), de uma área (⇧⌘4), captura e gravação (⇧⌘5), Mission Control, emojis (⌃⌘Espaço) e bloquear a tela (⌃⌘Q). Mandar teclas pede a permissão de Acessibilidade, pedida no primeiro clique.
 - **Kanji**: o [Kanji](https://github.com/henriquebap/kanji-local-dictation), o app de ditado, num clique: ditar, transcrever o áudio do Mac, abrir o Kanji e um botão por skill (ditar já reescrevendo como resposta de LinkedIn, mensagem informal, prompt…). São os próprios atalhos do Kanji, lidos dos ajustes dele, então mudam quando você muda lá. A mesma permissão de Acessibilidade dos Atalhos.
 - **⚙︎**: abre os Ajustes (também no item do Kizami na barra de menus, ou ⌘, com o menu aberto).
+
+Só a aba escolhida mostra o nome; as outras mostram o ícone (o nome aparece com o cursor em cima).
+
+**Placar ao vivo:** durante um jogo de um time que você segue, a ilha fechada mostra o placar em volta do notch (visitante à esquerda, mandante à direita), atualizado a cada minuto pela ESPN, e a linha dos Interesses mostra o placar com um ponto vermelho. No fim, um aviso "Fim de jogo" com o placar final; o clique abre a página da ESPN.
+
+**Play/pause do navegador:** quando um navegador está tocando (YouTube), a linha do que está tocando ganha um botão de tocar ou pausar. Ele manda a tecla de play/pause do teclado, que o macOS entrega a quem está tocando (Acessibilidade, como os Atalhos).
 
 **Clique numa atividade para abrir:** o aviso do Claude traz o app da sessão para a frente, um jogo abre a página dele na ESPN, o lembrete de reunião entra na chamada (ou abre o Calendário), um emblema do Dock abre o app. As atividades mandadas por outros apps ou scripts só aparecem.
 
@@ -77,7 +85,7 @@ Passe o mouse no notch e a ilha abre. No topo:
 
 A ilha aberta começa com uma faixa do dia:
 - **Próximo evento** dos seus calendários (EventKit), com aviso 15 minutos antes e na hora de começar. Quando o evento tem link de Meet, Zoom, Teams, FaceTime ou Whereby, o botão **Entrar** abre a reunião. Na primeira vez o macOS pede acesso aos Calendários; negado, a faixa só deixa o evento de fora.
-- **Tempo** da cidade que você digita em **Ajustes… › Tempo**, do [Open-Meteo](https://open-meteo.com) (sem chave nem conta), atualizado a cada 30 minutos.
+- **Tempo** da cidade que você digita em **Ajustes… › Tempo**, do [Open-Meteo](https://open-meteo.com) (sem chave nem conta), atualizado a cada 15 minutos. Quando vem chuva na próxima hora (a precipitação de 15 em 15 minutos do Open-Meteo), um aviso "Chuva às 14:30" aparece uma vez por chuva, e o chip do tempo mostra um guarda-chuva com a hora. No Brasil essa série é interpolada da previsão de hora em hora, então a hora é aproximada.
 
 ## Interesses
 

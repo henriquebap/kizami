@@ -39,6 +39,57 @@ import Foundation
     conferir("sem a parte diária é descartado",
              OpenMeteo.previsao(de: Data(#"{"current":{"temperature_2m":20,"weather_code":0,"is_day":1}}"#.utf8), obtida: agora), nil)
 
+    // Forma da resposta real com `minutely_15` e `timeformat=unixtime` (São Paulo, 17/11/2026 00:37), com chuva
+    // posta nos quartos de hora 01:15 e 01:30. Cada valor é a soma dos 15 min anteriores ao horário.
+    let comQuinze = """
+        {"timezone":"America/Sao_Paulo","current":{"time":1794886200,"interval":900,"temperature_2m":19.0,"weather_code":3,"is_day":0},
+        "minutely_15_units":{"time":"unixtime","precipitation":"mm"},
+        "minutely_15":{"time":[1794886200,1794887100,1794888000,1794888900,1794889800,1794890700,1794891600,1794892500],
+        "precipitation":[0.00,0.00,0.10,0.40,1.20,0.00,0.00,0.00]},
+        "daily":{"time":[1794884400],"temperature_2m_max":[27.6],"temperature_2m_min":[18.1],"precipitation_probability_max":[9]}}
+        """
+    let as0037 = Date(timeIntervalSince1970: 1_794_886_620)
+    // 1794888900 é 01:15 (soma de 01:00 a 01:15): a chuva começa às 01:00, 23 min depois.
+    conferir("chuva chegando na resposta", OpenMeteo.previsao(de: Data(comQuinze.utf8), obtida: as0037)?.chuvaAs,
+             Date(timeIntervalSince1970: 1_794_888_000))
+    conferir("resposta sem minutely_15: sem aviso", previsao(20)?.chuvaAs, nil)
+    conferir("resposta sem minutely_15 ainda vale", previsao(20)?.temperatura, 20)
+    let torta = comQuinze.replacingOccurrences(of: "0.00,0.00]}", with: "0.00]}")
+    conferir("série com tamanhos diferentes: sem aviso, com temperatura",
+             OpenMeteo.previsao(de: Data(torta.utf8), obtida: as0037).map { [$0.chuvaAs == nil, $0.temperatura == 19] }, [true, true])
+    let negativa = comQuinze.replacingOccurrences(of: "0.40", with: "-5")
+    conferir("chuva negativa invalida a série", OpenMeteo.previsao(de: Data(negativa.utf8), obtida: as0037)?.chuvaAs, nil)
+
+    // A regra do aviso: quartos de hora a partir das 14:00 (em segundos desde `base`).
+    let base = Date(timeIntervalSince1970: 1_800_000_000)
+    func serie(_ mm: [Double]) -> [(inicio: Date, mm: Double)] {
+        mm.enumerated().map { (inicio: base + Double($0.offset) * 900, mm: $0.element) }
+    }
+    let as1405 = base + 5 * 60
+    conferir("série vazia", Previsao.chuvaChegando([], agora: as1405), nil)
+    conferir("chuva às 14:30", Previsao.chuvaChegando(serie([0, 0, 0.5, 1]), agora: as1405), base + 30 * 60)
+    conferir("já chovendo: não avisa", Previsao.chuvaChegando(serie([0.5, 0, 1]), agora: as1405), nil)
+    conferir("choveu e parou: avisa a próxima", Previsao.chuvaChegando(serie([0.5, 0, 1]), agora: base + 20 * 60), base + 30 * 60)
+    conferir("garoa abaixo do limiar", Previsao.chuvaChegando(serie([0, 0.1, 0.19, 0]), agora: as1405), nil)
+    conferir("no limiar avisa", Previsao.chuvaChegando(serie([0, 0.2]), agora: as1405), base + 15 * 60)
+    conferir("depois da próxima hora não avisa", Previsao.chuvaChegando(serie([0, 0, 0, 0, 0, 3]), agora: as1405), nil)
+    conferir("horários passados não contam", Previsao.chuvaChegando(serie([2, 0]), agora: base + 40 * 60), nil)
+    conferir("fora de ordem: a primeira", Previsao.chuvaChegando(Array(serie([0, 0, 1, 1]).reversed()), agora: as1405),
+             base + 30 * 60)
+
+    // Um aviso por episódio.
+    let chega = base + 30 * 60
+    func episodio(_ chega: Date?, _ avisada: Date?, _ agora: Date) -> [String] {
+        let r = Tempo.episodio(chega: chega, avisada: avisada, agora: agora)
+        return [r.avisada.map { "\(Int($0.timeIntervalSince(base)) / 60)" } ?? "nil", r.publicar ? "publica" : "quieto"]
+    }
+    conferir("primeira chuva: publica", episodio(chega, nil, as1405), ["30", "publica"])
+    conferir("mesma chuva na atualização seguinte: quieto", episodio(chega, chega, base + 20 * 60), ["30", "quieto"])
+    conferir("chuva adiada: não repete", episodio(chega + 900, chega, base + 35 * 60), ["30", "quieto"])
+    conferir("previsão desistiu antes da hora: guarda", episodio(nil, chega, base + 20 * 60), ["30", "quieto"])
+    conferir("choveu e passou: esquece", episodio(nil, chega, base + 50 * 60), ["nil", "quieto"])
+    conferir("hora depois do avisado: nova chuva avisa", episodio(base + 2 * 3600, chega, base + 95 * 60), ["120", "publica"])
+
     // Resposta real da busca por "São Paulo" (cortada) e a de uma busca sem resultado, que vem sem `results`.
     let buscaReal = """
         {"results":[{"id":3448439,"name":"São Paulo","latitude":-23.5475,"longitude":-46.63611,"country_code":"BR",
@@ -59,6 +110,7 @@ import Foundation
     let url = OpenMeteo.urlPrevisao(Lugar(nome: "São Paulo", latitude: -23.5475, longitude: -46.63611))?.absoluteString ?? ""
     conferir("coordenadas com ponto", url.contains("latitude=-23.5475&longitude=-46.6361&"), true)
     conferir("previsão no host fixo, por HTTPS", url.hasPrefix("https://api.open-meteo.com/v1/forecast?"), true)
+    conferir("URL pede a série de 15 min", url.contains("minutely_15=precipitation&forecast_minutely_15=8&timeformat=unixtime"), true)
 
     let resposta = { (url: String, status: Int) in
         HTTPURLResponse(url: URL(string: url)!, statusCode: status, httpVersion: nil, headerFields: nil)!

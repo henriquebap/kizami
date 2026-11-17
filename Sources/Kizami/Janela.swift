@@ -15,7 +15,7 @@ final class EstadoIlha {
     /// A linha da lista sob o cursor: só ela mostra o ✕ (a view não tem `@State` sem as macros).
     var linhaSobCursor: String?
 
-    enum Aba { case inicio, atalhos, kanji }
+    enum Aba { case inicio, hoje, timer, atalhos, kanji }
 
     init(geometria: Geometria) {
         self.geometria = geometria
@@ -111,8 +111,10 @@ final class Janela {
         // sem o botão apertado, não há arraste, e a ilha não pode ficar presa aberta sobre a barra de menus.
         if bandeja.arrastando && !botao { bandeja.arrastando = false }
         let g = estado.geometria
-        // Fechada, a zona tem o tamanho que a ilha desenha agora (aviso ou asas com até três ícones).
-        let fechada = mural.avisos.isEmpty ? g.compacta(icones: mural.destaques.count) : g.aviso(linhas: mural.avisos.count)
+        // Fechada, a zona tem o tamanho que a ilha desenha agora (aviso, asas do timer, do placar, dos ícones), e as
+        // asas no mínimo: arrastando, a ilha em repouso também aceita o arquivo.
+        let desenhada = tamanhoFechado(g, fontes)
+        let fechada = CGSize(width: max(desenhada.width, g.compacta.width), height: desenhada.height)
         let zona = if estado.aberta {
             g.zona(tamanhoAberto(g, estado.aba, fontes))
         } else if bandeja.arrastando {

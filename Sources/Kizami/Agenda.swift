@@ -34,6 +34,15 @@ struct EventoAgenda: Equatable, Identifiable, Sendable {
             .min { ($0.inicio, $0.titulo) < ($1.inicio, $1.titulo) }  // título desempata: a escolha não pisca entre refreshes
     }
 
+    /// A aba "Hoje": o que ainda não acabou até a meia-noite, os de dia inteiro primeiro, sem os recusados.
+    static func doDia(_ eventos: [EventoAgenda], agora: Date, calendario: Calendar = .current) -> [EventoAgenda] {
+        let inicioDoDia = calendario.startOfDay(for: agora)
+        let amanha = calendario.date(byAdding: .day, value: 1, to: inicioDoDia) ?? inicioDoDia.addingTimeInterval(24 * 3600)
+        return eventos
+            .filter { !$0.recusado && $0.fim > agora && $0.inicio < amanha }
+            .sorted { ($0.diaInteiro ? 0 : 1, $0.inicio, $0.titulo) < ($1.diaInteiro ? 0 : 1, $1.inicio, $1.titulo) }
+    }
+
     // MARK: Link da reunião
 
     /// Só serviços de videochamada conhecidos, e só https: o link vem de convites de qualquer pessoa,
@@ -119,6 +128,8 @@ final class Agenda {
     enum Acesso: Equatable { case naoPedido, permitido, negado }
 
     private(set) var proximo: EventoAgenda?
+    /// O resto do dia, para a aba "Hoje".
+    private(set) var hoje: [EventoAgenda] = []
     private(set) var acesso: Acesso = .naoPedido
 
     @ObservationIgnored private let mural: Mural
@@ -149,8 +160,8 @@ final class Agenda {
     }
 
     /// Abre a reunião do próximo evento. Só chega aqui link https de um serviço da lista (`EventoAgenda.aceito`).
-    func entrar() {
-        guard let link = proximo?.link, EventoAgenda.aceito(link) else { return }
+    func entrar(_ evento: EventoAgenda? = nil) {
+        guard let link = (evento ?? proximo)?.link, EventoAgenda.aceito(link) else { return }
         NSWorkspace.shared.open(link)
     }
 
@@ -187,6 +198,8 @@ final class Agenda {
         let eventos = loja.events(matching: predicado).map(EventoAgenda.init)
         let novo = EventoAgenda.proximo(eventos, agora: agora)
         if novo != proximo { proximo = novo }
+        let doDia = EventoAgenda.doDia(eventos, agora: agora)
+        if doDia != hoje { hoje = doDia }
         let devidos = EventoAgenda.lembretes(eventos, agora: agora, avisados: avisados)
         for lembrete in devidos {
             avisados.insert(lembrete.chave)
