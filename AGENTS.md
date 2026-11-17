@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Guide for coding agents. For people, start with the [README](README.md).
+Guide for coding agents. For people, start with the [README](README.md). For the design, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## What it is
 
@@ -11,7 +11,7 @@ Kizami is a menu-bar-only macOS app that draws a black island around the MacBook
 ```bash
 make app      # build/Kizami.app (swiftc only; signed with the local "Kanji Dev" certificate when present, so permissions survive rebuilds)
 make install  # /Applications/Kizami.app
-make teste    # pure rules: Geometria, Comando, Atividade, Som, Agenda, Tempo, Claude
+make teste    # pure rules: Geometria, Comando, Atividade, Som, Agenda, Tempo, Claude, Mac, Interesses
 ```
 
 **Constraints:**
@@ -42,25 +42,30 @@ make install && /Applications/Kizami.app/Contents/MacOS/Kizami enviar --titulo t
 | `Claude.swift`, `ClaudeView.swift` | Claude Code sessions: hook events → session states, expiry, the "needs you" alert, the open-island section |
 | `Agenda.swift`, `AgendaView.swift` | Calendar (EventKit): next event, meeting-link allowlist, 15-min / starting reminders, the "Today" chip |
 | `Tempo.swift`, `TempoView.swift` | Weather from Open-Meteo for the city in Settings: fetch + validation, WMO code → symbol, the "Today" chip |
-| `AjustesView.swift` | The Settings window (city, calendar access, Claude hooks pointer) |
+| `Interesses.swift`, `InteressesView.swift` | Interests: ESPN schedules (teams, F1) and ICS feeds the person adds, the week / day-before / 1-hour reminders, the open-island row and its Settings section |
+| `Mac.swift`, `MacView.swift` | Mic and camera in use, battery, Dock badges (opt-in, Accessibility): the privacy dots, the open-island row, its Settings section |
+| `Atalhos.swift` | The Shortcuts tab: system shortcuts sent as key events (screenshots, emoji, lock) or opened as apps (Mission Control) |
+| `Kanji.swift`, `KanjiAba.swift` | The Kanji tab: Kanji's global shortcuts read from its defaults, skill headers from `~/Library/Application Support/Kanji/Skills`, sent as key events |
+| `AjustesView.swift` | The Settings window (city, calendar access, interests, apps and Mac, Claude hooks pointer) |
 
 What's next and what macOS allows: [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Rules that must not break
 
-1. **Incoming text is data.** Any local process can post. Show it with `Text(verbatim:)`, keep `Atividade.validar` as the only way in, never open URLs or run anything from it. The one exception is a meeting link from the user's own calendar: opened only on the user's click, and only if `EventoAgenda.aceito` passes (https + allowlisted host).
+1. **Incoming text is data.** Any local process can post. Show it with `Text(verbatim:)`, keep `Atividade.validar` as the only way in, never open URLs or run anything from it. Click actions (`Mural.receber(_:aoAbrir:)`) exist only for Kizami's own sources. Links opened: a meeting link from the user's own calendar (only if `EventoAgenda.aceito` passes: https + allowlisted host) and an ESPN game page (https on `www.espn.com`), both only on the user's click.
 2. **Logs never include activity content.** Log counts only. No `print()` in the app (the CLI writes usage to stderr).
-3. **Never take focus.** Use `.nonactivatingPanel` and `orderFrontRegardless()`. Never `makeKey`, never `NSApp.activate`.
+3. **Never take focus.** Use `.nonactivatingPanel` and `orderFrontRegardless()`. Never `makeKey`, never `NSApp.activate`. The one exception is the Settings window the person asked for (`Kizami.abrirAjustes`).
 4. **Never block the menu bar.** While closed, `ignoresMouseEvents = true`.
 5. **Public APIs only.** No MediaRemote, no SkyLight: they break between macOS versions.
-6. **Permissions stay optional.** Automation (artwork, media buttons) and Calendars (next event). Denied, everything else keeps working. Track titles, event titles, session folders and the city are content: never in logs.
+6. **Permissions stay optional.** Automation (artwork, media buttons), Calendars (next event) and Accessibility (Dock badges, off by default; the Shortcuts tab, asked on first use). Denied, everything else keeps working. Track titles, event titles, session folders, the city, followed teams, app names and badge counts are content: never in logs.
 7. **No third-party dependencies.**
-8. **Network only to named services that need no key**, over HTTPS with a timeout and a size cap: today Open-Meteo. A new service is a decision written in the ROADMAP.
+8. **Network only to named services that need no key**, over HTTPS with a timeout, a size cap and the redirect target checked: today Open-Meteo and ESPN's public JSON (`site.api.espn.com`), plus ICS feeds whose link the person pastes in Settings. A new service is a decision written in the ROADMAP.
 
 ## Conventions
 
 Same as Kanji:
 - Code, comments and logs in pt-BR, with correct accents.
+- Docs are English-first; README and ARCHITECTURE have pt-BR copies (`README.pt-BR.md`, `docs/ARCHITECTURE.pt-BR.md`). Change both.
 - UI localized pt-BR + en: the Portuguese text is the key in `Resources/en.lproj/Localizable.strings`. Never localize the wire format or CLI options.
 - Comments explain the why.
 - `// ponytail:` marks a deliberate simplification and its ceiling.

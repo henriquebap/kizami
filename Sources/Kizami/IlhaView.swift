@@ -23,13 +23,27 @@ private enum Forma: Equatable {
     let agenda: Agenda
     let tempo: Tempo
     let claude: SessoesClaude
+    let mac: Mac
+    let interesses: Interesses
+    let kanji: PonteKanji
+}
+
+/// O tamanho da ilha aberta na aba escolhida. A janela mede a área do hover com a mesma conta.
+@MainActor func tamanhoAberto(_ g: Geometria, _ aba: EstadoIlha.Aba, _ f: Fontes) -> CGSize {
+    switch aba {
+    case .inicio: g.aberta(secoesAtuais(f))
+    case .atalhos: g.abertaAtalhos
+    case .kanji: g.abertaComAba(AbaKanji.altura(skills: f.kanji.skills.count))
+    }
 }
 
 /// As seções da ilha aberta agora. A janela mede a área do hover com a mesma conta.
 @MainActor func secoesAtuais(_ f: Fontes) -> Secoes {
     Secoes(tocando: f.tocando.app != nil, atividades: f.mural.atividades.count,
            arquivos: f.bandeja.arquivos.count, arrastando: f.bandeja.arrastando,
-           sessoes: f.claude.sessoes.count, hoje: f.agenda.proximo != nil || f.tempo.previsao != nil)
+           sessoes: f.claude.sessoes.count, hoje: f.agenda.proximo != nil || f.tempo.previsao != nil,
+           apps: !f.mac.emblemas.isEmpty || !f.mac.microfone.isEmpty || f.mac.camera || f.mac.bateria != nil,
+           interesse: !f.interesses.proximos.isEmpty)
 }
 
 /// A forma preta presa ao topo. Sempre à vista: sem nada, fica em repouso, só um pouco maior que o notch.
@@ -39,19 +53,21 @@ struct IlhaView: View {
     private var mural: Mural { fontes.mural }
     private var bandeja: Bandeja { fontes.bandeja }
     private var tocando: TocandoAgora { fontes.tocando }
+    /// Microfone ou câmera ligados: como no iPhone, a ilha não fica em repouso escondendo isso.
+    private var privacidade: Bool { !fontes.mac.microfone.isEmpty || fontes.mac.camera }
 
     var body: some View {
         let g = estado.geometria
         let secoes = secoesAtuais(fontes)
         let forma: Forma = estado.aberta ? .aberta
-            : mural.novidade != nil ? .aviso
-            : !mural.atividades.isEmpty || !bandeja.arquivos.isEmpty || tocando.app != nil ? .compacta
+            : !mural.avisos.isEmpty ? .aviso
+            : !mural.atividades.isEmpty || !bandeja.arquivos.isEmpty || tocando.app != nil || privacidade ? .compacta
             : .repouso
         let tamanho = switch forma {
         case .repouso: g.repouso
-        case .compacta: g.compacta
-        case .aviso: g.aviso
-        case .aberta: g.aberta(secoes)
+        case .compacta: g.compacta(icones: mural.atividades.isEmpty ? 1 : mural.destaques.count)
+        case .aviso: g.aviso(linhas: mural.avisos.count)
+        case .aberta: tamanhoAberto(g, estado.aba, fontes)
         }
         let contorno = FormaIlha(orelha: forma.orelha, raio: forma.raio)
 
@@ -64,43 +80,80 @@ struct IlhaView: View {
                 case .compacta:
                     // Atividade tem a vez (foi pedida por alguém); depois o som; por fim a bandeja.
                     let lado = ladoDaAsa(g.notch.height)
-                    if let destaque = mural.destaque {
+                    if let primeira = mural.destaques.first {
+                        // Até três ícones, o mais importante encostado no canto: lado a lado, sem empilhar.
                         Asas(altura: g.notch.height) {
-                            Simbolo(nome: destaque.simbolo ?? "bell.fill", cor: cor(destaque), chegada: destaque.chegada)
+                            HStack(spacing: Geometria.iconeExtra - lado) {
+                                ForEach(mural.destaques) { atividade in
+                                    Simbolo(nome: atividade.simbolo ?? "bell.fill", cor: cor(atividade), chegada: atividade.chegada)
+                                        .frame(width: lado, height: lado)
+                                        .transition(.scale.combined(with: .opacity))
+                                }
+                            }
                         } direita: {
-                            Contador(total: mural.atividades.count, cor: cor(destaque))
+                            HStack(spacing: 4) {
+                                IndicadorPrivacidade(mac: fontes.mac)
+                                Contador(total: mural.atividades.count, cor: cor(primeira))
+                            }
                         }
                     } else if tocando.app != nil {
                         Asas(altura: g.notch.height) {
                             Miniatura(tocando: tocando, lado: lado, raio: lado / 4)
                                 .opacity(tocando.pausado ? 0.55 : 1)
                         } direita: {
+                            IndicadorPrivacidade(mac: fontes.mac)
                             if tocando.pausado {
                                 Image(systemName: "pause.fill").font(.system(size: 10, weight: .bold)).foregroundStyle(.secondary)
                             } else {
                                 Barras(altura: lado * 0.6)
                             }
                         }
+                    } else if bandeja.arquivos.isEmpty {
+                        // Só o microfone ou a câmera: o app que está ouvindo à esquerda, os pontinhos à direita.
+                        Asas(altura: g.notch.height) {
+                            if let app = fontes.mac.microfone.first {
+                                LinhaApps.icone(app).frame(width: lado, height: lado)
+                            } else {
+                                Simbolo(nome: "video.fill", cor: .green, chegada: nil)
+                            }
+                        } direita: {
+                            IndicadorPrivacidade(mac: fontes.mac)
+                        }
                     } else {
                         Asas(altura: g.notch.height) {
                             Simbolo(nome: "tray.full.fill", cor: .white, chegada: nil)
                         } direita: {
-                            Contador(total: bandeja.arquivos.count, cor: .white)
+                            HStack(spacing: 4) {
+                                IndicadorPrivacidade(mac: fontes.mac)
+                                Contador(total: bandeja.arquivos.count, cor: .white)
+                            }
                         }
                     }
                 case .aviso:
-                    if let novidade = mural.novidade {
-                        LinhaDeAviso(atividade: novidade)
-                            .frame(height: Geometria.alturaLinha)
-                            .padding(.top, g.faixaDoTopo)  // a faixa do notch é a câmera: o texto vem abaixo
+                    VStack(spacing: Geometria.espacoLinha) {
+                        ForEach(mural.avisos) { aviso in
+                            LinhaDeAviso(atividade: aviso)
+                                .frame(height: Geometria.alturaLinha)
+                                .transition(.blurReplace)
+                        }
                     }
+                    .padding(.top, g.faixaDoTopo)  // a faixa do notch é a câmera: o texto vem abaixo
                 case .aberta:
                     VStack(spacing: Geometria.espacoSecao) {
+                        Cabecalho(estado: estado, mural: mural)
+                        if estado.aba == .atalhos {
+                            GradeDeAtalhos(estado: estado, mural: mural)
+                        } else if estado.aba == .kanji {
+                            AbaKanji(estado: estado, kanji: fontes.kanji, mural: mural)
+                        } else {
                         if secoes.hoje { LinhaHoje(agenda: fontes.agenda, tempo: fontes.tempo) }
+                        if secoes.interesse { LinhaInteresse(interesses: fontes.interesses) }
                         if secoes.sessoes > 0 { SecaoClaude(sessoes: fontes.claude) }
                         if secoes.tocando { LinhaTocando(tocando: tocando) }
-                        if secoes.linhas > 0 { Lista(atividades: mural.atividades) }
+                        if secoes.linhas > 0 { Lista(mural: mural, estado: estado) }
+                        if secoes.apps { LinhaApps(mac: fontes.mac) }
                         if secoes.bandeja { FileiraDaBandeja(bandeja: bandeja, alvo: estado.alvo) }
+                        }
                     }
                     .padding(.top, g.faixaDoTopo + 8)
                 }
@@ -122,13 +175,18 @@ struct IlhaView: View {
         .animation(forma == .repouso || forma == .compacta
                    ? .spring(response: 0.34, dampingFraction: 0.92)
                    : .spring(response: 0.44, dampingFraction: 0.74), value: forma)
-        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: mural.atividades.count)
+        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: mural.atividades.map(\.id))
+        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: mural.avisos.map(\.id))
         .animation(.spring(response: 0.4, dampingFraction: 0.85), value: bandeja.arquivos.count)
         .animation(.smooth(duration: 0.2), value: estado.alvo)
         .animation(.spring(response: 0.4, dampingFraction: 0.85), value: tocando.app)
         .animation(.smooth(duration: 0.3), value: tocando.metadados)
         .animation(.spring(response: 0.4, dampingFraction: 0.85), value: fontes.claude.sessoes)
         .animation(.spring(response: 0.4, dampingFraction: 0.85), value: secoes.hoje)
+        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: secoes.apps)
+        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: secoes.interesse)
+        .animation(.spring(response: 0.4, dampingFraction: 0.82), value: estado.aba)
+        .animation(.smooth(duration: 0.25), value: privacidade)
     }
 }
 
@@ -155,6 +213,60 @@ struct FormaIlha: Shape {
         p.addQuadCurve(to: CGPoint(x: r.maxX, y: r.minY), control: CGPoint(x: r.maxX - o, y: r.minY))
         p.closeSubpath()
         return p
+    }
+}
+
+/// O topo da ilha aberta: as abas e a engrenagem, para achar os atalhos e os Ajustes sem ir à barra de menus.
+private struct Cabecalho: View {
+    let estado: EstadoIlha
+    let mural: Mural
+
+    var body: some View {
+        HStack(spacing: 4) {
+            aba("Início", "house.fill", .inicio)
+            aba("Atalhos", "command", .atalhos)
+            aba("Kanji", "waveform", .kanji)
+            Spacer(minLength: 0)
+            if estado.aba == .inicio && !mural.atividades.isEmpty {
+                // Duas sessões do Claude terminaram e os avisos ficaram: um clique tira todos.
+                Button { mural.limpar() } label: {
+                    Label("Limpar", systemImage: "xmark.circle.fill")
+                        .font(.caption.weight(.semibold))
+                        .padding(.horizontal, 8)
+                        .frame(height: 22)
+                        .background(Capsule().fill(.white.opacity(0.1)))
+                        .contentShape(.capsule)
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.secondary)
+                .help(Text("Tirar todos os avisos da ilha"))
+                .transition(.opacity)
+            }
+            Button("Ajustes", systemImage: "gearshape.fill") { Kizami.shared.abrirAjustes() }
+                .labelStyle(.iconOnly)
+                .buttonStyle(.plain)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(.secondary)
+                .frame(width: 26, height: 26)
+                .contentShape(.rect)
+                .help(Text("Ajustes"))
+        }
+        .padding(.horizontal, 10)
+        .frame(height: Geometria.alturaCabecalho)
+    }
+
+    private func aba(_ nome: LocalizedStringKey, _ simbolo: String, _ valor: EstadoIlha.Aba) -> some View {
+        let escolhida = estado.aba == valor
+        return Button { estado.aba = valor } label: {
+            Label(nome, systemImage: simbolo)
+                .font(.caption.weight(.semibold))
+                .padding(.horizontal, 10)
+                .frame(height: 22)
+                .background(Capsule().fill(.white.opacity(escolhida ? 0.16 : 0)))
+                .foregroundStyle(escolhida ? .primary : .secondary)
+                .contentShape(.capsule)
+        }
+        .buttonStyle(.plain)
     }
 }
 
@@ -290,7 +402,7 @@ private struct Asas<Esquerda: View, Direita: View>: View {
     var body: some View {
         let lado = ladoDaAsa(altura)
         HStack(spacing: 0) {
-            esquerda.frame(width: lado, height: lado)
+            esquerda.frame(minWidth: lado, maxHeight: lado, alignment: .leading)
             Spacer(minLength: 0)
             direita.frame(minWidth: lado, maxHeight: lado)
         }
@@ -432,9 +544,11 @@ private struct LinhaDeAviso: View {
 
 /// Aberta: as três mais recentes; com mais de três, duas e a linha "mais N" no lugar da terceira.
 private struct Lista: View {
-    let atividades: [Atividade]
+    let mural: Mural
+    let estado: EstadoIlha
 
     var body: some View {
+        let atividades = mural.atividades
         let visiveis = atividades.count > Geometria.maximoLinhas ? Geometria.maximoLinhas - 1 : Geometria.maximoLinhas
         VStack(alignment: .leading, spacing: Geometria.espacoLinha) {
             ForEach(atividades.prefix(visiveis)) { atividade in
@@ -448,11 +562,25 @@ private struct Lista: View {
                     }
                     .lineLimit(1)
                     Spacer(minLength: 8)
-                    if let chegada = atividade.chegada {
+                    if estado.linhaSobCursor == atividade.id {
+                        Button("Tirar da ilha", systemImage: "xmark.circle.fill") { mural.remover(id: atividade.id) }
+                            .labelStyle(.iconOnly)
+                            .buttonStyle(.plain)
+                            .font(.system(size: 14))
+                            .foregroundStyle(.secondary)
+                            .help(Text("Tirar da ilha"))
+                    } else if let chegada = atividade.chegada {
                         Text(chegada, style: .relative).font(.caption2).monospacedDigit().foregroundStyle(.tertiary)
                     }
                 }
+                .onHover { dentro in
+                    if dentro { estado.linhaSobCursor = atividade.id }
+                    else if estado.linhaSobCursor == atividade.id { estado.linhaSobCursor = nil }
+                }
                 .frame(height: Geometria.alturaLinha)
+                .contentShape(.rect)
+                // Só as do próprio Kizami abrem algo (a sessão do Claude, o jogo, a reunião, o app do emblema).
+                .onTapGesture { mural.abrir(atividade.id) }
                 .transition(.blurReplace)
             }
             if atividades.count > visiveis {

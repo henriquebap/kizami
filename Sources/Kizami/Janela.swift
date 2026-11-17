@@ -9,6 +9,13 @@ final class EstadoIlha {
     var aberta = false
     /// Um arquivo arrastado está em cima da ilha: a área de soltar acende.
     var alvo = false
+    var aba: Aba = .inicio
+    /// Um atalho foi clicado: a ilha fecha e só volta a abrir depois que o cursor sai e volta.
+    var recolher = false
+    /// A linha da lista sob o cursor: só ela mostra o ✕ (a view não tem `@State` sem as macros).
+    var linhaSobCursor: String?
+
+    enum Aba { case inicio, atalhos, kanji }
 
     init(geometria: Geometria) {
         self.geometria = geometria
@@ -30,9 +37,15 @@ final class Janela {
     private var entrada: Date?
     /// O cursor precisa parar no notch este tempo: passar por ele a caminho dos menus da direita não abre a ilha.
     private static let permanencia: TimeInterval = 0.15
+    /// O monitor em coordenadas do Quartz, as da lista de janelas do macOS.
+    private let telaQuartz: CGRect
+    /// O monitor está num espaço de tela cheia: a ilha sai dele (pedido da pessoa: em vídeo ou jogo, ela atrapalha).
+    private(set) var oculta = false
 
     init(fontes: Fontes, tela: NSScreen) {
         self.fontes = fontes
+        let numero = tela.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID
+        telaQuartz = numero.map(CGDisplayBounds) ?? .null
         let geometria = Geometria(tela: tela.frame, esquerda: tela.auxiliaryTopLeftArea?.width,
                                   direita: tela.auxiliaryTopRightArea?.width, topoSeguro: tela.safeAreaInsets.top,
                                   barraDeMenus: NSStatusBar.system.thickness)
@@ -40,9 +53,8 @@ final class Janela {
         painel = NSPanel(contentRect: geometria.janela, styleMask: [.borderless, .nonactivatingPanel],
                          backing: .buffered, defer: false)
         painel.level = .mainMenu + 3  // acima da barra de menus; o .statusBar (25) fica logo acima dela e não basta (boring.notch usa este)
-        // Sem .fullScreenAuxiliary: o painel não entra no espaço de um app em tela cheia, e a ilha some ali
-        // (pedido da pessoa: em vídeo ou jogo, ela atrapalha). Cada monitor tem o seu espaço, então só some
-        // no monitor que está em tela cheia.
+        // Sem .fullScreenAuxiliary não basta para sumir em tela cheia: neste nível, o macOS mostra o painel
+        // também no espaço do app em tela cheia (visto com o YouTube no Chrome). Quem esconde é `ajustar(fundos:)`.
         painel.collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle]
         painel.backgroundColor = .clear
         painel.isOpaque = false
@@ -57,6 +69,21 @@ final class Janela {
         painel.setFrame(geometria.janela, display: true)
         painel.orderFrontRegardless()  // nunca makeKey nem activate: o foco fica no app em que a pessoa está
         vigiar()
+    }
+
+    /// Esconde a ilha no monitor que está em tela cheia e devolve quando sai dela. `fundos`: as janelas do fundo
+    /// da mesa que estão à vista (`Geometria.emTelaCheia`).
+    func ajustar(fundos: [CGRect], mesa: Bool) {
+        let cheia = Geometria.emTelaCheia(tela: telaQuartz, fundos: fundos, mesa: mesa)
+        guard cheia != oculta else { return }
+        oculta = cheia
+        if cheia {
+            painel.orderOut(nil)
+            estado.aberta = false
+            painel.ignoresMouseEvents = true
+        } else {
+            painel.orderFrontRegardless()
+        }
     }
 
     func fechar() {
@@ -84,21 +111,23 @@ final class Janela {
         // sem o botão apertado, não há arraste, e a ilha não pode ficar presa aberta sobre a barra de menus.
         if bandeja.arrastando && !botao { bandeja.arrastando = false }
         let g = estado.geometria
+        // Fechada, a zona tem o tamanho que a ilha desenha agora (aviso ou asas com até três ícones).
+        let fechada = mural.avisos.isEmpty ? g.compacta(icones: mural.destaques.count) : g.aviso(linhas: mural.avisos.count)
         let zona = if estado.aberta {
-            g.zona(g.aberta(secoesAtuais(fontes)))
+            g.zona(tamanhoAberto(g, estado.aba, fontes))
         } else if bandeja.arrastando {
-            g.zona(g.compacta)  // arrastando, as asas também valem: ninguém clica num menu no meio de um arraste
-        } else if mural.novidade != nil {
-            g.zona(g.aviso)  // o aviso já está à vista: passar o cursor nele abre a lista
+            g.zona(fechada)  // arrastando, as asas também valem: ninguém clica num menu no meio de um arraste
+        } else if !mural.avisos.isEmpty {
+            g.zona(fechada)  // o aviso já está à vista: passar o cursor nele abre a lista
         } else {
             g.gatilho
         }
         let cursor = NSEvent.mouseLocation
         // Aberta e com o botão apertado, fica aberta: um arquivo arrastado para fora da bandeja ainda está em viagem,
         // e fechar trocaria a view de origem no meio do arraste.
-        // Em tela cheia o painel não está no espaço ativo: sem isto, a ilha "abriria" invisível e
-        // encerraria o aviso de uma atividade que ninguém viu.
-        let dentro = painel.isOnActiveSpace && zona.contains(cursor)
+        // Escondida em tela cheia: sem isto, a ilha "abriria" invisível e encerraria o aviso que ninguém viu.
+        if estado.recolher && !zona.contains(cursor) { estado.recolher = false }
+        let dentro = !oculta && !estado.recolher && zona.contains(cursor)
         entrada = dentro ? (entrada ?? .now) : nil
         // A ilha está sempre lá e abre mesmo vazia, para mostrar a bandeja. Fechada, só abre se o cursor parar;
         // com um arquivo sendo arrastado, abre na hora.
@@ -113,6 +142,8 @@ final class Janela {
             if aberta {
                 mural.encerrarAviso()
                 bandeja.podar()
+            } else {
+                estado.aba = .inicio  // abre sempre no início, que é onde está o que chegou
             }
         }
         let pertoDoTopo = g.tela.contains(cursor) && cursor.y > g.tela.maxY - 120

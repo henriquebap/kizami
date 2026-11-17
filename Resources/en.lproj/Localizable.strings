@@ -22,7 +22,6 @@
 /* Bandeja */
 "Solte aqui para guardar" = "Drop here to keep";
 "Enviar por AirDrop" = "Send with AirDrop";
-"Abrir" = "Open";
 "Mostrar no Finder" = "Show in Finder";
 "Tirar da bandeja" = "Remove from Tray";
 
@@ -75,3 +74,72 @@
 "precisa de você" = "needs you";
 "trabalhando" = "working";
 "pronta" = "ready";
+
+/* Apps e Mac (v0.8) */
+"Apps e Mac" = "Apps and Mac";
+"Mostrar as mensagens não lidas do Dock" = "Show unread counts from the Dock";
+"Para ler os emblemas do Dock, o Kizami precisa de Acessibilidade. Libere nos Ajustes do Sistema e abra esta janela de novo." = "To read the Dock badges, Kizami needs Accessibility. Allow it in System Settings and open this window again.";
+"Microfone, câmera e bateria aparecem na ilha sem pedir permissão." = "Microphone, camera and battery show on the island without asking for permission.";
+"Bateria fraca" = "Low battery";
+"Carregando" = "Charging";
+"Carga completa" = "Fully charged";
+"1 não lida" = "1 unread";
+"%lld não lidas" = "%lld unread";
+"Microfone em uso" = "Microphone in use";
+"Câmera em uso" = "Camera in use";
+
+/* Interesses (v0.7) */
+"Fórmula 1" = "Formula 1";
+"em 1 hora" = "in 1 hour";
+"hoje %@" = "today %@";
+"amanhã %@" = "tomorrow %@";
+"amanhã" = "tomorrow";
+"Interesses" = "Interests";
+"Remover" = "Remove";
+"Liga" = "League";
+"Time" = "Team";
+"Seguindo" = "Following";
+"Seguir" = "Follow";
+"Nenhum time encontrado, ou a rede falhou." = "No team found, or the network failed.";
+"Calendário (link ICS ou webcal)" = "Calendar (ICS or webcal link)";
+"Adicionar" = "Add";
+"Use um link https ou webcal." = "Use an https or webcal link.";
+"Lembra na semana do evento, na véspera e 1 hora antes. Jogos e corridas vêm da ESPN." = "Reminds you during the event's week, the day before and 1 hour before. Games and races come from ESPN.";
+
+/* Cabeçalho da ilha aberta e atalhos */
+"Início" = "Home";
+"Atalhos" = "Shortcuts";
+"Ajustes" = "Settings";
+"Ajustes do Kizami" = "Kizami Settings";
+"Tela" = "Screen";
+"Área" = "Area";
+"Gravar" = "Record";
+"Janelas" = "Windows";
+"Emojis" = "Emoji";
+"Bloquear" = "Lock";
+"Captura da tela inteira" = "Capture the whole screen";
+"Captura de uma área (ou da janela, com espaço)" = "Capture an area (or a window, with Space)";
+"Captura e gravação de tela, com opções" = "Screenshot and screen recording, with options";
+"Mission Control: todas as janelas" = "Mission Control: all windows";
+"Emojis e símbolos, no app em que você está" = "Emoji and symbols, in the app you are in";
+"Bloquear a tela" = "Lock the screen";
+"Atalhos pedem Acessibilidade" = "Shortcuts need Accessibility";
+"Clique para liberar o Kizami" = "Click to allow Kizami";
+"Abrir na ESPN" = "Open on ESPN";
+"Limpar" = "Clear";
+"Tirar todos os avisos da ilha" = "Remove every activity from the island";
+"Tirar da ilha" = "Remove from the island";
+
+/* Aba do Kanji */
+"Kanji" = "Kanji";
+"Ditar" = "Dictate";
+"Transcrever o Mac" = "Transcribe Mac";
+"Abrir" = "Open";
+"Começa ou para o ditado no app em que você está" = "Starts or stops dictation in the app you're in";
+"Começa ou para a transcrição do áudio que o Mac está tocando" = "Starts or stops transcribing the audio your Mac is playing";
+"Abre a janela do Kanji" = "Opens the Kanji window";
+"Kanji não está instalado" = "Kanji isn't installed";
+"Abrindo o Kanji…" = "Opening Kanji…";
+"Clique de novo quando ele abrir" = "Click again once it opens";
+"Sem atalho livre: escolha um para esta skill no Kanji" = "No free shortcut: pick one for this skill in Kanji";
+"Começa um ditado com esta skill" = "Starts a dictation with this skill";

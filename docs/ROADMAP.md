@@ -23,7 +23,7 @@ Kizami stays on public APIs, so every feature below says what macOS allows and w
 
 ## v0.4.1 (done)
 
-- The island hides on a display that is in full screen (video, game, presentation): the panel no longer joins full-screen Spaces.
+- The island hides on a display that is in full screen (video, game, presentation). Dropping `.fullScreenAuxiliary` wasn't enough: at the island's window level macOS still draws it on a full-screen Space (seen with YouTube in Chrome). The working signal is that macOS takes the wallpaper and the Finder desktop windows off a display in full screen; Kizami checks the window list on every Space change.
 
 ## Plan from v0.5
 
@@ -35,7 +35,7 @@ Kizami is the more flexible sibling of Kanji: it may call **named network servic
 |---|---|---|
 | **Settings window** (done: city) | City, interests, one toggle per module | |
 | **Reminder schedule** (pure) | From an event's start: "this week", "tomorrow", "in 1 hour", "in 15 min" → activities in the `Mural` | Calendar and interests use the same rule; tested like `Geometria`. |
-| **Who owns the closed wings** (pure) | Music, a meeting in 5 min, a Claude session waiting: one wins the closed island | A product decision, written as a small tested function. |
+| **Priority queue** (done) | Activities carry `prioridade` (`baixa`, `normal`, `alta`, `urgente`). The island sorts by it, then by arrival; full, it drops the least important. Up to three notices drop together, and the closed wings show up to three icons. `baixa` joins without dropping the island. | `Mural.antes` is the whole rule. Activities still beat music in the closed wings. |
 | **Urgent over full screen** | Optional: a meeting about to start or a Claude permission prompt still shows on a full-screen display | Needs a second panel that does join full-screen Spaces; off by default. |
 
 ### v0.5: Claude sessions (done)
@@ -57,7 +57,7 @@ Only `session_id`, the folder name and the state cross over; never the prompt or
 
 WeatherKit needs a paid developer account, and Core Location would ask for location for a city the person can type once.
 
-### v0.7: Interests (the "external calendar")
+### v0.7: Interests (the "external calendar") (done, except live score)
 
 Events the person follows but doesn't keep in their calendar (Buffalo Bills, F1, a football club):
 
@@ -68,7 +68,7 @@ Events the person follows but doesn't keep in their calendar (Buffalo Bills, F1,
 | Reminders | The shared schedule: the week's list, the day before, 1 hour before | |
 | Later: live score | Poll the ESPN scoreboard every minute only while a followed game is on | |
 
-### v0.8: Apps and the Mac
+### v0.8: Apps and the Mac (done: mic, camera, battery, Dock badges; timer and browser media keys still open)
 
 | What | How | Permission |
 |---|---|---|
@@ -79,6 +79,33 @@ Events the person follows but doesn't keep in their calendar (Buffalo Bills, F1,
 | Kanji is transcribing (done on Kanji's side: id `kanji-transcricao`) | Kanji posts `io.github.henriquebap.kizami.enviar` | none |
 | Timer | Kizami's own state, set from the open island | none |
 | Media keys for browsers (YouTube) | Post the system media-key events | Accessibility |
+
+### v0.9: The open island as a menu (done)
+
+- Tabs at the top of the open island: **Home**, **Shortcuts** and **Kanji**, plus a ⚙︎ that opens Settings.
+- **Shortcuts:** the Mac's shortcuts in one click, with the keys written under each one (screenshots, Mission Control, emoji, lock).
+- **Kanji:** dictate, transcribe the Mac's audio, open Kanji, and one button per Kanji skill. They are Kanji's own global shortcuts, read from its settings and sent as key events.
+- **Click an activity to open it:** the Claude session's app, the game's ESPN page, the meeting, the Dock app. Only Kizami's own sources get an action; activities from outside only show.
+- **Clear:** a Clear button for every activity, and a ✕ on the row under the cursor.
+- **Interests side by side:** the next event of each followed source, up to three.
+
+## Ideas (not scheduled)
+
+Ranked by value for daily use against the work it takes.
+
+| Idea | How | Cost |
+|---|---|---|
+| Live score of a followed game in the closed wings | ESPN scoreboard every minute, only while the game is on | small |
+| Rain alert ("rain in 20 min") | Open-Meteo `minutely_15` precipitation, already the weather source | small |
+| Timer / pomodoro in the closed wings | Kizami's own state, started from a new tab | small |
+| Today tab: the whole day's agenda | EventKit, already allowed | small |
+| Browser media keys (YouTube play/pause) | System media-key events; Accessibility is now granted for Shortcuts | small |
+| Urgent over full screen (meeting starting, Claude permission) | A second panel that joins full-screen Spaces, off by default | medium |
+| Kanji: live level of the microphone while dictating | Kanji posts a level (never text) on the existing protocol | medium (both apps) |
+| GitHub: CI failed / review requested on your PRs | `gh` CLI the person already logged in, polled every few minutes | medium |
+| Clipboard: the last copies, click to paste again | Shared with Kanji's clipboard history (it already filters passwords) | medium |
+| Downloads: progress of a file being downloaded | Watch `~/Downloads` for `.download` / `.crdownload` (asks for the Downloads folder) | medium |
+| Camera mirror before a call | AVFoundation preview in the open island (asks for the camera) | medium |
 
 ## Not possible with public APIs
 

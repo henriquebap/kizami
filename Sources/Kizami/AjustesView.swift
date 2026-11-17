@@ -13,7 +13,10 @@ final class FormularioAjustes {
 struct AjustesView: View {
     let tempo: Tempo
     let agenda: Agenda
+    let mac: Mac
+    let interesses: Interesses
     @Bindable var formulario: FormularioAjustes
+    let formularioInteresses: FormularioInteresses
 
     var body: some View {
         Form {
@@ -47,19 +50,14 @@ struct AjustesView: View {
                     }
                 }
             }
+            AjustesInteresses(interesses: interesses, formulario: formularioInteresses)
+            AjustesMac(mac: mac)
             Section("Claude Code") {
                 Text("As sessões aparecem na ilha quando os hooks do Claude Code chamam o Kizami (docs/CLAUDE-HOOKS.md).")
             }
         }
         .formStyle(.grouped)
-        .frame(width: 440)
-        .fixedSize(horizontal: false, vertical: true)
-        // App sem Dock (LSUIElement): sem ativar, a janela de Ajustes abre atrás do app em que a pessoa está.
-        // É a pessoa que pediu a janela; a ilha continua sem nunca tomar o foco.
-        .onAppear {
-            NSApp.activate()
-            agenda.iniciar()  // liberado nos Ajustes do Sistema depois de negado: confere de novo ao abrir esta janela
-        }
+        .frame(minWidth: 440, idealWidth: 460, minHeight: 420, idealHeight: 640)
     }
 
     private func buscar() {

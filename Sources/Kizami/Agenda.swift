@@ -194,8 +194,18 @@ final class Agenda {
             case .faltam(let minutos): String(localized: "em \(minutos) min")
             case .comecando: String(localized: "começando agora")
             }
+            // Começando agora passa na frente de tudo: é a hora de entrar na reunião.
             mural.receber(Atividade(id: "agenda-\(lembrete.evento.id)", titulo: lembrete.evento.titulo, detalhe: detalhe,
-                                    simbolo: "calendar", cor: "vermelho", expira: 60))
+                                    simbolo: "calendar", cor: "vermelho", expira: 60,
+                                    prioridade: lembrete.aviso == .comecando ? "urgente" : "alta")) { [link = lembrete.evento.link] in
+                // Com link de reunião (já conferido pela lista de serviços), entra nela; sem, abre o Calendário.
+                if let link, EventoAgenda.aceito(link) {
+                    NSWorkspace.shared.open(link)
+                } else {
+                    NSWorkspace.shared.openApplication(at: URL(fileURLWithPath: "/System/Applications/Calendar.app"),
+                                                       configuration: NSWorkspace.OpenConfiguration(), completionHandler: nil)
+                }
+            }
         }
         // Esquece o que já passou: só eventos ainda na janela podem pedir aviso de novo.
         let ids = Set(eventos.map(\.id))

@@ -10,7 +10,14 @@ A small island around the MacBook notch that shows what other apps and scripts a
 |---|---|---|
 | ![closed](docs/fechada.png) | ![arrived](docs/aviso.png) | ![open](docs/aberta.png) |
 
-Free and open source (Apache 2.0). No private APIs and no third-party dependencies. Every permission is optional: Automation, for the artwork and media buttons of the song that is playing, and Calendars, for your next event. The network goes only to Open-Meteo, for the weather of the city you type in Settings.
+Free and open source (Apache 2.0). No private APIs and no third-party dependencies.
+
+**Every permission is optional**, and each one turns on one thing:
+- **Automation:** the artwork and media buttons of the song that is playing.
+- **Calendars:** your next event.
+- **Accessibility:** the Dock badges, the Shortcuts tab and the Kanji tab.
+
+**The network goes only to services that need no key:** Open-Meteo for the weather, ESPN's public schedules for the games you follow, and the calendar links you paste in Settings. Audio, files and what you type never leave the Mac.
 
 ## Build
 
@@ -38,8 +45,9 @@ $K limpar
 - `--cor`: one of `vermelho`, `laranja`, `amarelo`, `verde`, `azul`, `roxo`, `rosa`, `cinza`.
 - `--expira`: seconds until the activity disappears (default 10). `0` keeps it until `remover`.
 - `--id`: sending again with the same id replaces the activity.
+- `--prioridade`: `baixa`, `normal` (default), `alta` or `urgente`. The island sorts by it, and when it's full the least important activity leaves first. `baixa` joins the island without dropping it down.
 
-From another app, post a distributed notification named `io.github.henriquebap.kizami.enviar`. Put the activity's JSON in `object`: `{"id", "titulo", "detalhe"?, "simbolo"?, "cor"?, "expira"?}`. Pass `deliverImmediately: true`: Kizami is never the active app, and without that flag macOS may hold the notification back.
+From another app, post a distributed notification named `io.github.henriquebap.kizami.enviar`. Put the activity's JSON in `object`: `{"id", "titulo", "detalhe"?, "simbolo"?, "cor"?, "expira"?, "prioridade"?}`. Pass `deliverImmediately: true`: Kizami is never the active app, and without that flag macOS may hold the notification back.
 
 **What arrives is data, never a command.** Any process on the Mac can post one. Kizami only displays it: cleaned of invisible and direction characters, length-limited and never parsed as Markdown. *Clear the Island*, in Kizami's menu bar item, removes everything.
 
@@ -55,15 +63,35 @@ Only media apps count (players and browsers): Core Audio tells which apps have t
 
 ![now playing](docs/tocando.png)
 
+## The open island
+
+Hover the notch and the island opens. At the top:
+- **Home**: everything below (today, interests, Claude sessions, now playing, activities, apps, tray).
+- **Shortcuts**: one click for the Mac's shortcuts, with the keys written under each one so you learn them: full screenshot (⇧⌘3), area (⇧⌘4), screenshot and recording (⇧⌘5), Mission Control, emoji (⌃⌘Space) and lock screen (⌃⌘Q). Sending keys needs the Accessibility permission, asked on the first click.
+- **Kanji**: [Kanji](https://github.com/henriquebap/kanji-local-dictation), the dictation app, in one click: dictate, transcribe the Mac's audio, open Kanji, and one button per skill (dictate already rewritten as a LinkedIn reply, an informal message, a prompt…). They are Kanji's own shortcuts, read from its settings, so they change when you change them there. Same Accessibility permission as Shortcuts.
+- **⚙︎**: opens Settings (also in Kizami's menu bar item, or ⌘, with its menu open).
+
+**Click an activity to open it:** a Claude alert brings its session's app forward, a game opens its ESPN page, a meeting reminder joins the call (or opens Calendar), a Dock badge opens the app. Activities sent by other apps or scripts only show.
+
 ## Today
 
 The open island starts with a strip for the day:
 - **Next event** from your calendars (EventKit), with a reminder 15 minutes before and when it starts. When the event has a Meet, Zoom, Teams, FaceTime or Whereby link, a **Join** button opens it. macOS asks for access to Calendars the first time; say no and the strip just leaves the event out.
 - **Weather** for the city you type in **Settings… › Weather**, from [Open-Meteo](https://open-meteo.com) (no key, no account), refreshed every 30 minutes.
 
+## Interests
+
+Games and races you follow but don't keep in your calendar. In **Settings › Interests** (the ⚙︎ on the open island), pick a league and search a team (NFL, NBA, MLB, Brasileirão, Premier League, from ESPN's public schedules), turn on Formula 1, or paste an ICS / webcal calendar link. The island reminds you during the event's week, the day before and 1 hour before, and the open island shows the next one within 7 days. The Buffalo Bills come followed by default.
+
 ## Claude sessions
 
 Claude Code hooks call `Kizami claude`, and the open island lists the running sessions: working, **needs you** (a permission prompt) or ready. A session that needs you also drops the island with an alert. Click a session to bring its app forward. Only the session id, the folder name and the state cross over, never your prompts or Claude's replies. Setup: [docs/CLAUDE-HOOKS.md](docs/CLAUDE-HOOKS.md).
+
+## Apps and Mac
+
+- **Microphone and camera in use:** an orange dot (mic) and a green dot (camera) on the closed island, like on the iPhone, and the app that is listening when you hover.
+- **Battery:** the percentage when hovered, and a warning at 20% and 10%.
+- **Unread counts from the Dock** (WhatsApp 3, Mail 12): turn them on in **Settings… › Apps and Mac**. Reading the Dock needs the Accessibility permission. When a count goes up, the island drops a line; click an app to open it. macOS has no way to read other apps' notification text, only these counts.
 
 ## File tray
 
@@ -75,7 +103,7 @@ Drag files from any app to the notch: the island opens with *Drop here to keep*.
 
 - **Notch:** on a screen with a notch, the island hugs it and opens when the cursor touches the notch itself, never the menus beside it. On a screen without one, the island is just the two "wings" under the menu bar.
 - **Monitors:** one island on every display, so you see it on the screen you are working on. They are rebuilt when displays change.
-- **New activity:** the island drops a line below the notch with the title for a few seconds, then closes again.
+- **New activity:** the island drops a line below the notch with the title for a few seconds, then closes again. Up to three that arrive together drop at once, the most important on top; closed, the island shows up to three icons.
 - **On launch:** it shows "Kizami is running", and the menu bar item says how many activities are on the island.
 - **Full screen:** it hides on a display that is in full screen, so it never sits over a video, game or presentation.
 - **Always there:** with nothing to show, the island rests as a small pill around the notch (or at the top of a display without one). Hovered, it offers the empty tray.

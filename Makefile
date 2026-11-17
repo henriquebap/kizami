@@ -29,7 +29,8 @@ install: app
 teste:
 	mkdir -p build
 	$(SWIFTC) Tests/*.swift Sources/Kizami/Geometria.swift Sources/Kizami/Atividades.swift Sources/Kizami/Correio.swift Sources/Kizami/Bandeja.swift Sources/Kizami/Som.swift Sources/Kizami/Player.swift \
-		Sources/Kizami/Agenda.swift Sources/Kizami/Tempo.swift Sources/Kizami/Claude.swift -o build/teste
+		Sources/Kizami/Agenda.swift Sources/Kizami/Tempo.swift Sources/Kizami/Claude.swift Sources/Kizami/Mac.swift \
+		Sources/Kizami/Interesses.swift Sources/Kizami/Kanji.swift -o build/teste
 	./build/teste
 
 clean:
