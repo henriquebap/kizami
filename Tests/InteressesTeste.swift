@@ -133,6 +133,13 @@ import Foundation
 
     // MARK: Lembretes
 
+    // O lembrete de 1 hora de um jogo à 00:30 sai às 23:30 da véspera: "amanhã", não "hoje".
+    let madrugada = EventoInteresse(id: "espn-2", titulo: "x", inicio: utc("2026-11-23T03:30Z"), fonte: .bills)  // 00:30 em SP
+    conferir("1 hora antes, na véspera: amanhã",
+             EventoInteresse.diaEHora(madrugada, agora: utc("2026-11-23T02:30Z"), calendario: cal).hasPrefix("amanhã"), true)
+    conferir("1 hora antes, no mesmo dia: hoje",
+             EventoInteresse.diaEHora(madrugada, agora: utc("2026-11-23T03:00Z"), calendario: cal).hasPrefix("hoje"), true)
+
     // Jogo no domingo 22/11, 15:00 em São Paulo (18:00Z). A semana dele começa na segunda 16/11, 09:00 (12:00Z).
     let jogo = EventoInteresse(id: "espn-1", titulo: "Bills x Dolphins", inicio: utc("2026-11-22T18:00Z"), fonte: .bills)
     func tipo(_ e: EventoInteresse, _ agora: String) -> TipoLembrete? { EventoInteresse.tipoDevido(e, agora: utc(agora), calendario: cal) }

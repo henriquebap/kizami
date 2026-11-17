@@ -111,6 +111,14 @@ struct EventoInteresse: Equatable, Identifiable, Sendable {
             .min { ($0.inicio, $0.titulo) < ($1.inicio, $1.titulo) }  // título desempata: a escolha não pisca
     }
 
+    /// "hoje 20:15" ou "amanhã 00:30", sem contagem: o texto do lembrete de 1 hora, que fica parado na ilha.
+    static func diaEHora(_ e: EventoInteresse, agora: Date, calendario: Calendar = .current) -> String {
+        let hora = e.inicio.formatted(Date.FormatStyle(date: .omitted, time: .shortened, locale: calendario.locale ?? .current,
+                                                       calendar: calendario, timeZone: calendario.timeZone))
+        return calendario.isDate(e.inicio, inSameDayAs: agora) ? String(localized: "hoje \(hora)")
+            : String(localized: "amanhã \(hora)")
+    }
+
     /// "em 45 min", "hoje 20:15", "amanhã 14:00", "dom. 14:00". Contagem na última hora, quando "quanto falta"
     /// importa mais que "a que horas".
     static func quando(_ e: EventoInteresse, agora: Date, calendario: Calendar = .current) -> String {
@@ -511,6 +519,8 @@ final class Interesses {
     /// Os que já deram "Fim de jogo": não avisam de novo nem voltam a ser consultados. Só da sessão: depois de
     /// reiniciar, a agenda da ESPN já não traz jogo terminado.
     @ObservationIgnored private var encerrados: Set<String> = []
+    /// Jogos que já tiveram placar: esses são consultados a cada minuto até acabar, mesmo se uma consulta falhar.
+    @ObservationIgnored private var comPlacar: Set<String> = []
     @ObservationIgnored private var placar: Task<Void, Never>?
     @ObservationIgnored private var porFonte: [Seguido: [EventoInteresse]] = [:]
     @ObservationIgnored private var disparados: [String: Date] = [:]
@@ -660,8 +670,9 @@ final class Interesses {
             let expira = lembrete.tipo == .umaHora ? max(e.inicio.timeIntervalSince(agora), 1) : Atividade.expiraPadrao
             mural.receber(Atividade(id: "interesse-\(lembrete.chave)", titulo: e.titulo,
                                     // O de 1 hora fica até o início: "em 1 hora" ficaria parado; a hora não envelhece.
+                                    // Um jogo à 00:30 tem o lembrete às 23:30 da véspera: aí é "amanhã", não "hoje".
                                     detalhe: lembrete.tipo == .umaHora
-                                        ? String(localized: "hoje \(e.inicio.formatted(date: .omitted, time: .shortened))")
+                                        ? EventoInteresse.diaEHora(e, agora: agora)
                                         : EventoInteresse.quando(e, agora: agora),
                                     simbolo: e.fonte.simbolo, cor: e.fonte.cor, expira: expira,
                                     prioridade: lembrete.tipo == .umaHora ? "alta" : "normal")) { [weak self] in self?.abrir(e) }
@@ -679,20 +690,24 @@ final class Interesses {
     // ponytail: um placar por vez (o jogo que começou antes); dois jogos seguidos ao mesmo tempo ganham os dois
     // "Fim de jogo", mas só o primeiro aparece ao vivo.
     private func acompanharPlacar() async {
-        let jogos = Placar.emJogo(seguidos.flatMap { porFonte[$0] ?? [] }, agora: .now, encerrados: encerrados)
-        guard !jogos.isEmpty else {
+        let agora = Date.now
+        let naJanela = Placar.emJogo(seguidos.flatMap { porFonte[$0] ?? [] }, agora: agora, encerrados: encerrados)
+        guard !naJanela.isEmpty else {
             if aoVivo != nil { aoVivo = nil; conferir() }
             return
         }
-        guard var placares = await Placar.buscar(jogos) else { return }  // sem rede: o último placar fica
+        // Meia hora depois do início e ainda sem placar (atrasado pela chuva, adiado ou cancelado, que `ler` não
+        // distingue de "ainda não começou"): consulta a cada 5 min em vez de a cada minuto, sem nunca dar o jogo por
+        // encerrado. Uma falha passageira de uma das ligas não pode apagar o placar até reabrir o app.
+        let minuto = Int(agora.timeIntervalSince1970 / 60)
+        let jogos = naJanela.filter { e in
+            agora.timeIntervalSince(e.inicio) < 1800 || minuto % 5 == 0 || Placar.idESPN(e).map(comPlacar.contains) == true
+        }
+        guard !jogos.isEmpty, var placares = await Placar.buscar(jogos) else { return }  // sem rede: o último placar fica
         // Deixou de seguir o time durante a consulta: o placar dele não volta para a ilha.
         let seguidosAgora = seguidos.flatMap { porFonte[$0] ?? [] }
         placares = placares.filter { p in seguidosAgora.contains(where: p.eDo) }
-        // Meia hora depois do início e a ESPN sem placar (jogo adiado ou cancelado, que `ler` recusa): para de
-        // consultar, em vez de bater na ESPN a cada minuto até a janela de 5 h fechar.
-        for e in jogos where Date.now.timeIntervalSince(e.inicio) > 1800 && !placares.contains(where: { $0.eDo(e) }) {
-            if let id = Placar.idESPN(e) { encerrados.insert(id) }
-        }
+        comPlacar.formUnion(placares.map(\.eventoId))
         for p in placares where p.encerrado && !encerrados.contains(p.eventoId) {
             encerrados.insert(p.eventoId)
             guard let e = jogos.first(where: p.eDo) else { continue }
