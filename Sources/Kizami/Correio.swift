@@ -111,10 +111,12 @@ enum Correio {
         }
     }
 
-    /// Lê o JSON do hook na entrada padrão e manda ao app só o id da sessão, a pasta, o evento e o app onde ela roda.
+    /// Lê o JSON do hook na entrada padrão e manda ao app só o id da sessão, a pasta, o evento, o app onde ela roda
+    /// e o terminal dela.
     static func encaminharHookDoClaude() {
+        let (app, tty) = ancestrais()
         guard isatty(STDIN_FILENO) == 0, let dados = entrada(ate: MensagemClaude.limiteHook),
-              let mensagem = MensagemClaude.doHook(dados, app: appDosAncestrais()),
+              let mensagem = MensagemClaude.doHook(dados, app: app, tty: tty),
               let texto = (try? JSONEncoder().encode(mensagem)).flatMap({ String(data: $0, encoding: .utf8) })
         else { return }
         DistributedNotificationCenter.default().postNotificationName(claude, object: texto, userInfo: nil, deliverImmediately: true)
@@ -129,24 +131,30 @@ enum Correio {
         return dados.count <= limite ? dados : nil
     }
 
-    /// O app onde a sessão roda: sobe pelos processos pais (sh do hook, claude, shell, Terminal) até o primeiro
+    /// O app onde a sessão roda: sobe pelos processos pais (sh do hook, claude, shell, login, Terminal) até o primeiro
     /// que está dentro de um .app. `Som.caminhoDoApp` pega o .app mais de fora do caminho, então um helper do
     /// VS Code ("Code Helper (Plugin).app" dentro de "Visual Studio Code.app") vira o VS Code.
-    private static func appDosAncestrais() -> String? {
+    /// No caminho, o terminal de controle do primeiro processo que tem um, que é o da aba: o `claude`, o shell e o
+    /// login herdam o pty que o Terminal abriu para ela; se o hook rodar numa sessão própria, sem terminal, o `claude`
+    /// ainda tem. O app (Terminal, iTerm2) não tem terminal de controle, então o tty nunca vem de cima dele.
+    private static func ancestrais() -> (app: String?, tty: String?) {
         var pid = getppid()
+        var tty: String?
         for _ in 0..<32 where pid > 1 {
+            var info = kinfo_proc()
+            var tamanho = MemoryLayout<kinfo_proc>.stride
+            var mib: [Int32] = [CTL_KERN, KERN_PROC, KERN_PROC_PID, pid]
+            guard sysctl(&mib, u_int(mib.count), &info, &tamanho, nil, 0) == 0, tamanho > 0 else { break }
+            // Sem terminal (NODEV), o `devname` devolve nil.
+            if tty == nil { tty = devname(info.kp_eproc.e_tdev, S_IFCHR).map { String(cString: $0) } }
             var caminho = [CChar](repeating: 0, count: 4096)
             if proc_pidpath(pid, &caminho, UInt32(caminho.count)) > 0,
                let app = Som.caminhoDoApp(String(decoding: caminho.prefix { $0 != 0 }.map { UInt8(bitPattern: $0) }, as: UTF8.self)),
                let bundle = Bundle(path: app)?.bundleIdentifier {
-                return bundle
+                return (bundle, tty)
             }
-            var info = kinfo_proc()
-            var tamanho = MemoryLayout<kinfo_proc>.stride
-            var mib: [Int32] = [CTL_KERN, KERN_PROC, KERN_PROC_PID, pid]
-            guard sysctl(&mib, u_int(mib.count), &info, &tamanho, nil, 0) == 0, tamanho > 0 else { return nil }
             pid = info.kp_eproc.e_ppid
         }
-        return nil
+        return (nil, tty)
     }
 }

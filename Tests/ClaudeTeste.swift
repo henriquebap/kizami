@@ -54,6 +54,13 @@ import Foundation
     conferir("pasta cortada e limpa", MensagemClaude.ler(texto(MensagemClaude(id: "a", pasta: "\u{202E}" + String(repeating: "x", count: 99), evento: .pronta)))?.pasta,
              String(repeating: "x", count: 40))
     conferir("bundle id inválido vira nil", MensagemClaude.ler(texto(MensagemClaude(id: "a", pasta: "p", evento: .pronta, app: "com.x; rm -rf")))?.app, String?.none)
+    conferir("tty do hook atravessa", MensagemClaude.doHook(hook("Stop"), app: AbaDoTerminal.terminal, tty: "ttys003")?.tty, "ttys003")
+    conferir("tty bom passa", MensagemClaude.ler(texto(MensagemClaude(id: "a", pasta: "p", evento: .pronta, tty: "ttys003")))?.tty, "ttys003")
+    for ruim in ["ttys", "ttys12345", "/dev/ttys003", "ttys003\" & do shell script \"x", "ttys٣", "tty.usb0", "console", ""] {
+        let lida = MensagemClaude.ler(texto(MensagemClaude(id: "a", pasta: "p", evento: .pronta, tty: ruim)))
+        conferir("tty inválido vira nil, a mensagem fica (\(ruim.count))", lida.map { $0.tty == nil }, true)
+    }
+    conferir("mensagem sem tty (versão antiga) passa", MensagemClaude.ler(#"{"id":"a","pasta":"p","evento":"pronta"}"#)?.tty, String?.none)
     conferir("mensagem acima de 4 KB recusada",
              MensagemClaude.ler(#"{"id":"a","evento":"pronta","pasta":""# + String(repeating: "x", count: 4100) + "\"}"), nil)
     conferir("sem objeto recusada", MensagemClaude.ler(nil), nil)
@@ -72,6 +79,22 @@ import Foundation
     conferir("app guardado quando o evento não traz", lista.first?.app, "com.apple.Terminal")
     lista = SessaoClaude.aplicar(m("a", .inicio), a: lista, agora: t0 + 30)
     conferir("SessionStart no meio (compactação) não muda o estado", lista.first?.estado, .trabalhando)
+    var comTty = m("a", .pronta, app: AbaDoTerminal.terminal)
+    comTty.tty = "ttys003"
+    var pares = SessaoClaude.aplicar(comTty, a: lista, agora: t0 + 31)
+    pares = SessaoClaude.aplicar(m("a", .pronta), a: pares, agora: t0 + 32)
+    conferir("evento sem app guarda o app e o tty", pares.first.map { "\($0.app ?? "") \($0.tty ?? "")" }, "com.apple.Terminal ttys003")
+    pares = SessaoClaude.aplicar(m("a", .pronta, app: "com.microsoft.VSCode"), a: pares, agora: t0 + 33)
+    conferir("app novo sem tty não herda o tty antigo", pares.first?.tty, String?.none)
+
+    // O AppleScript da aba: só Terminal e iTerm2, e o único texto de fora é o tty já conferido.
+    let doTerminal = AbaDoTerminal.script(app: AbaDoTerminal.terminal, tty: "ttys003")
+    conferir("Terminal procura a aba pelo dispositivo", doTerminal?.contains(#"if tty of t is "/dev/ttys003" then"#), true)
+    conferir("Terminal não abre o app fechado", doTerminal?.hasPrefix(#"if application id "com.apple.Terminal" is not running"#), true)
+    conferir("iTerm2 procura a sessão pelo dispositivo",
+             AbaDoTerminal.script(app: AbaDoTerminal.iterm, tty: "ttys12")?.contains(#"if tty of s is "/dev/ttys12" then"#), true)
+    conferir("outro app não tem script", AbaDoTerminal.script(app: "com.microsoft.VSCode", tty: "ttys003"), String?.none)
+    conferir("tty inválido não entra no script", AbaDoTerminal.script(app: AbaDoTerminal.terminal, tty: #"ttys1" & beep & ""#), String?.none)
     lista = SessaoClaude.aplicar(m("a", .precisaDeVoce), a: lista, agora: t0 + 40)
     lista = SessaoClaude.aplicar(m("a", .subagente), a: lista, agora: t0 + 50)
     conferir("subagente usando ferramenta tira do precisa de você", lista.first?.estado, .trabalhando)

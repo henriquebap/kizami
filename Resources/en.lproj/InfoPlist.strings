@@ -1,5 +1,5 @@
 /* Info.plist em inglês. */
-"NSAppleEventsUsageDescription" = "Kizami asks Music and Spotify for the artwork of the song that is playing, to show it at the notch.";
+"NSAppleEventsUsageDescription" = "Kizami asks Music and Spotify for the artwork of the song that is playing, to show it at the notch, and Terminal and iTerm2 for the tab of the Claude session you click.";
 "NSCalendarsFullAccessUsageDescription" = "Kizami shows your next event at the notch and reminds you 15 minutes before it starts.";
 "NSCameraUsageDescription" = "Kizami shows your camera in the notch when you ask for the mirror, so you can check yourself before a call. The image is never recorded and never leaves the Mac.";
 "NSDownloadsFolderUsageDescription" = "Kizami watches files being downloaded to show their progress in the notch, if you turn that on in Settings.";
