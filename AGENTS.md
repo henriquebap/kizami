@@ -11,7 +11,7 @@ Kizami is a menu-bar-only macOS app that draws a black island around the MacBook
 ```bash
 make app      # build/Kizami.app (swiftc only; signed with the local "Kanji Dev" certificate when present, so permissions survive rebuilds)
 make install  # /Applications/Kizami.app
-make teste    # pure rules: Geometria, Comando, Atividade, Som, Agenda, Tempo, Claude, Mac, Interesses, Placar, Cronometro, Copiados, Espelho, Downloads, GitHub, Personalizacao, AtalhosApple
+make teste    # pure rules: Geometria, Comando, Atividade, Som, Volume, Agenda, Tempo, Claude, Mac, Interesses, Placar, Cronometro, Copiados, Espelho, Downloads, GitHub, Personalizacao, AtalhosApple
 ```
 
 **Constraints:**
@@ -39,7 +39,8 @@ make install && /Applications/Kizami.app/Contents/MacOS/Kizami enviar --titulo t
 | `Arrasto.swift` | Global mouse monitors + the drag pasteboard: notices a file drag in any app so the closed island opens and accepts the drop |
 | `Atividades.swift` | `Atividade` (wire format + validation) and `Mural` (list, max 8, expiry, the "arrived" line) |
 | `Som.swift` | Now playing: Core Audio process list (who has audio output open), media-app allowlist, Music/Spotify notifications, debounce |
-| `Player.swift` | Music and Spotify through `osascript`: media commands (`Controle`), artwork (`Capa`: Music bytes to a temp file, Spotify URL from `*.scdn.co`), the player position and seeking (`Progresso`), the runner with a timeout (`AppleScript`) |
+| `Player.swift` | Music and Spotify through `osascript`: media commands (`Controle`), artwork (`Capa`: Music bytes to a temp file, Spotify URL from `*.scdn.co`; its average colour as an accent, `Capa.destaque`), the player position and seeking (`Progresso`), the runner with a timeout (`AppleScript`) |
+| `Volume.swift` | The default output's volume and mute, read only, through Core Audio listeners; `Volume.visivel` (1.5 s after the person changes it) |
 | `Correio.swift` | CLI parsing (`Comando`, including `Kizami claude` for Claude Code hooks) and the distributed notifications (`Correio`) |
 | `Claude.swift`, `ClaudeView.swift` | Claude Code sessions: hook events → session states, expiry, the "needs you" alert, the open-island section, the click that selects the session's tab in Terminal / iTerm2 (`AbaDoTerminal`) |
 | `Agenda.swift`, `AgendaView.swift` | Calendar (EventKit): next event, meeting-link allowlist, 15-min / starting reminders, the "Today" chip, the expanded week / month (`Calendario`, `AgendaExpandida`) |

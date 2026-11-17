@@ -157,4 +157,4 @@ Ranked by value for daily use against the work it takes.
 
 - **Other apps' notification text** (WhatsApp, Slack, Messages). macOS has no API to read another app's notifications, and macOS 26.3 moved the Notification Center data to a protected location (CVE-2026-20648). Reading the banners through Accessibility is fragile. What is possible: the unread *count* from the Dock badge (v0.8), and any app or script that wants to show up can send an activity to Kizami.
 - **Lock screen island.** Needs the private SkyLight framework.
-- **Replacing the volume / brightness HUD.** Needs to intercept media keys (Accessibility) and breaks between macOS versions.
+- **Replacing the volume / brightness HUD.** Hiding the system indicator needs to intercept media keys (Accessibility) and breaks between macOS versions. What is possible (v0.16): reading the default output's volume and mute through Core Audio listeners and showing the level in the wing for a moment after the person changes it. The system indicator still shows; brightness has no public read API on Apple displays.
