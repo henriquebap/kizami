@@ -32,8 +32,10 @@ enum Tipo {
 
 extension View {
     /// O rótulo pequeno em caixa alta em cima de cada widget ("AGORA", "PRÓXIMO").
-    func estiloRotulo() -> some View {
-        font(Tipo.rotulo).tracking(0.7).textCase(.uppercase).foregroundStyle(.secondary).lineLimit(1)
+    /// Com `cor`, o rótulo leva a cor do assunto (a capa, o calendário).
+    func estiloRotulo(_ cor: Color? = nil) -> some View {
+        font(Tipo.rotulo).tracking(0.7).textCase(.uppercase).lineLimit(1)
+            .foregroundStyle(cor.map(AnyShapeStyle.init) ?? AnyShapeStyle(.secondary))
     }
 
     /// O fundo de um cartão de conteúdo: um preenchimento claro, não vidro. O HIG deixa o Liquid Glass para os

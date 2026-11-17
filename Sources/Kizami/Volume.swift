@@ -15,6 +15,10 @@ final class Volume {
     private(set) var mudo = false
     /// A última mudança feita pela pessoa. A leitura ao abrir e a troca de dispositivo não contam.
     private(set) var mudouEm: Date?
+    /// A asa mostra o nível agora: liga na mudança e desliga `mostrarPor` depois, por uma Task agendada, sem relógio
+    /// redesenhando a ilha (a asa fechada não pode ter nada por segundo; ver Energy no ARCHITECTURE).
+    private(set) var naAsa = false
+    @ObservationIgnored private var esconder: Task<Void, Never>?
 
     /// O dispositivo ouvido agora, os endereços em que o ouvinte entrou e o próprio ouvinte: para tirar o
     /// mesmo bloco dos mesmos endereços quando a saída padrão muda.
@@ -75,7 +79,18 @@ final class Volume {
         guard nivel != self.nivel || mudo != self.mudo else { return }
         if nivel != self.nivel { self.nivel = nivel }
         if mudo != self.mudo { self.mudo = mudo }
-        if pelaPessoa { mudouEm = .now }
+        if pelaPessoa { mostrar() }
+    }
+
+    private func mostrar() {
+        mudouEm = .now
+        if !naAsa { naAsa = true }
+        esconder?.cancel()
+        esconder = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(Self.mostrarPor))
+            guard !Task.isCancelled else { return }
+            self?.naAsa = false
+        }
     }
 
     // MARK: Core Audio

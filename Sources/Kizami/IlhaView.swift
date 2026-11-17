@@ -29,6 +29,8 @@ private enum Forma: Equatable {
     let cronometro: Cronometro
     let copiados: Copiados
     let espelho: Espelho
+    let lembretes: Lembretes
+    let volume: Volume
     let personalizacao: Personalizacao
     let atalhosApple: AtalhosApple
 }
@@ -69,6 +71,7 @@ extension Aba {
 /// O tamanho da ilha fechada agora: o aviso, as asas ou o repouso. A janela mede a área do hover com a mesma conta.
 @MainActor func tamanhoFechado(_ g: Geometria, _ f: Fontes) -> CGSize {
     if !f.mural.avisos.isEmpty { return g.aviso(linhas: f.mural.avisos.count) }
+    if f.volume.naAsa { return g.compacta(icones: 2) }  // o alto-falante de um lado, a barra do nível do outro
     return switch asaAtual(f) {
     case .atividades: g.compacta(icones: f.mural.destaques.count)
     case .timer, .reuniao: g.compacta(icones: 2)  // "24:59" ou "10 min" não cabe na asa de um ícone
@@ -86,7 +89,7 @@ extension Aba {
         switch expansaoAtual(estado, f) {
         case .agenda: g.abertaComAba(alturaDaAgendaExpandida(estado, f.agenda))
         case .musica: g.abertaComAba(Geometria.alturaMusica(barra: f.tocando.app.map(Controle.sabeControlar) == true))
-        case nil: g.aberta(secoesAtuais(f))
+        case nil: g.aberta(painelAtual(f))
         }
     case .atalhos: g.abertaComAba(Geometria.alturaComFileira(f.atalhosApple.escolhidos.count))
     case .kanji: g.abertaComAba(AbaKanji.altura(skills: f.kanji.skills.count))
@@ -108,17 +111,36 @@ extension Aba {
     }
 }
 
-/// As seções da ilha aberta agora. A janela mede a área do hover com a mesma conta.
+/// O Início em grade agora. A janela mede a área do hover com a mesma conta.
 /// Uma seção escondida nos Ajustes conta como vazia: some da ilha e da conta da altura juntas.
-@MainActor func secoesAtuais(_ f: Fontes) -> Secoes {
+@MainActor func painelAtual(_ f: Fontes) -> Painel {
     let p = f.personalizacao
-    return Secoes(tocando: p.mostra(.tocando) && f.tocando.app != nil, atividades: f.mural.atividades.count,
-                  arquivos: p.mostra(.bandeja) ? f.bandeja.arquivos.count : 0, arrastando: f.bandeja.arrastando,
-                  sessoes: p.mostra(.claude) ? f.claude.sessoes.count : 0,
-                  hoje: p.mostra(.hoje) && (f.agenda.proximo != nil || f.tempo.previsao != nil),
-                  apps: p.mostra(.apps) && (!f.mac.emblemas.isEmpty || !f.mac.microfone.isEmpty || f.mac.camera || f.mac.bateria != nil),
-                  interesse: p.mostra(.interesse) && !f.interesses.proximos.isEmpty,
-                  semBandejaVazia: !p.mostra(.bandeja))
+    let hoje = p.mostra(.hoje)
+    let claude = p.mostra(.claude) ? f.claude.sessoes : []
+    return Painel(Painel.Entrada(
+        precisaDeVoce: claude.contains { $0.estado == .precisaDeVoce },
+        sessoes: claude.count,
+        reuniao: hoje && f.agenda.emBreve != nil,
+        tocando: p.mostra(.tocando) && f.tocando.app != nil,
+        timer: f.cronometro.ativo,
+        hoje: hoje,
+        tempo: f.tempo.previsao != nil,
+        agenda: f.agenda.proximo != nil,
+        eventosHoje: f.agenda.acesso == .permitido ? f.agenda.hoje.count : 0,
+        lembretes: f.lembretes.ligado ? f.lembretes.proximos.count : 0,
+        interesse: p.mostra(.interesse) && !f.interesses.proximos.isEmpty,
+        mac: p.mostra(.apps) && (!f.mac.emblemas.isEmpty || !f.mac.microfone.isEmpty || f.mac.camera || f.mac.bateria != nil),
+        atividades: f.mural.atividades.filter { !avisosNoDestaque(f).contains($0.id) }.count,
+        bandeja: f.bandeja.arrastando || (p.mostra(.bandeja) && !f.bandeja.arquivos.isEmpty)))
+}
+
+/// A cor do que está em destaque, para o contorno da ilha aberta e o fundo do cartão: o Claude esperando, a reunião
+/// na cor do calendário, a música na cor da capa. Sem nada disso, nenhuma (o contorno fica neutro).
+@MainActor func corDoAssunto(_ f: Fontes) -> Color? {
+    if f.claude.sessoes.contains(where: { $0.estado == .precisaDeVoce }) { return .orange }
+    if let reuniao = f.agenda.emBreve { return corDoCalendario(reuniao) }
+    if f.tocando.app != nil { return f.tocando.corDeDestaque }
+    return nil
 }
 
 /// A forma preta presa ao topo. Sempre à vista: sem nada, fica em repouso, só um pouco maior que o notch.
@@ -131,16 +153,15 @@ struct IlhaView: View {
     /// Microfone ou câmera ligados: como no iPhone, a ilha não fica em repouso escondendo isso.
     private var privacidade: Bool { !fontes.mac.microfone.isEmpty || fontes.mac.camera }
     private var cronometro: Cronometro { fontes.cronometro }
-    /// O vidro do chip da agenda e da linha do que está tocando muda de forma para o do item expandido.
+    /// A capa e o ponto da reunião voam da asa para o cartão ao abrir, e o cartão cresce até o item expandido.
     @Namespace private var espaco
 
     var body: some View {
         let g = estado.geometria
-        let secoes = secoesAtuais(fontes)
         let asa = asaAtual(fontes)
         let forma: Forma = estado.aberta ? .aberta
             : !mural.avisos.isEmpty ? .aviso
-            : asa != .nada ? .compacta
+            : asa != .nada || fontes.volume.naAsa ? .compacta
             : .repouso
         let tamanho = forma == .aberta ? tamanhoAberto(g, estado, fontes) : tamanhoFechado(g, fontes)
         let contorno = FormaIlha(orelha: forma.orelha, raio: forma.raio)
@@ -154,6 +175,11 @@ struct IlhaView: View {
             } else {
                 contorno.fill(.black)
             }
+            if forma == .aberta {
+                // O contorno de 1 pt na cor do assunto, como a borda da Dynamic Island no modo escuro: diz de relance
+                // de quem é a ilha agora. Sem assunto, um branco quase apagado, só para separar do fundo.
+                contorno.stroke((corDoAssunto(fontes) ?? .white).opacity(corDoAssunto(fontes) == nil ? 0.1 : 0.4), lineWidth: 1)
+            }
             Group {
                 switch forma {
                 case .repouso:
@@ -161,17 +187,22 @@ struct IlhaView: View {
                 case .compacta:
                     // Atividade tem a vez (foi pedida por alguém); depois o som; por fim a bandeja.
                     let lado = ladoDaAsa(g.notch.height)
-                    if asa == .reuniao, let reuniao = fontes.agenda.emBreve {
+                    if fontes.volume.naAsa {
+                        AsaDoVolume(volume: fontes.volume, altura: g.notch.height)
+                    } else if asa == .reuniao, let reuniao = fontes.agenda.emBreve {
+                        // Os dois lados na cor do calendário: a asa lê como uma coisa só (HIG, Live Activities).
+                        let cor = corDoCalendario(reuniao)
                         Asas(altura: g.notch.height) {
-                            Simbolo(nome: "calendar", cor: reuniao.cor.map { Color(red: $0.x, green: $0.y, blue: $0.z) } ?? .red,
-                                    chegada: nil)
+                            Simbolo(nome: "calendar", cor: cor, chegada: nil)
+                                .matchedGeometryEffect(id: "reuniao", in: espaco)
                         } direita: {
                             HStack(spacing: 4) {
                                 IndicadorPrivacidade(mac: fontes.mac)
                                 // Por minuto: a contagem anda sozinha entre as releituras da agenda.
                                 TimelineView(.everyMinute) { contexto in
                                     Text(verbatim: Self.falta(reuniao.inicio, agora: contexto.date))
-                                        .font(.caption.weight(.bold)).monospacedDigit()
+                                        .font(.system(size: 12.5, weight: .bold, design: .rounded)).monospacedDigit()
+                                        .foregroundStyle(cor)
                                 }
                             }
                         }
@@ -221,20 +252,21 @@ struct IlhaView: View {
                     } else if asa == .tocando {
                         Asas(altura: g.notch.height) {
                             Miniatura(tocando: tocando, lado: lado, raio: lado / 4)
+                                .matchedGeometryEffect(id: "capa", in: espaco)  // ao abrir, a capa voa até o cartão
                                 .opacity(tocando.pausado ? 0.55 : 1)
                         } direita: {
                             IndicadorPrivacidade(mac: fontes.mac)
                             if tocando.pausado {
                                 Image(systemName: "pause.fill").font(.system(size: 10, weight: .bold)).foregroundStyle(.secondary)
                             } else {
-                                Barras(altura: lado * 0.6)
+                                Barras(altura: lado * 0.6, cor: tocando.corDeDestaque)
                             }
                         }
                     } else if bandeja.arquivos.isEmpty {
                         // Só o microfone ou a câmera: o app que está ouvindo à esquerda, os pontinhos à direita.
                         Asas(altura: g.notch.height) {
                             if let app = fontes.mac.microfone.first {
-                                LinhaApps.icone(app).frame(width: lado, height: lado)
+                                WidgetMac.icone(app).frame(width: lado, height: lado)
                             } else {
                                 Simbolo(nome: "video.fill", cor: .green, chegada: nil)
                             }
@@ -281,27 +313,15 @@ struct IlhaView: View {
                         } else if estado.aba == .kanji {
                             AbaKanji(estado: estado, kanji: fontes.kanji, mural: mural)
                         } else {
-                        GlassEffectContainer {
-                            VStack(spacing: Geometria.espacoSecao) {
-                                switch expansaoAtual(estado, fontes) {
-                                case .agenda:
-                                    AgendaExpandida(estado: estado, agenda: fontes.agenda, espaco: espaco) { alternar(.agenda) }
-                                case .musica:
-                                    MusicaExpandida(estado: estado, tocando: tocando, espaco: espaco) { alternar(.musica) }
-                                case nil:
-                                    if secoes.hoje {
-                                        LinhaHoje(agenda: fontes.agenda, tempo: fontes.tempo, espaco: espaco) { alternar(.agenda) }
-                                            .entrada(0)
-                                    }
-                                    if secoes.interesse { LinhaInteresse(interesses: fontes.interesses).entrada(1) }
-                                    if secoes.sessoes > 0 { SecaoClaude(sessoes: fontes.claude).entrada(2) }
-                                    if secoes.tocando { LinhaTocando(tocando: tocando, espaco: espaco) { alternar(.musica) }.entrada(3) }
-                                    if secoes.linhas > 0 { Lista(mural: mural, estado: estado).entrada(4) }
-                                    if secoes.apps { LinhaApps(mac: fontes.mac).entrada(5) }
-                                    if secoes.bandeja { FileiraDaBandeja(bandeja: bandeja, alvo: estado.alvo).entrada(6) }
-                                }
+                            switch expansaoAtual(estado, fontes) {
+                            case .agenda:
+                                AgendaExpandida(estado: estado, agenda: fontes.agenda, espaco: espaco) { alternar(.agenda) }
+                            case .musica:
+                                MusicaExpandida(estado: estado, tocando: tocando, espaco: espaco) { alternar(.musica) }
+                            case nil:
+                                InicioEmGrade(estado: estado, fontes: fontes, painel: painelAtual(fontes), espaco: espaco,
+                                              alternar: alternar)
                             }
-                        }
                         }
                     }
                     .padding(.top, g.faixaDoTopo + 8)
@@ -329,9 +349,8 @@ struct IlhaView: View {
         .animation(Movimento.ou(Movimento.conteudo), value: tocando.app)
         .animation(Movimento.rapido, value: tocando.metadados)
         .animation(Movimento.ou(Movimento.conteudo), value: fontes.claude.sessoes)
-        .animation(Movimento.ou(Movimento.conteudo), value: secoes.hoje)
-        .animation(Movimento.ou(Movimento.conteudo), value: secoes.apps)
-        .animation(Movimento.ou(Movimento.conteudo), value: secoes.interesse)
+        .animation(Movimento.ou(Movimento.conteudo), value: painelAtual(fontes))
+        .animation(Movimento.rapido, value: fontes.volume.naAsa)
         .animation(Movimento.ou(Movimento.conteudo), value: estado.aba)
         .animation(Movimento.rapido, value: privacidade)
         .animation(Movimento.ou(Movimento.conteudo), value: asa)
@@ -342,6 +361,7 @@ extension IlhaView {
     /// Expande o item, ou recolhe o que já está expandido. A agenda lê o mês só enquanto está expandida.
     private func alternar(_ item: EstadoIlha.Expansao) {
         let novo = estado.expandido == item ? nil : item
+        Haptico.tocar()
         withAnimation(Movimento.ou(Movimento.expandir)) {
             estado.expandido = novo
             estado.diaEscolhido = nil
@@ -447,34 +467,6 @@ private struct Cabecalho: View {
     }
 }
 
-/// A faixa de cima da ilha aberta: o próximo evento à esquerda, o tempo à direita. Cada um some sozinho
-/// quando não tem o que mostrar (sem acesso à agenda, sem cidade).
-private struct LinhaHoje: View {
-    let agenda: Agenda
-    let tempo: Tempo
-    let espaco: Namespace.ID
-    /// Clique no chip: a agenda expande no lugar. O "Entrar" dentro dele continua sendo só o botão.
-    let aoClicar: () -> Void
-
-    var body: some View {
-        HStack(spacing: 8) {
-            if agenda.proximo != nil {
-                ChipAgenda(agenda: agenda)
-                    .padding(.horizontal, 8)
-                    .cartao(id: "agenda", em: espaco)
-                    .contentShape(.rect)
-                    .onTapGesture(perform: aoClicar)
-                    .accessibilityAddTraits(.isButton)
-                    .transition(.blurReplace)
-            }
-            Spacer(minLength: 0)
-            ChipTempo(tempo: tempo).fixedSize()  // a máxima e a mínima não podem virar reticências
-        }
-        .padding(.horizontal, 14)
-        .frame(height: Geometria.alturaHoje)
-    }
-}
-
 /// Fechada: uma coisa em cada asa, com a mesma folga em cima, embaixo e do lado. Assim o conteúdo acompanha
 /// o canto arredondado de baixo, em vez de encostar na borda (com 22 pt de altura no monitor externo, encostava).
 private struct Asas<Esquerda: View, Direita: View>: View {
@@ -533,7 +525,7 @@ private struct Contador: View {
 
 /// A bandeja aberta: os arquivos numa fileira (arrastáveis para fora) e as ações ao lado.
 /// Vazia, durante um arraste, é só a área de soltar.
-private struct FileiraDaBandeja: View {
+struct FileiraDaBandeja: View {
     let bandeja: Bandeja
     let alvo: Bool
 
@@ -632,12 +624,14 @@ private struct LinhaDeAviso: View {
 }
 
 /// Aberta: as três mais recentes; com mais de três, duas e a linha "mais N" no lugar da terceira.
-private struct Lista: View {
+struct Lista: View {
     let mural: Mural
     let estado: EstadoIlha
+    /// Os avisos que o cartão de destaque já mostra.
+    var ocultos: Set<String> = []
 
     var body: some View {
-        let atividades = mural.atividades
+        let atividades = mural.atividades.filter { !ocultos.contains($0.id) }
         let visiveis = atividades.count > Geometria.maximoLinhas ? Geometria.maximoLinhas - 1 : Geometria.maximoLinhas
         VStack(alignment: .leading, spacing: Geometria.espacoLinha) {
             ForEach(atividades.prefix(visiveis)) { atividade in
@@ -709,5 +703,30 @@ private func cor(_ atividade: Atividade) -> Color {
     case "rosa": .pink
     case "cinza": .gray
     default: .white
+    }
+}
+
+/// O volume mudou: o alto-falante de um lado e a barra do nível do outro, por 1,5 s. Lê o que o `Volume` já leu.
+private struct AsaDoVolume: View {
+    let volume: Volume
+    let altura: CGFloat
+
+    var body: some View {
+        let nivel = volume.mudo ? 0 : (volume.nivel ?? 0)
+        Asas(altura: altura) {
+            Image(systemName: volume.mudo ? "speaker.slash.fill" : nivel < 0.34 ? "speaker.wave.1.fill"
+                  : nivel < 0.67 ? "speaker.wave.2.fill" : "speaker.wave.3.fill")
+                .font(.system(size: 12, weight: .semibold))
+                .contentTransition(.symbolEffect(.replace))
+        } direita: {
+            ZStack(alignment: .leading) {
+                Capsule().fill(.white.opacity(0.2))
+                Capsule().fill(.white).frame(width: 40 * nivel)
+            }
+            .frame(width: 40, height: 5)
+            .animation(Movimento.rapido, value: nivel)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(verbatim: volume.mudo ? String(localized: "Sem som") : "\(Int((nivel * 100).rounded()))%"))
     }
 }

@@ -115,7 +115,7 @@ struct ContagemNaAsa: View {
 }
 
 /// A contagem que se atualiza sozinha a cada segundo.
-private struct TextoDaContagem: View {
+struct TextoDaContagem: View {
     let cronometro: Cronometro
     let fonte: Font
     /// Na asa, sem animação: o SwiftUI redesenha a ilha inteira na CPU a cada quadro de animação, e o número rolando
@@ -133,6 +133,28 @@ private struct TextoDaContagem: View {
                 .font(fonte).monospacedDigit()
                 .contentTransition(animado ? .numericText(countsDown: true) : .identity)
                 .animation(animado ? .snappy : nil, value: texto)
+        }
+    }
+}
+
+/// O timer correndo (ou pausado) num quadrado: o modo, a contagem grande e quando termina. Clique: a aba do Timer.
+struct WidgetTimer: View {
+    let cronometro: Cronometro
+    let estado: EstadoIlha
+
+    var body: some View {
+        Quadro(id: "timer", estado: estado, acao: { estado.aba = .timer }) {
+            Cabeca(rotulo: Text(verbatim: cronometro.modo.nome), simbolo: cronometro.modo.simbolo, cor: .orange)
+            TextoDaContagem(cronometro: cronometro, fonte: Tipo.numero, animado: false)
+            Spacer(minLength: 0)
+            Group {
+                if cronometro.pausado {
+                    Text("pausado")
+                } else if let fim = cronometro.fim {
+                    Text("termina às \(fim.formatted(date: .omitted, time: .shortened))")
+                }
+            }
+            .font(Tipo.corpo).foregroundStyle(.secondary).lineLimit(1)
         }
     }
 }

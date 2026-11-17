@@ -170,7 +170,7 @@ struct Geometria: Equatable {
 /// A janela (área do hover) e a view medem com a mesma regra, como antes.
 struct Painel: Equatable, Sendable {
     /// O que ocupa as duas colunas.
-    enum Largo: Equatable, Sendable {
+    enum Largo: Hashable, Sendable {
         /// Uma sessão do Claude precisa de você; `outras`: há mais sessões, que viram pílulas embaixo.
         case claude(outras: Bool)
         /// Uma reunião nos próximos 15 min (`Agenda.emBreve`).
@@ -185,9 +185,9 @@ struct Painel: Equatable, Sendable {
     }
 
     /// Um quadrado da grade.
-    enum Widget: String, CaseIterable, Sendable { case tempo, agenda, sessoes, musica, timer, lembretes, interesse, mac }
+    enum Widget: String, CaseIterable, Hashable, Sendable { case tempo, agenda, sessoes, musica, timer, lembretes, interesse, mac }
 
-    enum Fileira: Equatable, Sendable {
+    enum Fileira: Hashable, Sendable {
         case larga(Largo)
         case dupla(Widget, Widget)
         /// Um widget sem par ocupa a fileira toda: um quadrado sozinho deixaria um buraco ao lado.

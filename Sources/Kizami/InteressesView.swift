@@ -1,51 +1,37 @@
 import SwiftUI
 
-/// O próximo de cada fonte seguida, lado a lado (os Bills e a F1, por exemplo), no estilo da `Lista`.
-/// Clicar num abre a página dele na ESPN. Sem evento, não mostra nada.
-struct LinhaInteresse: View {
+/// O próximo jogo ou corrida num quadrado: quando (ou o placar ao vivo, grande) e o nome. Clique: a página na ESPN.
+struct WidgetInteresse: View {
     let interesses: Interesses
+    let estado: EstadoIlha
 
     var body: some View {
-        let eventos = interesses.proximos
-        HStack(spacing: 6) {
-            ForEach(eventos) { evento in
-                HStack(spacing: 6) {
-                    Image(systemName: evento.fonte.simbolo)
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(Self.cor(evento.fonte))
-                    VStack(alignment: .leading, spacing: 0) {
-                        // verbatim: o título vem da ESPN ou de um calendário de fora e não pode virar Markdown nem chave de tradução.
-                        Text(verbatim: evento.titulo).font(.caption.weight(.semibold))
-                        if let placar = interesses.aoVivo.first(where: { $0.eDo(evento) }) {
-                            HStack(spacing: 4) {
-                                Circle().fill(.red).frame(width: 5, height: 5)
-                                    .accessibilityLabel(Text("Ao vivo"))
-                                // verbatim: siglas, pilotos e situação vêm da ESPN.
-                                Text(verbatim: placar.situacao.isEmpty ? placar.texto : "\(placar.texto) · \(placar.situacao)")
-                                    .font(.caption2).monospacedDigit().foregroundStyle(.secondary)
-                            }
-                        } else {
-                            // Por minuto: "em 12 min" precisa andar sozinho, sem os Interesses publicarem nada.
-                            TimelineView(.everyMinute) { contexto in
-                                Text(verbatim: EventoInteresse.quando(evento, agora: contexto.date))
-                                    .font(.caption2).monospacedDigit().foregroundStyle(.secondary)
-                            }
-                        }
-                    }
-                    .lineLimit(1)
+        if let evento = interesses.proximos.first {
+            let placar = interesses.aoVivo.first { $0.eDo(evento) }
+            Quadro(id: "interesse", estado: estado, acao: { interesses.abrir(evento) }) {
+                Cabeca(rotulo: placar == nil ? Text("A seguir") : Text("Ao vivo"),
+                       simbolo: evento.fonte.simbolo, cor: Self.cor(evento.fonte),
+                       ponto: placar == nil ? nil : .red)
+                // verbatim: siglas, placar, situação e título vêm da ESPN ou de um calendário de fora.
+                if let placar {
+                    Text(verbatim: placar.texto).font(Tipo.numeroMedio).monospacedDigit()
+                        .lineLimit(1).minimumScaleFactor(0.6)
+                        .contentTransition(.numericText())
                     Spacer(minLength: 0)
+                    Text(verbatim: placar.situacao.isEmpty ? evento.titulo : placar.situacao)
+                        .font(Tipo.corpo).foregroundStyle(.secondary).lineLimit(1)
+                } else {
+                    // Por minuto: "em 12 min" precisa andar sozinho, sem os Interesses publicarem nada.
+                    TimelineView(.everyMinute) { contexto in
+                        Text(verbatim: EventoInteresse.quando(evento, agora: contexto.date))
+                            .font(Tipo.numeroMedio).monospacedDigit().lineLimit(1).minimumScaleFactor(0.6)
+                    }
+                    Spacer(minLength: 0)
+                    Text(verbatim: evento.titulo).font(Tipo.corpo).foregroundStyle(.secondary).lineLimit(1)
                 }
-                .padding(.horizontal, 8)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .glassEffect(eventos.count > 1 ? .regular : .identity, in: .rect(cornerRadius: 10, style: .continuous))
-                .contentShape(.rect)
-                .onTapGesture { interesses.abrir(evento) }  // a página do jogo, com escalação, placar e onde passa
-                .help(evento.link == nil ? "" : String(localized: "Abrir na ESPN"))
-                .transition(.blurReplace)
             }
+            .help(evento.link == nil ? "" : String(localized: "Abrir na ESPN"))
         }
-        .frame(height: Geometria.alturaLinha + 4)
-        .padding(.horizontal, eventos.count > 1 ? 10 : 6)
     }
 
     private static func cor(_ fonte: Seguido) -> Color {

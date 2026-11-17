@@ -103,7 +103,7 @@ final class Kizami {
     let formularioInteresses = FormularioInteresses()
     private var fontes: Fontes { Fontes(mural: mural, bandeja: bandeja, tocando: tocando, agenda: agenda, tempo: tempo, claude: claude, mac: mac,
                                        interesses: interesses, kanji: kanji, cronometro: cronometro,
-                                       copiados: copiados, espelho: espelho,
+                                       copiados: copiados, espelho: espelho, lembretes: lembretes, volume: volume,
                                        personalizacao: personalizacao, atalhosApple: atalhosApple) }
     private var janelas: [Janela] = []
     private var ajustes: NSWindow?

@@ -14,63 +14,60 @@ struct IndicadorPrivacidade: View {
             }
             .frame(width: 20, height: 20)
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel(LinhaApps.descricaoPrivacidade(microfone: microfone, camera: mac.camera))
+            .accessibilityLabel(WidgetMac.descricaoPrivacidade(microfone: microfone, camera: mac.camera))
         }
     }
 }
 
-/// Uma linha da ilha aberta: os apps com emblema no Dock, quem está no microfone e na câmera, e a bateria.
-struct LinhaApps: View {
+/// O Mac num quadrado: a bateria num anel, os apps com emblema no Dock (clique abre o app) e quem está no
+/// microfone e na câmera.
+struct WidgetMac: View {
     let mac: Mac
+    let estado: EstadoIlha
 
     var body: some View {
-        HStack(spacing: 10) {
-            ForEach(mac.emblemas.prefix(6)) { emblema in  // mais que isso espremeria a bateria e o microfone
-                Button { Mac.ativar(emblema.bundle) } label: {
-                    Self.icone(emblema.bundle)
-                        .frame(width: 22, height: 22)
-                        .overlay(alignment: .topTrailing) {
-                            Text(verbatim: emblema.rotulo)  // vem do Dock: dado, nunca chave de tradução
-                                .font(.system(size: 9, weight: .bold))
-                                .monospacedDigit()
-                                .foregroundStyle(.white)
-                                .padding(.horizontal, 3)
-                                .frame(minWidth: 13, minHeight: 13)
-                                .background(Capsule().fill(.red))
-                                .offset(x: 6, y: -4)
-                        }
-                }
-                .buttonStyle(.plain)
-                .help(Text(verbatim: emblema.nome))
-            }
+        Quadro(id: "mac", estado: estado) {
+            Cabeca(rotulo: Text(verbatim: "Mac"))
             Spacer(minLength: 0)
-            privacidade
-            if let bateria = mac.bateria {
-                HStack(spacing: 3) {
-                    Image(systemName: Self.simbolo(bateria))
-                        .symbolRenderingMode(.hierarchical)
-                    Text(verbatim: "\(bateria.porcento)%")
-                        .font(.caption)
-                        .monospacedDigit()
+            HStack(spacing: 12) {
+                if let bateria = mac.bateria { AnelDaBateria(bateria: bateria) }
+                ForEach(mac.emblemas.prefix(mac.bateria == nil ? 4 : 3)) { emblema in  // mais que isso não cabe no quadrado
+                    Button { Mac.ativar(emblema.bundle) } label: {
+                        Self.icone(emblema.bundle)
+                            .frame(width: 26, height: 26)
+                            .overlay(alignment: .topTrailing) {
+                                Text(verbatim: emblema.rotulo)  // vem do Dock: dado, nunca chave de tradução
+                                    .font(.system(size: 9, weight: .bold))
+                                    .monospacedDigit()
+                                    .foregroundStyle(.white)
+                                    .padding(.horizontal, 3)
+                                    .frame(minWidth: 14, minHeight: 14)
+                                    .background(Capsule().fill(.red))
+                                    .offset(x: 6, y: -5)
+                            }
+                    }
+                    .buttonStyle(EstiloBotao())
+                    .help(Text(verbatim: emblema.nome))
                 }
-                .foregroundStyle(bateria.porcento <= 20 && !bateria.ligadaNaTomada ? .red : .white)
+                Spacer(minLength: 0)
+                privacidade
             }
         }
-        .lineLimit(1)
-        .foregroundStyle(.white)
-        .padding(.horizontal, 14)
-        .frame(height: Geometria.alturaLinha)
     }
 
     @ViewBuilder private var privacidade: some View {
         let microfone = mac.microfone.first
         if microfone != nil || mac.camera {
-            HStack(spacing: 4) {
+            VStack(spacing: 4) {
                 if mac.camera { Image(systemName: "video.fill").foregroundStyle(.green) }
                 if let microfone {
-                    Image(systemName: "mic.fill").foregroundStyle(.orange)
-                    Button { Mac.ativar(microfone) } label: { Self.icone(microfone).frame(width: 16, height: 16) }
-                        .buttonStyle(.plain)
+                    Button { Mac.ativar(microfone) } label: {
+                        HStack(spacing: 3) {
+                            Image(systemName: "mic.fill").foregroundStyle(.orange)
+                            Self.icone(microfone).frame(width: 16, height: 16)
+                        }
+                    }
+                    .buttonStyle(EstiloBotao())
                 }
             }
             .font(.system(size: 11))
@@ -106,6 +103,27 @@ struct LinhaApps: View {
         case ..<88: "battery.75percent"
         default: "battery.100percent"
         }
+    }
+}
+
+/// A bateria num anel: verde carregando ou na tomada, vermelho com 20% ou menos fora da tomada.
+private struct AnelDaBateria: View {
+    let bateria: Bateria
+
+    var body: some View {
+        let cor: Color = bateria.carregando || bateria.ligadaNaTomada ? .green
+            : bateria.porcento <= 20 ? .red : .white
+        ZStack {
+            Circle().stroke(.white.opacity(0.12), lineWidth: 4)
+            Circle()
+                .trim(from: 0, to: CGFloat(min(max(bateria.porcento, 0), 100)) / 100)
+                .stroke(cor, style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+            Text(verbatim: "\(bateria.porcento)").font(.system(size: 12, weight: .semibold, design: .rounded)).monospacedDigit()
+        }
+        .frame(width: 40, height: 40)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(verbatim: "\(bateria.porcento)%"))
     }
 }
 
