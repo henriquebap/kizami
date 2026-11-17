@@ -90,6 +90,15 @@ struct SessaoClaude: Identifiable, Equatable, Sendable {
         }
     }
 
+    /// Duas listas iguais para a ilha: tudo menos o `visto`, que muda a cada ferramenta e não aparece em lugar nenhum.
+    static func mesmasNaTela(_ a: [SessaoClaude], _ b: [SessaoClaude]) -> Bool {
+        a.count == b.count && zip(a, b).allSatisfy { x, y in
+            var semVisto = x
+            semVisto.visto = y.visto
+            return semVisto == y
+        }
+    }
+
     static func vivas(_ sessoes: [SessaoClaude], agora: Date) -> [SessaoClaude] {
         sessoes.filter {
             agora.timeIntervalSince($0.visto) <= semSinalExpira
@@ -188,7 +197,12 @@ struct MensagemClaude: Codable, Equatable, Sendable {
 /// repetido não pisca a ilha de novo.
 @MainActor @Observable
 final class SessoesClaude {
+    /// O que a ilha desenha. Só muda quando algo visível muda (`mesmasNaTela`): com o `visto` novo a cada ferramenta,
+    /// cada `PreToolUse`/`PostToolUse` redesenhava a ilha inteira, e com algumas sessões trabalhando o Kizami
+    /// passava de 10% de CPU (medido com `top` e `sample`).
     private(set) var sessoes: [SessaoClaude] = []
+    /// A lista de verdade, com o `visto` em dia: é dela que saem os prazos.
+    @ObservationIgnored private var atuais: [SessaoClaude] = []
     @ObservationIgnored private let mural: Mural
     @ObservationIgnored private var varredura: Task<Void, Never>?
     /// Sessões que acabaram há pouco. Os hooks são assíncronos, cada um num processo: um `Stop` atrasado pode chegar
@@ -227,13 +241,13 @@ final class SessoesClaude {
         } else if mensagem.evento != .inicio, encerradas[mensagem.id] != nil {
             return  // atrasado; um `inicio` com o mesmo id é um --resume e vale
         }
-        trocar(por: SessaoClaude.aplicar(mensagem, a: sessoes, agora: agora))
+        trocar(por: SessaoClaude.aplicar(mensagem, a: atuais, agora: agora))
     }
 
     func varrer(agora: Date) {
-        let novas = SessaoClaude.vivas(SessaoClaude.envelhecidas(sessoes, agora: agora), agora: agora)
+        let novas = SessaoClaude.vivas(SessaoClaude.envelhecidas(atuais, agora: agora), agora: agora)
         // Pela varredura não houve Stop: nada de "Claude terminou".
-        if novas != sessoes { trocar(por: novas, avisarFim: false) }
+        if novas != atuais { trocar(por: novas, avisarFim: false) }
     }
 
     /// Traz para frente o app da sessão e, no Terminal e no iTerm2, a aba dela. É o clique da pessoa que pede;
@@ -269,9 +283,10 @@ final class SessoesClaude {
     }
 
     private func trocar(por novas: [SessaoClaude], avisarFim: Bool = true) {
-        let antes = Dictionary(sessoes.map { ($0.id, $0.estado) }, uniquingKeysWith: { a, _ in a })
+        let antes = Dictionary(atuais.map { ($0.id, $0.estado) }, uniquingKeysWith: { a, _ in a })
         let depois = Dictionary(novas.map { ($0.id, $0.estado) }, uniquingKeysWith: { a, _ in a })
-        sessoes = novas
+        atuais = novas
+        if !SessaoClaude.mesmasNaTela(novas, sessoes) { sessoes = novas }
         guard antes != depois else { return }
         registro.info("claude: \(novas.count) sessão(ões), \(novas.filter { $0.estado == .precisaDeVoce }.count) esperando")
         for (id, estado) in antes where estado == .precisaDeVoce && depois[id] != .precisaDeVoce {

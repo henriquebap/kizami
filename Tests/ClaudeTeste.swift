@@ -168,4 +168,20 @@ import Foundation
     conferir("Stop atrasado depois do SessionEnd não cria fantasma", sessoes.sessoes.contains { $0.id == "f" }, false)
     sessoes.receber(m("f", .inicio), agora: ultimo + 3)
     conferir("--resume com o mesmo id volta", sessoes.sessoes.contains { $0.id == "f" }, true)
+
+    // Energia (v0.14): o `visto` de cada ferramenta não redesenha a ilha, mas os prazos continuam usando ele.
+    let base = SessaoClaude(id: "v", pasta: "v", estado: .trabalhando, desde: t0, visto: t0, app: nil)
+    var maisTarde = base
+    maisTarde.visto = t0 + 60
+    conferir("só o visto mudou: mesma lista na tela", SessaoClaude.mesmasNaTela([base], [maisTarde]), true)
+    var outroEstado = maisTarde
+    outroEstado.estado = .pronta
+    conferir("o estado mudou: lista nova", SessaoClaude.mesmasNaTela([base], [outroEstado]), false)
+    conferir("uma sessão a mais: lista nova", SessaoClaude.mesmasNaTela([base], [base, outroEstado]), false)
+    let viva = SessoesClaude(mural: Mural())
+    viva.receber(m("w", .trabalhando), agora: t0)
+    viva.receber(m("w", .trabalhando), agora: t0 + 19 * 60)
+    conferir("a ilha guarda o visto da primeira vez", viva.sessoes.first?.visto, t0)
+    viva.varrer(agora: t0 + 25 * 60)
+    conferir("mas o prazo conta do último sinal: segue trabalhando", viva.sessoes.map(\.estado), [.trabalhando])
 }
