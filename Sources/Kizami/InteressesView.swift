@@ -16,11 +16,11 @@ struct LinhaInteresse: View {
                     VStack(alignment: .leading, spacing: 0) {
                         // verbatim: o título vem da ESPN ou de um calendário de fora e não pode virar Markdown nem chave de tradução.
                         Text(verbatim: evento.titulo).font(.caption.weight(.semibold))
-                        if let placar = interesses.aoVivo, placar.eDo(evento) {
+                        if let placar = interesses.aoVivo.first(where: { $0.eDo(evento) }) {
                             HStack(spacing: 4) {
                                 Circle().fill(.red).frame(width: 5, height: 5)
                                     .accessibilityLabel(Text("Ao vivo"))
-                                // verbatim: siglas e situação vêm da ESPN.
+                                // verbatim: siglas, pilotos e situação vêm da ESPN.
                                 Text(verbatim: placar.situacao.isEmpty ? placar.texto : "\(placar.texto) · \(placar.situacao)")
                                     .font(.caption2).monospacedDigit().foregroundStyle(.secondary)
                             }
