@@ -12,6 +12,8 @@ A small island around the MacBook notch that shows what other apps and scripts a
 
 Free and open source (Apache 2.0). No private APIs and no third-party dependencies.
 
+**Why it exists.** Kizami is a personal study project: I built it to learn and apply native macOS development by making something I use every day. It covers AppKit and SwiftUI built with `swiftc` alone, Swift 6 strict concurrency, EventKit, Core Audio, AVFoundation, the Accessibility APIs and inter-process notifications. It is not a commercial product, and it is not meant to be used in interviews, exams or assessments. Kizami itself doesn't capture the screen, doesn't record audio and sends nothing to an AI model; everything it shows sits in plain sight on the notch. The Kanji tab only presses the shortcuts of [Kanji](https://github.com/henriquebap/kanji-local-dictation), my dictation app.
+
 **Every permission is optional**, and each one turns on one thing:
 - **Automation:** the artwork and media buttons of the song that is playing.
 - **Calendars:** your next event.
