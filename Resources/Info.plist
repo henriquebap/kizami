@@ -13,7 +13,7 @@
 	<key>LSMinimumSystemVersion</key><string>27.0</string>
 	<key>LSUIElement</key><true/>
 	<key>NSSupportsAutomaticTermination</key><false/>
-	<key>NSAppleEventsUsageDescription</key><string>O Kizami pede ao Music e ao Spotify a capa da música que está tocando, para mostrar no notch.</string>
+	<key>NSAppleEventsUsageDescription</key><string>O Kizami pede ao Music e ao Spotify a capa da música que está tocando, para mostrar no notch, e ao Terminal e ao iTerm2 a aba da sessão do Claude em que você clicar.</string>
 	<key>NSSupportsSuddenTermination</key><false/>
 	<key>NSCameraUsageDescription</key><string>O Kizami mostra a sua câmera no notch quando você pede o espelho, para se ver antes de uma chamada. A imagem não é gravada nem sai do Mac.</string>
 	<key>NSDownloadsFolderUsageDescription</key><string>O Kizami acompanha os arquivos sendo baixados para mostrar o andamento no notch, se você ligar isso nos Ajustes.</string>

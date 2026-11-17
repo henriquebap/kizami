@@ -26,6 +26,8 @@ struct SessaoClaude: Identifiable, Equatable, Sendable {
     var visto: Date
     /// Bundle id do app onde a sessão roda (Terminal, VS Code, Claude), para o clique trazê-lo para frente.
     var app: String?
+    /// Terminal da sessão (`ttys003`), para o clique achar a aba no Terminal ou no iTerm2. Anda junto com `app`.
+    var tty: String?
 
     static let maximo = 16
     /// Uma sessão pronta e parada há meia hora já não é novidade: ou a pessoa viu, ou foi embora.
@@ -57,8 +59,10 @@ struct SessaoClaude: Identifiable, Equatable, Sendable {
         case .pronta: estado = .pronta
         }
         let desde = antiga.flatMap { $0.estado == estado ? $0.desde : nil } ?? agora
+        // O tty vale para o app com que veio: um evento sem app (o caminho até ele falhou) fica com o par antigo.
+        let (app, tty) = mensagem.app != nil ? (mensagem.app, mensagem.tty) : (antiga?.app, antiga?.tty)
         let nova = SessaoClaude(id: mensagem.id, pasta: mensagem.pasta, estado: estado, desde: desde, visto: agora,
-                                app: mensagem.app ?? antiga?.app)
+                                app: app, tty: tty)
         return Array(ordenadas(resto + [nova]).prefix(maximo))
     }
 
@@ -94,7 +98,7 @@ struct SessaoClaude: Identifiable, Equatable, Sendable {
     }
 }
 
-/// O que `Kizami claude` manda ao app. Só o id da sessão, o nome da pasta e o evento atravessam:
+/// O que `Kizami claude` manda ao app. Só o id da sessão, o nome da pasta, o evento, o app e o terminal atravessam:
 /// nunca o prompt, a resposta nem o texto da notificação.
 struct MensagemClaude: Codable, Equatable, Sendable {
     enum Evento: String, Codable, Sendable {
@@ -105,6 +109,7 @@ struct MensagemClaude: Codable, Equatable, Sendable {
     var pasta: String
     var evento: Evento
     var app: String?
+    var tty: String?
 
     /// O mesmo teto do `Correio`: uma mensagem inteira cabe com folga.
     static let limite = 4096
@@ -115,7 +120,7 @@ struct MensagemClaude: Codable, Equatable, Sendable {
 
     /// Lê o JSON de um hook do Claude Code (https://code.claude.com/docs/en/hooks).
     /// nil para evento que a ilha não mostra, JSON inválido ou campo faltando.
-    static func doHook(_ dados: Data, app: String?) -> MensagemClaude? {
+    static func doHook(_ dados: Data, app: String?, tty: String? = nil) -> MensagemClaude? {
         guard dados.count <= limiteHook,
               let json = (try? JSONSerialization.jsonObject(with: dados)) as? [String: Any],
               let id = json["session_id"] as? String,
@@ -124,7 +129,7 @@ struct MensagemClaude: Codable, Equatable, Sendable {
               let evento = evento(nome, notificacao: json["notification_type"] as? String,
                                   subagente: json["agent_id"] as? String != nil)
         else { return nil }
-        return validar(MensagemClaude(id: id, pasta: (cwd as NSString).lastPathComponent, evento: evento, app: app))
+        return validar(MensagemClaude(id: id, pasta: (cwd as NSString).lastPathComponent, evento: evento, app: app, tty: tty))
     }
 
     static func evento(_ nome: String, notificacao: String?, subagente: Bool) -> Evento? {
@@ -162,7 +167,12 @@ struct MensagemClaude: Codable, Equatable, Sendable {
             return nil
         }
         let app = bruta.app.flatMap { (1...155).contains($0.utf8.count) && $0.unicodeScalars.allSatisfy(bundleValido) ? $0 : nil }
-        return MensagemClaude(id: bruta.id, pasta: pasta, evento: bruta.evento, app: app)
+        return MensagemClaude(id: bruta.id, pasta: pasta, evento: bruta.evento, app: app, tty: bruta.tty.flatMap { ttyValido($0) ? $0 : nil })
+    }
+
+    /// Só o nome de um pseudoterminal: ele entra num AppleScript, e qualquer processo pode postar a notificação.
+    static func ttyValido(_ tty: String) -> Bool {
+        tty.wholeMatch(of: /ttys[0-9]{1,4}/) != nil
     }
 
     private static func idValido(_ c: Unicode.Scalar) -> Bool {
@@ -226,14 +236,31 @@ final class SessoesClaude {
         if novas != sessoes { trocar(por: novas, avisarFim: false) }
     }
 
-    /// Traz para frente o app da sessão. É o clique da pessoa que pede; o Kizami continua sem foco.
-    // ponytail: ativa o app, não a janela nem a aba da sessão; um deep link para a sessão do app Claude fica para validar.
+    /// Traz para frente o app da sessão e, no Terminal e no iTerm2, a aba dela. É o clique da pessoa que pede;
+    /// o Kizami continua sem foco.
+    // ponytail: no VS Code, em outro editor e no app Claude, só o app vem para frente. O app Claude não documenta
+    // link para uma sessão existente do Claude Code (só `claude://code/new`); o `vscode://anthropic.claude-code/open?session=`
+    // documentado abre na janela que estiver em foco e, se a sessão não for da pasta dela, começa uma conversa nova.
+    // Trocar quando houver um link documentado que ache a janela certa sozinho.
     func focar(_ sessao: SessaoClaude) {
         guard let bundle = sessao.app,
               let app = NSRunningApplication.runningApplications(withBundleIdentifier: bundle).first else {
             registro.notice("claude: app da sessão não está aberto")
             return
         }
+        guard let tty = sessao.tty, let script = AbaDoTerminal.script(app: bundle, tty: tty) else {
+            Self.ativar(app)
+            return
+        }
+        // A aba antes da ativação: o app já chega com a janela certa na frente. Automação negada, aba fechada ou
+        // script com erro dão em nil ou "", e fica a ativação do app, como antes.
+        Task {
+            if await AppleScript.rodar(script) != "ok" { registro.info("claude: aba da sessão não encontrada") }
+            Self.ativar(app)
+        }
+    }
+
+    private static func ativar(_ app: NSRunningApplication) {
         // A ativação cooperativa (macOS 14+) pode recusar o pedido de um app que não está ativo;
         // pelo Launch Services, abrir um app que já roda só o traz para frente.
         if !app.activate(), let url = app.bundleURL {
@@ -262,6 +289,62 @@ final class SessoesClaude {
             default:
                 break
             }
+        }
+    }
+}
+
+/// O AppleScript que seleciona a aba do Terminal ou a sessão do iTerm2 cujo `tty` é o da sessão do Claude e põe a
+/// janela dela na frente das outras do app. Pede Automação para o Terminal ou o iTerm2 na primeira vez.
+/// O único texto de fora no script é o tty, conferido aqui de novo: o resto é fixo.
+enum AbaDoTerminal {
+    static let terminal = "com.apple.Terminal"
+    static let iterm = "com.googlecode.iterm2"
+
+    /// nil para outro app ou tty inválido. Pelo bundle id, não pelo nome: o iTerm2 se chama "iTerm" no disco.
+    /// O `is running` vem antes do `tell`: falar com um app fechado abriria o app.
+    static func script(app: String, tty: String) -> String? {
+        guard MensagemClaude.ttyValido(tty) else { return nil }
+        let dispositivo = "/dev/" + tty
+        switch app {
+        case terminal:
+            // Abas nativas do macOS aparecem aqui como janelas de uma aba só: pôr a janela na frente já escolhe a aba.
+            return """
+                if application id "\(terminal)" is not running then return ""
+                tell application id "\(terminal)"
+                    repeat with w in windows
+                        repeat with t in tabs of w
+                            if tty of t is "\(dispositivo)" then
+                                set miniaturized of w to false
+                                set selected tab of w to t
+                                set index of w to 1
+                                return "ok"
+                            end if
+                        end repeat
+                    end repeat
+                end tell
+                return ""
+                """
+        case iterm:
+            return """
+                if application id "\(iterm)" is not running then return ""
+                tell application id "\(iterm)"
+                    repeat with w in windows
+                        repeat with t in tabs of w
+                            repeat with s in sessions of t
+                                if tty of s is "\(dispositivo)" then
+                                    select t
+                                    select s
+                                    select w
+                                    return "ok"
+                                end if
+                            end repeat
+                        end repeat
+                    end repeat
+                end tell
+                return ""
+                """
+        default:
+            return nil
         }
     }
 }
