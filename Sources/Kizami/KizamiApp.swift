@@ -94,6 +94,7 @@ final class Kizami {
     let espelho = Espelho()
     let personalizacao = Personalizacao()
     let atalhosApple: AtalhosApple
+    let login = Login()
     let downloads: Downloads
     let github: GitHub
     let formulario = FormularioAjustes()
@@ -204,7 +205,7 @@ final class Kizami {
             let raiz = AjustesView(tempo: tempo, agenda: agenda, mac: mac, interesses: interesses, formulario: formulario,
                                    formularioInteresses: formularioInteresses, copiados: copiados,
                                    downloads: downloads, github: github,
-                                   personalizacao: personalizacao, atalhosApple: atalhosApple)
+                                   personalizacao: personalizacao, atalhosApple: atalhosApple, login: login)
             let janela = NSWindow(contentViewController: NSHostingController(rootView: raiz))
             janela.title = String(localized: "Ajustes do Kizami")
             janela.styleMask = [.titled, .closable, .miniaturizable, .resizable]

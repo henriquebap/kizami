@@ -79,6 +79,12 @@ Passe o mouse no notch e a ilha abre. No topo:
 
 Só a aba escolhida mostra o nome; as outras mostram o ícone (o nome aparece com o cursor em cima).
 
+**No dia a dia:**
+- **Abrir no login:** Ajustes › Geral (o macOS pode pedir para você aprovar em Itens de Início).
+- **Reunião chegando:** de 10 minutos antes até 5 minutos depois de uma reunião começar, a ilha fechada mostra a contagem em volta do notch.
+- **O timer sobrevive ao reinício:** um timer correndo ou pausado volta quando o Kizami reabre. Se acabou com o Kizami fechado (há menos de uma hora), chega o aviso de fim.
+- **Imagens nos Copiados:** os Copiados guardam também imagens PNG e TIFF (até 10 MB cada, 50 MB no total), só na memória, com miniatura.
+
 **Do seu jeito** (Ajustes › Abas da ilha e abaixo):
 - **Abas:** ligue ou desligue cada aba e mude a ordem; a ilha abre na primeira. O Início fica sempre.
 - **Início:** esconda as seções que você não quer (próximo evento e tempo, interesses, sessões do Claude, tocando agora, apps e Mac, a bandeja).

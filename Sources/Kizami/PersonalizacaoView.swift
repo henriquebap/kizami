@@ -72,6 +72,7 @@ struct AjustesIlha: View {
 
     private func nome(_ asa: Asa) -> LocalizedStringKey {
         switch asa {
+        case .reuniao: "Reunião chegando"
         case .timer: "Timer correndo"
         case .atividades: "Avisos"
         case .placar: "Placar ao vivo"

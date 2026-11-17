@@ -22,6 +22,7 @@ struct AjustesView: View {
     let github: GitHub
     let personalizacao: Personalizacao
     let atalhosApple: AtalhosApple
+    let login: Login
     @AppStorage(Janela.chaveUrgenteEmTelaCheia) private var urgenteEmTelaCheia = false
 
     var body: some View {
@@ -61,6 +62,21 @@ struct AjustesView: View {
             AjustesCopiados(copiados: copiados)
             AjustesDownloads(downloads: downloads)
             AjustesGitHub(github: github)
+            Section("Geral") {
+                Toggle("Abrir o Kizami no login", isOn: Binding(get: { login.ligado }, set: { login.alternar(para: $0) }))
+                if login.precisaAprovar {
+                    Text("O macOS pede a sua aprovação em Itens de Início.").font(.caption).foregroundStyle(.secondary)
+                    Button("Abrir Itens de Início") { login.abrirItensDeInicio() }
+                } else if login.falhou {
+                    Text("Não deu para mudar. Abra o Kizami de /Applications e tente de novo.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+            }
+            .onAppear { login.conferir() }
+            // Voltando dos Ajustes do Sistema (Itens de Início), o estado pode ter mudado lá.
+            .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+                login.conferir()
+            }
             AjustesIlha(personalizacao: personalizacao)
             AjustesAtalhosApple(atalhos: atalhosApple)
             AjustesTimer(cronometro: Kizami.shared.cronometro)

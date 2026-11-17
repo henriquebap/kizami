@@ -113,9 +113,16 @@ Events the person follows but doesn't keep in their calendar (Buffalo Bills, F1,
 - Timer: focus, break and up to 3 free timers in Settings.
 - Apple Shortcuts: up to 6 chosen shortcuts as buttons in the Shortcuts tab, run with `/usr/bin/shortcuts run -- <name>`.
 
+### v0.13: Daily use (done)
+
+- Open at login with `SMAppService.mainApp` (Settings › General).
+- The meeting countdown in the closed wings (`Asa.reuniao`, first by default; a saved order gets it at the end).
+- The timer saved in `timer.estado` and restored on launch; an end missed by less than 1 h still notifies.
+- Images in Copied (PNG/TIFF, memory only, 10 MB each, 50 MB in all).
+- Still open: new screenshots in `docs/` (they need the Screen Recording permission).
+
 ### Next
 
-- **v0.13, daily use:** open at login (`SMAppService`), the timer surviving a restart, the meeting countdown in the wings, images in Copied, new screenshots in `docs/`.
 - **v0.14, depth:** Kanji's live mic level (needs Kanji), opening the exact Claude session, two live games and F1 positions, energy profiling.
 
 ## Ideas (not scheduled)

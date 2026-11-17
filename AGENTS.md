@@ -47,7 +47,8 @@ make install && /Applications/Kizami.app/Contents/MacOS/Kizami enviar --titulo t
 | `Cronometro.swift`, `CronometroView.swift` | Timer / pomodoro: the countdown, the focus → break cycle, the Timer tab and the countdown in the closed wings |
 | `Personalizacao.swift`, `PersonalizacaoView.swift` | The person's choices: tabs and order, hidden Home sections, the order of the wings (`Aba`, `Asa`); the Settings section |
 | `AtalhosApple.swift`, `AtalhosAppleView.swift` | Apple Shortcuts chosen in Settings, run with `/usr/bin/shortcuts run -- <name>`; the row in the Shortcuts tab |
-| `Copiados.swift`, `CopiadosView.swift` | Clipboard history (opt-in, memory only, password/key filter), the Copied tab, paste with ⌘V |
+| `Copiados.swift`, `CopiadosView.swift` | Clipboard history of text and images (opt-in, memory only, password/key filter, size caps), the Copied tab, paste with ⌘V |
+| `Login.swift` | Open at login (`SMAppService.mainApp`), shown in Settings › General |
 | `GitHub.swift`, `GitHubView.swift` | CI failed / review requested through the logged-in `gh` (opt-in, read only), its Settings section |
 | `Downloads.swift`, `DownloadsView.swift` | Downloads in progress from `~/Downloads` partial files (opt-in), its Settings section |
 | `Espelho.swift`, `EspelhoView.swift` | Camera mirror (video only), opened from the Shortcuts tab, off when the island closes |

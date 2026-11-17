@@ -56,6 +56,7 @@ extension Aba {
         switch asa {
         case .atividades: !f.mural.atividades.isEmpty
         case .timer: f.cronometro.ativo && !f.cronometro.pausado
+        case .reuniao: f.agenda.emBreve != nil
         case .placar: f.interesses.aoVivo != nil
         case .tocando: f.tocando.app != nil
         case .privacidade: !f.mac.microfone.isEmpty || f.mac.camera
@@ -70,7 +71,7 @@ extension Aba {
     if !f.mural.avisos.isEmpty { return g.aviso(linhas: f.mural.avisos.count) }
     return switch asaAtual(f) {
     case .atividades: g.compacta(icones: f.mural.destaques.count)
-    case .timer: g.compacta(icones: 2)  // "24:59" não cabe na asa de um ícone
+    case .timer, .reuniao: g.compacta(icones: 2)  // "24:59" ou "10 min" não cabe na asa de um ícone
     case .placar: g.compacta(icones: 3)  // "BUF 14" de um lado, "7 KC" do outro
     case .tocando, .privacidade, .bandeja: g.compacta
     case .nada: g.repouso
@@ -134,7 +135,21 @@ struct IlhaView: View {
                 case .compacta:
                     // Atividade tem a vez (foi pedida por alguém); depois o som; por fim a bandeja.
                     let lado = ladoDaAsa(g.notch.height)
-                    if asa == .timer {
+                    if asa == .reuniao, let reuniao = fontes.agenda.emBreve {
+                        Asas(altura: g.notch.height) {
+                            Simbolo(nome: "calendar", cor: reuniao.cor.map { Color(red: $0.x, green: $0.y, blue: $0.z) } ?? .red,
+                                    chegada: nil)
+                        } direita: {
+                            HStack(spacing: 4) {
+                                IndicadorPrivacidade(mac: fontes.mac)
+                                // Por minuto: a contagem anda sozinha entre as releituras da agenda.
+                                TimelineView(.everyMinute) { contexto in
+                                    Text(verbatim: Self.falta(reuniao.inicio, agora: contexto.date))
+                                        .font(.caption.weight(.bold)).monospacedDigit()
+                                }
+                            }
+                        }
+                    } else if asa == .timer {
                         Asas(altura: g.notch.height) {
                             Simbolo(nome: cronometro.modo.simbolo, cor: .orange, chegada: nil)
                         } direita: {
@@ -275,6 +290,14 @@ struct IlhaView: View {
         .animation(.spring(response: 0.4, dampingFraction: 0.82), value: estado.aba)
         .animation(.smooth(duration: 0.25), value: privacidade)
         .animation(.spring(response: 0.4, dampingFraction: 0.85), value: asa)
+    }
+}
+
+extension IlhaView {
+    /// "8 min" até a reunião, ou "agora" quando já começou: cabe na asa.
+    static func falta(_ inicio: Date, agora: Date) -> String {
+        let minutos = Int((inicio.timeIntervalSince(agora) / 60).rounded(.up))
+        return minutos > 0 ? String(localized: "\(minutos) min") : String(localized: "agora")
     }
 }
 
