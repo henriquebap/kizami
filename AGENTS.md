@@ -11,7 +11,7 @@ Kizami is a menu-bar-only macOS app that draws a black island around the MacBook
 ```bash
 make app      # build/Kizami.app (swiftc only; signed with the local "Kanji Dev" certificate when present, so permissions survive rebuilds)
 make install  # /Applications/Kizami.app
-make teste    # pure rules: Geometria, Comando, Atividade, Som, Volume, Agenda, Tempo, Claude, Mac, Interesses, Placar, Cronometro, Copiados, Espelho, Downloads, GitHub, Personalizacao, AtalhosApple, Lembretes
+make teste    # pure rules: Geometria, Comando, Atividade, Som, Volume, Agenda, Tempo, Claude, Mac, Interesses, Placar, Cronometro, Copiados, Espelho, Downloads, GitHub, Personalizacao, AtalhosApple, Lembretes, Fones
 ```
 
 **Constraints:**
@@ -55,6 +55,7 @@ make install && /Applications/Kizami.app/Contents/MacOS/Kizami enviar --titulo t
 | `GitHub.swift`, `GitHubView.swift` | CI failed / review requested through the logged-in `gh` (opt-in, read only), its Settings section |
 | `Lembretes.swift`, `LembretesView.swift` | Reminders from the Reminders app (EventKit, opt-in): the ones for the island (`Lembrete.proximos`: overdue and today, then undated, max 3), marking one completed on the person's click (`concluir`), its Settings section |
 | `Downloads.swift`, `DownloadsView.swift` | Downloads in progress from `~/Downloads` partial files (opt-in), its Settings section |
+| `Fones.swift`, `FonesBateria.swift` | Headphones connected (opt-in): IOBluetooth connect notifications, the battery from `system_profiler` (pure parsing in `FonesBateria.swift`) |
 | `Espelho.swift`, `EspelhoView.swift` | Camera mirror (video only), opened from the Shortcuts tab, off when the island closes |
 | `Mac.swift`, `MacView.swift` | Mic and camera in use, battery, Dock badges (opt-in, Accessibility): the privacy dots, the open-island row, its Settings section |
 | `Atalhos.swift` | The Shortcuts tab: system shortcuts sent as key events (screenshots, emoji, lock) or opened as apps (Mission Control); the media play/pause key for browsers (`TeclaDeMidia`) |
@@ -70,10 +71,10 @@ What's next and what macOS allows: [docs/ROADMAP.md](docs/ROADMAP.md).
 3. **Never take focus.** Use `.nonactivatingPanel` and `orderFrontRegardless()`. Never `makeKey`, never `NSApp.activate`. The one exception is the Settings window the person asked for (`Kizami.abrirAjustes`).
 4. **Never block the menu bar.** While closed, `ignoresMouseEvents = true`.
 5. **Public APIs only.** No MediaRemote, no SkyLight: they break between macOS versions.
-6. **Permissions stay optional.** Automation (artwork, media buttons, the Claude session's tab in Terminal / iTerm2), Calendars (next event) and Accessibility (Dock badges, off by default; the Shortcuts and Kanji tabs, browser play/pause and pasting from Copied, asked on first use), Camera (the mirror, asked when opened), Files and Folders (Downloads, opt-in) and Reminders (opt-in). Denied, everything else keeps working. Track titles, event titles, reminder titles, session folders, the city, followed teams, app names and badge counts are content: never in logs.
+6. **Permissions stay optional.** Automation (artwork, media buttons, the Claude session's tab in Terminal / iTerm2), Calendars (next event) and Accessibility (Dock badges, off by default; the Shortcuts and Kanji tabs, browser play/pause and pasting from Copied, asked on first use), Camera (the mirror, asked when opened), Files and Folders (Downloads, opt-in), Reminders (opt-in) and Bluetooth (headphones connected, opt-in). Denied, everything else keeps working. Track titles, event titles, reminder titles, session folders, the city, followed teams, app names, badge counts and device names are content: never in logs.
 7. **No third-party dependencies.**
 8. **Network only to named services that need no key**, over HTTPS with a timeout, a size cap and the redirect target checked: today Open-Meteo and ESPN's public JSON (`site.api.espn.com`), plus ICS feeds whose link the person pastes in Settings. A new service is a decision written in the ROADMAP. GitHub goes through the person's own `gh` CLI (fixed arguments, timeout, output cap), never a token in Kizami.
-9. **Opt-in for what reads more of the Mac:** Copied (clipboard, memory only), Downloads, GitHub, Reminders and urgent-over-full-screen start off. Only Kizami's own sources (the ones with a click action) may show over full screen.
+9. **Opt-in for what reads more of the Mac:** Copied (clipboard, memory only), Downloads, GitHub, Reminders, Headphones and urgent-over-full-screen start off. Only Kizami's own sources (the ones with a click action) may show over full screen.
 
 ## Conventions
 

@@ -21,6 +21,7 @@ struct AjustesView: View {
     let downloads: Downloads
     let github: GitHub
     let lembretes: Lembretes
+    let fones: Fones
     let personalizacao: Personalizacao
     let atalhosApple: AtalhosApple
     let login: Login
@@ -64,6 +65,12 @@ struct AjustesView: View {
             AjustesDownloads(downloads: downloads)
             AjustesGitHub(github: github)
             AjustesLembretes(lembretes: lembretes)
+            Section("Fones") {
+                Toggle("Avisar quando um fone Bluetooth conectar", isOn: Binding(get: { fones.ligado }, set: { fones.ligado = $0 }))
+                Text("AirPods, Beats e outros fones: o nome e a bateria aparecem na ilha por alguns segundos. O macOS pede acesso ao Bluetooth.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
             Section("Geral") {
                 Toggle("Abrir o Kizami no login", isOn: Binding(get: { login.ligado }, set: { login.alternar(para: $0) }))
                 if login.precisaAprovar {

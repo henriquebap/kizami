@@ -17,6 +17,7 @@
 	<key>NSSupportsSuddenTermination</key><false/>
 	<key>NSCameraUsageDescription</key><string>O Kizami mostra a sua câmera no notch quando você pede o espelho, para se ver antes de uma chamada. A imagem não é gravada nem sai do Mac.</string>
 	<key>NSDownloadsFolderUsageDescription</key><string>O Kizami acompanha os arquivos sendo baixados para mostrar o andamento no notch, se você ligar isso nos Ajustes.</string>
+	<key>NSBluetoothAlwaysUsageDescription</key><string>O Kizami avisa no notch quando um fone Bluetooth conecta e mostra a bateria dele, se você ligar isso nos Ajustes. Ele nunca conecta nem desconecta aparelhos.</string>
 	<key>NSCalendarsFullAccessUsageDescription</key><string>O Kizami mostra no notch o seu próximo evento e avisa 15 minutos antes de ele começar.</string>
 	<key>NSRemindersFullAccessUsageDescription</key><string>O Kizami mostra no notch os seus lembretes de hoje e marca como concluído o que você clicar, se você ligar isso nos Ajustes.</string>
 </dict>

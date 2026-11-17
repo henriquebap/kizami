@@ -307,6 +307,7 @@ import Foundation
         testarPersonalizacao()
         testarAtalhosApple()
         testarLembretes()
+        testarFones()
         if falhas > 0 { exit(1) }
     }
 }

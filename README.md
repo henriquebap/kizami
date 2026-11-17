@@ -19,6 +19,7 @@ Free and open source (Apache 2.0). No private APIs and no third-party dependenci
 - **Camera:** the mirror, only while it is open.
 - **Downloads folder:** downloads in progress, if you turn them on.
 - **Reminders:** today's reminders, if you turn them on.
+- **Bluetooth:** the headphones-connected notice, if you turn it on.
 
 **The network goes only to services that need no key:** Open-Meteo for the weather, ESPN's public schedules and scores for the games you follow, and the calendar links you paste in Settings. If you turn GitHub on, your own logged-in `gh` asks GitHub for your PRs; Kizami never sees the token. Audio, files and what you type never leave the Mac.
 
@@ -102,6 +103,7 @@ Only the chosen tab shows its name; the others show their icon (hover for the na
 **Downloads** (off by default, Settings › Downloads): a file being downloaded in Chrome, Safari or Firefox shows with its size or percentage, then "Download complete"; click to show it in Finder. Asks for the Downloads folder.
 
 **Reminders** (off by default, Settings › Reminders): up to 3 reminders from the Reminders app, overdue and today's first, then the ones without a date; click to mark one completed. Asks for Reminders.
+**Headphones** (off by default, Settings › Headphones): when AirPods or other Bluetooth headphones connect, the island shows their name and battery for a few seconds (left, right and case, or the single battery). Asks for Bluetooth; Kizami only listens and never connects or disconnects anything.
 
 **Urgent over full screen** (off by default, Settings › Full screen): during a full-screen video or game the island hides; with this on, it comes back only for a meeting starting or Claude asking for permission.
 

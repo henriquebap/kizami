@@ -255,3 +255,11 @@
 "Os atrasados e os de hoje primeiro, depois os sem data. O Kizami só marca um lembrete como concluído quando você clica." = "Overdue and today's first, then the ones without a date. Kizami only marks a reminder as completed when you click.";
 "atrasado" = "overdue";
 "hoje" = "today";
+/* Fones */
+"Fones" = "Headphones";
+"Conectado" = "Connected";
+"E %@" = "L %@";
+"D %@" = "R %@";
+"estojo %@" = "case %@";
+"Avisar quando um fone Bluetooth conectar" = "Notify when Bluetooth headphones connect";
+"AirPods, Beats e outros fones: o nome e a bateria aparecem na ilha por alguns segundos. O macOS pede acesso ao Bluetooth." = "AirPods, Beats and other headphones: the name and battery show on the island for a few seconds. macOS asks for Bluetooth access.";
