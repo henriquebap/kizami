@@ -175,9 +175,11 @@ final class Janela {
             if aberta {
                 estado.aberta = true
                 painel.ignoresMouseEvents = false  // aberta, o clique fica na ilha em vez de cair na janela de baixo
-                // Com aviso ou atividade, abre no Início, onde eles estão (o aviso se encerra logo abaixo); sem,
-                // na primeira aba da pessoa. Decidido ao abrir: a escolha pode ter mudado nos Ajustes.
-                estado.aba = mural.atividades.isEmpty && mural.avisos.isEmpty ? fontes.personalizacao.abaInicial : .inicio
+                // Com aviso, atividade ou um arquivo sendo arrastado, abre no Início, onde estão a lista e a bandeja
+                // (o aviso se encerra logo abaixo); sem, na primeira aba da pessoa. Decidido ao abrir: a escolha pode
+                // ter mudado nos Ajustes.
+                let noInicio = !mural.atividades.isEmpty || !mural.avisos.isEmpty || bandeja.arrastando
+                estado.aba = noInicio ? .inicio : fontes.personalizacao.abaInicial
                 mural.encerrarAviso()
                 bandeja.podar()
             } else {

@@ -37,8 +37,10 @@ final class AtalhosApple {
         }
         leituraFalhou = false
         disponiveis = Self.ler(saida)
-        // Lista vazia com escolhidos (o app Atalhos ainda sincronizando depois do login): não poda a escolha.
-        let conciliados = disponiveis.isEmpty ? escolhidos : Self.conciliar(escolhidos, disponiveis: disponiveis)
+        // Lista vazia (o app Atalhos ainda sincronizando depois do login) ou cortada no teto: não é a lista inteira,
+        // então não poda a escolha da pessoa.
+        let completa = !disponiveis.isEmpty && disponiveis.count < Self.maximoNaLista
+        let conciliados = completa ? Self.conciliar(escolhidos, disponiveis: disponiveis) : escolhidos
         if conciliados != escolhidos { escolhidos = conciliados }
         registro.info("atalhos da Apple: \(self.disponiveis.count) na lista, \(self.escolhidos.count) escolhidos (\(ContinuousClock.now - inicio, privacy: .public))")
     }
@@ -52,7 +54,8 @@ final class AtalhosApple {
             let inicio = ContinuousClock.now
             // Sumiu do app Atalhos: o `recarregar` já tirou dos escolhidos, e o clique não fica sem resposta.
             // Lista que não respondeu: roda assim mesmo, e o próprio `shortcuts run` diz se o atalho existe.
-            let status = disponiveis.contains(nome) || leituraFalhou || disponiveis.isEmpty ? await Self.executar(nome) : -1
+            let incompleta = leituraFalhou || disponiveis.isEmpty || disponiveis.count >= Self.maximoNaLista
+            let status = disponiveis.contains(nome) || incompleta ? await Self.executar(nome) : -1
             guard status != 0 else {
                 registro.info("atalhos da Apple: atalho rodou (\(ContinuousClock.now - inicio, privacy: .public))")
                 return
