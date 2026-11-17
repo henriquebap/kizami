@@ -116,6 +116,20 @@ struct Geometria: Equatable {
     /// `n` linhas da lista com o espaço entre elas.
     static func alturaLinhas(_ n: Int) -> CGFloat { n > 0 ? CGFloat(n) * alturaLinha + CGFloat(n - 1) * espacoLinha : 0 }
 
+    /// A música expandida: a capa grande com o título e os botões ao lado e, se o player diz onde está (Music,
+    /// Spotify), a barra do tempo embaixo. Num navegador não há barra.
+    static let capaGrande: CGFloat = 84
+    static func alturaMusica(barra: Bool) -> CGFloat { 12 + capaGrande + (barra ? 10 + 22 : 0) + 12 }
+
+    /// A agenda expandida: a linha do mês com Semana/Mês, a faixa da semana (ou a grade de `semanas` fileiras)
+    /// e os eventos do dia escolhido, como na aba Hoje (até `maximoDoDia` linhas, sem rolagem).
+    static let alturaDaFaixa: CGFloat = 40
+    static let alturaDaFileiraDoMes: CGFloat = 24
+    static func alturaAgenda(semanas: Int, eventos: Int) -> CGFloat {
+        let grade = semanas <= 1 ? alturaDaFaixa : 14 + CGFloat(semanas) * alturaDaFileiraDoMes
+        return 10 + 24 + 8 + grade + 8 + alturaDaLista(itens: eventos) + 10
+    }
+
     /// Uma aba que não é o Início: o cabeçalho e o conteúdo dela (atalhos, Kanji).
     func abertaComAba(_ conteudo: CGFloat) -> CGSize {
         CGSize(width: max(Self.larguraAberta, compacta.width),
@@ -128,7 +142,9 @@ struct Geometria: Equatable {
                                   sessoes: Self.maximoSessoes, hoje: true, apps: true, interesse: true))
         // A fechada com três ícones passa da aberta num notch mais largo que ~204 pt.
         let largura = max(maior.width, compacta(icones: 3).width, aviso(linhas: 3).width)
-        return retangulo(CGSize(width: largura + 2 * Self.sombra, height: maior.height + Self.sombra))
+        // O mês de seis semanas com a lista cheia: hoje cabe na maior do Início, mas não depende disso.
+        let altura = max(maior.height, abertaComAba(Self.alturaAgenda(semanas: 6, eventos: Self.maximoDoDia)).height)
+        return retangulo(CGSize(width: largura + 2 * Self.sombra, height: altura + Self.sombra))
     }
 
     /// Retângulo de um tamanho preso ao topo da tela, centrado no notch.

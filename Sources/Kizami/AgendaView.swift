@@ -106,9 +106,195 @@ struct AbaHoje: View {
         .frame(maxWidth: .infinity, alignment: .topLeading)
     }
 
-    private static func horario(_ evento: EventoAgenda) -> String {
+    static func horario(_ evento: EventoAgenda) -> String {
         if evento.diaInteiro { return String(localized: "Dia inteiro") }
         let hora = Date.FormatStyle(date: .omitted, time: .shortened)
         return "\(evento.inicio.formatted(hora))–\(evento.fim.formatted(hora))"
+    }
+}
+
+/// A altura da agenda expandida agora: a semana ou o mês do dia escolhido e quantos eventos ele tem.
+/// A janela mede a área do hover com a mesma conta (`tamanhoAberto`).
+@MainActor func alturaDaAgendaExpandida(_ estado: EstadoIlha, _ agenda: Agenda) -> CGFloat {
+    let calendario = Calendar.current
+    let dia = estado.diaEscolhido ?? .now
+    let semanas = estado.mesInteiro ? Calendario.mes(de: dia, calendario: calendario).count / 7 : 1
+    let eventos = Calendario.eventos(agenda.doPeriodo, em: dia, calendario: calendario).count
+    return Geometria.alturaAgenda(semanas: semanas, eventos: eventos)
+}
+
+private func corDoCalendario(_ evento: EventoAgenda?) -> Color {
+    evento?.cor.map { Color(red: $0.x, green: $0.y, blue: $0.z) } ?? .red
+}
+
+/// A agenda que cresceu do chip: a semana (ou o mês) com um ponto nos dias com evento, e os eventos do dia escolhido.
+struct AgendaExpandida: View {
+    let estado: EstadoIlha
+    let agenda: Agenda
+    let espaco: Namespace.ID
+    let aoRecolher: () -> Void
+
+    var body: some View {
+        let calendario = Calendar.current
+        let dia = calendario.startOfDay(for: estado.diaEscolhido ?? .now)
+        let dias = estado.mesInteiro ? Calendario.mes(de: dia, calendario: calendario)
+                                     : Calendario.semana(de: dia, calendario: calendario)
+        let pontos = Calendario.pontos(agenda.doPeriodo, dias: dias, calendario: calendario)
+        let eventos = Calendario.eventos(agenda.doPeriodo, em: dia, calendario: calendario)
+        VStack(alignment: .leading, spacing: 8) {
+            topo(dia)
+            if estado.mesInteiro {
+                grade(dias, dia: dia, pontos: pontos, calendario: calendario)
+            } else {
+                faixa(dias, dia: dia, pontos: pontos, calendario: calendario)
+            }
+            lista(eventos)
+        }
+        .padding(.vertical, 10)
+        .padding(.horizontal, 10)
+        .frame(height: Geometria.alturaAgenda(semanas: dias.count / 7, eventos: eventos.count), alignment: .top)
+        .vidro(id: "agenda", em: espaco)
+        .padding(.horizontal, 4)
+    }
+
+    /// O mês e o ano (clique recolhe), Semana/Mês e a seta de recolher.
+    private func topo(_ dia: Date) -> some View {
+        HStack(spacing: 8) {
+            // verbatim: o nome do mês já vem traduzido do sistema.
+            Text(verbatim: dia.formatted(.dateTime.month(.wide).year()))
+                .font(.callout.weight(.semibold))
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(.rect)
+                .onTapGesture(perform: aoRecolher)
+            Picker("Ver", selection: Binding(get: { estado.mesInteiro }, set: { novo in
+                withAnimation(Movimento.ou(Movimento.expandir)) { estado.mesInteiro = novo }
+            })) {
+                Text("Semana").tag(false)
+                Text("Mês").tag(true)
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .controlSize(.small)
+            .fixedSize()
+            Button("Recolher", systemImage: "chevron.up", action: aoRecolher)
+                .labelStyle(.iconOnly)
+                .buttonStyle(.plain)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(.secondary)
+                .frame(width: 24, height: 24)
+                .contentShape(.rect)
+                .help(Text("Recolher"))
+        }
+        .frame(height: 24)
+    }
+
+    /// A semana numa fileira: a letra do dia, o número e o ponto.
+    private func faixa(_ dias: [Date], dia: Date, pontos: [Date: EventoAgenda], calendario: Calendar) -> some View {
+        let letras = Calendario.letras(calendario: calendario)
+        return HStack(spacing: 2) {
+            ForEach(Array(dias.enumerated()), id: \.offset) { i, d in
+                Button { escolher(d) } label: {
+                    VStack(spacing: 2) {
+                        Text(verbatim: letras[i % 7]).font(.caption2).foregroundStyle(.secondary)
+                        numero(d, calendario: calendario)
+                        ponto(pontos[d])
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(selecao(d == dia))
+                    .contentShape(.rect)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .frame(height: Geometria.alturaDaFaixa)
+    }
+
+    /// O mês em fileiras de 7, com as letras em cima. Os dias de fora do mês ficam apagados, mas abrem também.
+    private func grade(_ dias: [Date], dia: Date, pontos: [Date: EventoAgenda], calendario: Calendar) -> some View {
+        let letras = Calendario.letras(calendario: calendario)
+        let mes = calendario.component(.month, from: dia)
+        return VStack(spacing: 0) {
+            HStack(spacing: 2) {
+                ForEach(Array(letras.enumerated()), id: \.offset) { _, letra in
+                    Text(verbatim: letra).font(.caption2).foregroundStyle(.secondary).frame(maxWidth: .infinity)
+                }
+            }
+            .frame(height: 14)
+            ForEach(0..<(dias.count / 7), id: \.self) { semana in
+                HStack(spacing: 2) {
+                    ForEach(dias[(semana * 7)..<(semana * 7 + 7)], id: \.self) { d in
+                        Button { escolher(d) } label: {
+                            VStack(spacing: 1) {
+                                numero(d, calendario: calendario)
+                                ponto(pontos[d])
+                            }
+                            .opacity(calendario.component(.month, from: d) == mes ? 1 : 0.4)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .background(selecao(d == dia))
+                            .contentShape(.rect)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .frame(height: Geometria.alturaDaFileiraDoMes)
+            }
+        }
+    }
+
+    private func numero(_ d: Date, calendario: Calendar) -> some View {
+        let hoje = calendario.isDateInToday(d)
+        return Text(verbatim: "\(calendario.component(.day, from: d))")
+            .font(.caption.weight(hoje ? .bold : .regular)).monospacedDigit()
+            .foregroundStyle(hoje ? Color.red : Color.primary)
+    }
+
+    /// O ponto do dia com evento, na cor do calendário do primeiro; sem evento, o espaço dele, para nada pular.
+    private func ponto(_ evento: EventoAgenda?) -> some View {
+        Circle().fill(corDoCalendario(evento)).frame(width: 4, height: 4).opacity(evento == nil ? 0 : 1)
+    }
+
+    private func selecao(_ escolhido: Bool) -> some View {
+        RoundedRectangle(cornerRadius: 7, style: .continuous).fill(.white.opacity(escolhido ? 0.16 : 0))
+    }
+
+    private func escolher(_ d: Date) {
+        withAnimation(Movimento.ou(Movimento.conteudo)) {
+            estado.diaEscolhido = d
+            agenda.mostrar(Calendario.intervalo(de: d, calendario: .current))
+        }
+    }
+
+    /// Todos os eventos do dia, sem rolagem: até `maximoDoDia` linhas, a última vira "mais k".
+    private func lista(_ eventos: [EventoAgenda]) -> some View {
+        let visiveis = Calendario.visiveis(eventos.count, maximo: Geometria.maximoDoDia)
+        return VStack(alignment: .leading, spacing: Geometria.espacoLinha) {
+            if eventos.isEmpty {
+                Label("Nada neste dia", systemImage: "calendar")
+                    .foregroundStyle(.secondary)
+                    .frame(height: Geometria.alturaLinha)
+            }
+            ForEach(eventos.prefix(visiveis)) { evento in
+                HStack(spacing: 10) {
+                    Capsule().fill(corDoCalendario(evento)).frame(width: 3, height: 22)
+                    Text(verbatim: AbaHoje.horario(evento))
+                        .font(.caption).monospacedDigit().foregroundStyle(.secondary)
+                        .frame(minWidth: 84, alignment: .leading)
+                        .fixedSize()
+                    // verbatim: o título vem do convite de qualquer pessoa.
+                    Text(verbatim: evento.titulo).font(.callout.weight(.semibold))
+                    Spacer(minLength: 0)
+                }
+                .lineLimit(1)
+                .frame(height: Geometria.alturaLinha)
+            }
+            if eventos.count > visiveis {
+                Text(String(localized: "mais \(eventos.count - visiveis)"))
+                    .font(.caption).foregroundStyle(.secondary)
+                    .frame(height: Geometria.alturaLinha)
+                    .padding(.leading, 13)
+            }
+        }
+        .font(.callout)
+        .padding(.horizontal, 4)
     }
 }

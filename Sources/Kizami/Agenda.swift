@@ -129,6 +129,70 @@ extension EventoAgenda {
     }
 }
 
+/// Os dias da agenda expandida: a faixa da semana, a grade do mês e os eventos de cada dia. Puro: o `Calendar`
+/// vem de fora (o primeiro dia da semana é o da pessoa, `Calendar.current`), e os testes usam um fixo.
+enum Calendario {
+    /// Os 7 dias da semana de `dia`, começando no primeiro dia da semana do calendário, à meia-noite.
+    static func semana(de dia: Date, calendario: Calendar) -> [Date] {
+        let inicio = calendario.dateInterval(of: .weekOfYear, for: dia)?.start ?? calendario.startOfDay(for: dia)
+        return dias(desde: inicio, total: 7, calendario: calendario)
+    }
+
+    /// A grade do mês de `dia`: semanas inteiras, da que tem o dia 1 à que tem o último (4 a 6 fileiras de 7).
+    static func mes(de dia: Date, calendario: Calendar) -> [Date] {
+        guard let mes = calendario.dateInterval(of: .month, for: dia),
+              let primeira = calendario.dateInterval(of: .weekOfYear, for: mes.start),
+              let ultima = calendario.dateInterval(of: .weekOfYear, for: mes.end.addingTimeInterval(-1)) else {
+            return semana(de: dia, calendario: calendario)
+        }
+        let semanas = (calendario.dateComponents([.day], from: primeira.start, to: ultima.start).day ?? 0) / 7 + 1
+        return dias(desde: primeira.start, total: semanas * 7, calendario: calendario)
+    }
+
+    /// O que ler do EventKit para mostrar `dia`: a grade do mês inteira, que já contém a semana dele.
+    static func intervalo(de dia: Date, calendario: Calendar) -> DateInterval {
+        let grade = mes(de: dia, calendario: calendario)
+        let inicio = grade.first ?? calendario.startOfDay(for: dia)
+        let fim = grade.last.flatMap { calendario.date(byAdding: .day, value: 1, to: $0) } ?? inicio
+        return DateInterval(start: inicio, end: fim)
+    }
+
+    /// As letras dos dias da semana na ordem da grade ("D S T Q Q S S" em pt-BR com o domingo primeiro).
+    static func letras(calendario: Calendar) -> [String] {
+        let simbolos = calendario.veryShortStandaloneWeekdaySymbols
+        let primeiro = calendario.firstWeekday - 1
+        return Array(simbolos[primeiro...] + simbolos[..<primeiro])
+    }
+
+    /// Os eventos de um dia: os que passam por ele (um de vários dias aparece em cada um), sem os recusados,
+    /// os de dia inteiro primeiro. Todos, até os que já acabaram: é a agenda do dia, não o "a seguir".
+    static func eventos(_ eventos: [EventoAgenda], em dia: Date, calendario: Calendar) -> [EventoAgenda] {
+        let inicio = calendario.startOfDay(for: dia)
+        let fim = calendario.date(byAdding: .day, value: 1, to: inicio) ?? inicio.addingTimeInterval(24 * 3600)
+        return eventos
+            .filter { !$0.recusado && $0.inicio < fim && ($0.fim > inicio || $0.inicio >= inicio) }  // o de duração zero também
+            .sorted { ($0.diaInteiro ? 0 : 1, $0.inicio, $0.titulo) < ($1.diaInteiro ? 0 : 1, $1.inicio, $1.titulo) }
+    }
+
+    /// O primeiro evento de cada dia que tem algum: o ponto embaixo do dia, com a cor do calendário dele.
+    static func pontos(_ eventos: [EventoAgenda], dias: [Date], calendario: Calendar) -> [Date: EventoAgenda] {
+        var pontos: [Date: EventoAgenda] = [:]
+        for dia in dias {
+            pontos[dia] = Self.eventos(eventos, em: dia, calendario: calendario).first
+        }
+        return pontos
+    }
+
+    /// Quantos eventos cabem na lista sem rolagem: com mais que `maximo`, um a menos, e a última linha vira "mais k".
+    static func visiveis(_ total: Int, maximo: Int) -> Int {
+        total > maximo ? maximo - 1 : total
+    }
+
+    private static func dias(desde inicio: Date, total: Int, calendario: Calendar) -> [Date] {
+        (0..<total).compactMap { calendario.date(byAdding: .day, value: $0, to: inicio) }
+    }
+}
+
 /// O calendário da pessoa na ilha: o próximo evento e os lembretes. Sem permissão, fica vazio e nada quebra.
 @MainActor @Observable
 final class Agenda {
@@ -140,12 +204,15 @@ final class Agenda {
     /// A reunião chegando, para as asas (`EventoAgenda.naAsa`). Recalculada a cada minuto com o resto.
     private(set) var emBreve: EventoAgenda?
     private(set) var acesso: Acesso = .naoPedido
+    /// Os eventos do mês que a agenda expandida está mostrando (`mostrar`). Vazio com ela recolhida.
+    private(set) var doPeriodo: [EventoAgenda] = []
 
     @ObservationIgnored private let mural: Mural
     /// EKEventStore não é Sendable: fica na thread principal, com a Agenda.
     @ObservationIgnored private let loja = EKEventStore()
     @ObservationIgnored private var avisados: Set<String> = []
     @ObservationIgnored private var relogio: Task<Void, Never>?
+    @ObservationIgnored private var periodo: DateInterval?
 
     init(mural: Mural) {
         self.mural = mural
@@ -172,6 +239,22 @@ final class Agenda {
     func entrar(_ evento: EventoAgenda? = nil) {
         guard let link = (evento ?? proximo)?.link, EventoAgenda.aceito(link) else { return }
         NSWorkspace.shared.open(link)
+    }
+
+    /// A agenda expandiu (ou trocou de mês): lê o período agora e de novo a cada minuto com o resto, até recolher (`nil`).
+    func mostrar(_ intervalo: DateInterval?) {
+        guard intervalo != periodo else { return }
+        periodo = intervalo
+        lerPeriodo()
+    }
+
+    private func lerPeriodo() {
+        var lidos: [EventoAgenda] = []
+        if acesso == .permitido, let periodo {
+            let predicado = loja.predicateForEvents(withStart: periodo.start, end: periodo.end, calendars: nil)
+            lidos = loja.events(matching: predicado).map(EventoAgenda.init)
+        }
+        if lidos != doPeriodo { doPeriodo = lidos }
     }
 
     private func negar() {
@@ -238,5 +321,6 @@ final class Agenda {
         let ids = Set(eventos.map(\.id))
         avisados = avisados.filter { ids.contains(String($0.prefix { $0 != "#" })) }
         if !devidos.isEmpty { registro.info("agenda: \(devidos.count) lembretes de \(eventos.count) eventos em 24 h") }
+        lerPeriodo()
     }
 }

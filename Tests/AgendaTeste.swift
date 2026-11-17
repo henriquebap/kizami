@@ -5,6 +5,7 @@ import Foundation
     let agora = Date(timeIntervalSince1970: 1_800_000_000)
     testarDoDia()
     testarReuniaoNaAsa()
+    testarCalendario()
     func evento(_ id: String, em minutos: Double, dura: Double = 30, diaInteiro: Bool = false, recusado: Bool = false) -> EventoAgenda {
         let inicio = agora.addingTimeInterval(minutos * 60)
         return EventoAgenda(id: id, titulo: id, inicio: inicio, fim: inicio.addingTimeInterval(dura * 60),
@@ -100,4 +101,62 @@ import Foundation
     conferir("hoje: vazio", EventoAgenda.doDia([], agora: agora, calendario: sp).map(\.id), [])
     conferir("hoje: altura vazia = uma linha", Geometria.alturaDoDia(eventos: 0), Geometria.alturaLinha)
     conferir("hoje: altura com 9 = cinco linhas", Geometria.alturaDoDia(eventos: 9), Geometria.alturaLinhas(5))
+}
+
+/// A agenda expandida: a semana e a grade do mês com o primeiro dia da semana da pessoa, e os eventos de cada dia.
+@MainActor func testarCalendario() {
+    var domingo = Calendar(identifier: .gregorian)
+    domingo.timeZone = TimeZone(identifier: "America/Sao_Paulo")!
+    domingo.locale = Locale(identifier: "pt_BR")
+    domingo.firstWeekday = 1
+    var segunda = domingo
+    segunda.firstWeekday = 2
+    func dia(_ a: Int, _ m: Int, _ d: Int, _ h: Double = 0) -> Date {
+        domingo.date(from: DateComponents(year: a, month: m, day: d))!.addingTimeInterval(h * 3600)
+    }
+    func numeros(_ dias: [Date]) -> [Int] { dias.map { domingo.component(.day, from: $0) } }
+    let terca = dia(2026, 11, 17, 15)  // terça-feira, 15 h
+
+    conferir("semana começando no domingo", numeros(Calendario.semana(de: terca, calendario: domingo)), [15, 16, 17, 18, 19, 20, 21])
+    conferir("semana começando na segunda", numeros(Calendario.semana(de: terca, calendario: segunda)), [16, 17, 18, 19, 20, 21, 22])
+    conferir("semana à meia-noite", Calendario.semana(de: terca, calendario: domingo).first, dia(2026, 11, 15))
+    let novembro = Calendario.mes(de: terca, calendario: domingo)
+    conferir("mês: 1º no domingo, 30 na segunda = 5 semanas", novembro.count, 35)
+    conferir("mês: do dia 1 ao sábado de dezembro", [novembro.first, novembro.last], [dia(2026, 11, 1), dia(2026, 12, 5)])
+    let comSegunda = Calendario.mes(de: terca, calendario: segunda)
+    conferir("mês com a segunda primeiro: 6 semanas, de outubro a dezembro",
+             [comSegunda.count, numeros(comSegunda).first!, numeros(comSegunda).last!], [42, 26, 6])
+    conferir("fevereiro de 2026 cabe em 4 semanas", Calendario.mes(de: dia(2026, 2, 10), calendario: domingo).count, 28)
+    conferir("a semana está dentro da grade do mês",
+             Set(Calendario.semana(de: dia(2026, 11, 30), calendario: domingo)).isSubset(of: Set(novembro)), true)
+    conferir("período lido: a grade inteira", Calendario.intervalo(de: terca, calendario: domingo),
+             DateInterval(start: dia(2026, 11, 1), end: dia(2026, 12, 6)))
+    let letrasDomingo = Calendario.letras(calendario: domingo), letrasSegunda = Calendario.letras(calendario: segunda)
+    conferir("letras: sete, giradas pelo primeiro dia",
+             [letrasDomingo.count, letrasSegunda.count] + [letrasSegunda.last == letrasDomingo.first ? 1 : 0], [7, 7, 1])
+
+    func evento(_ id: String, _ inicio: Date, horas: Double = 1, diaInteiro: Bool = false, recusado: Bool = false) -> EventoAgenda {
+        EventoAgenda(id: id, titulo: id, inicio: inicio, fim: inicio.addingTimeInterval(horas * 3600),
+                     diaInteiro: diaInteiro, recusado: recusado)
+    }
+    let eventos = [
+        evento("tarde", dia(2026, 11, 17, 16)), evento("manha", dia(2026, 11, 17, 9)),  // já acabou: entra mesmo assim
+        evento("feriado", dia(2026, 11, 17), horas: 24, diaInteiro: true),
+        evento("viagem", dia(2026, 11, 16, 20), horas: 30),  // segunda 20 h a quarta 2 h: passa pela terça
+        evento("lembrete", dia(2026, 11, 17, 12), horas: 0),
+        evento("recusado", dia(2026, 11, 17, 10), recusado: true),
+        evento("ate-meia-noite", dia(2026, 11, 16, 23)),  // acaba às 0 h da terça: não é dela
+        evento("quarta", dia(2026, 11, 18, 10)),
+    ]
+    conferir("eventos da terça: dia inteiro primeiro, todos os do dia",
+             Calendario.eventos(eventos, em: terca, calendario: domingo).map(\.id),
+             ["feriado", "viagem", "manha", "lembrete", "tarde"])
+    conferir("o de vários dias aparece na quarta também",
+             Calendario.eventos(eventos, em: dia(2026, 11, 18), calendario: domingo).map(\.id), ["viagem", "quarta"])
+    let pontos = Calendario.pontos(eventos, dias: Calendario.semana(de: terca, calendario: domingo), calendario: domingo)
+    conferir("pontos: só os dias com evento", Set(pontos.keys.map { domingo.component(.day, from: $0) }), [16, 17, 18])
+    conferir("ponto da terça: o primeiro da lista", pontos[dia(2026, 11, 17)]?.id, "feriado")
+    conferir("lista: cabem todos", Calendario.visiveis(5, maximo: 5), 5)
+    conferir("lista: com um a mais, a última vira \"mais 2\"", Calendario.visiveis(6, maximo: 5), 4)
+    conferir("lista: vazia", Calendario.visiveis(0, maximo: 5), 0)
 }

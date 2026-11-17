@@ -79,15 +79,32 @@ extension Aba {
 }
 
 /// O tamanho da ilha aberta na aba escolhida. A janela mede a área do hover com a mesma conta.
-@MainActor func tamanhoAberto(_ g: Geometria, _ aba: Aba, _ f: Fontes) -> CGSize {
-    switch aba {
-    case .inicio: g.aberta(secoesAtuais(f))
+/// Com um item expandido, o Início é o cabeçalho e ele.
+@MainActor func tamanhoAberto(_ g: Geometria, _ estado: EstadoIlha, _ f: Fontes) -> CGSize {
+    switch estado.aba {
+    case .inicio:
+        switch expansaoAtual(estado, f) {
+        case .agenda: g.abertaComAba(alturaDaAgendaExpandida(estado, f.agenda))
+        case .musica: g.abertaComAba(Geometria.alturaMusica(barra: f.tocando.app.map(Controle.sabeControlar) == true))
+        case nil: g.aberta(secoesAtuais(f))
+        }
     case .atalhos: g.abertaComAba(Geometria.alturaComFileira(f.atalhosApple.escolhidos.count))
     case .kanji: g.abertaComAba(AbaKanji.altura(skills: f.kanji.skills.count))
     case .hoje: g.abertaComAba(Geometria.alturaDoDia(eventos: f.agenda.hoje.count))
     case .timer: g.abertaAtalhos
     case .copiados: g.abertaComAba(Geometria.alturaDaLista(itens: f.copiados.itens.count))
     case .espelho: g.abertaComAba(AbaEspelho.altura)
+    }
+}
+
+/// O item expandido que ainda dá para mostrar: a música parou, a agenda perdeu o acesso ou a pessoa foi para
+/// outra aba, e o Início volta ao normal (a escolha fica para quando voltar).
+@MainActor func expansaoAtual(_ estado: EstadoIlha, _ f: Fontes) -> EstadoIlha.Expansao? {
+    guard estado.aba == .inicio else { return nil }
+    return switch estado.expandido {
+    case .agenda: f.agenda.acesso == .permitido ? .agenda : nil
+    case .musica: f.tocando.app != nil ? .musica : nil
+    case nil: nil
     }
 }
 
@@ -114,6 +131,8 @@ struct IlhaView: View {
     /// Microfone ou câmera ligados: como no iPhone, a ilha não fica em repouso escondendo isso.
     private var privacidade: Bool { !fontes.mac.microfone.isEmpty || fontes.mac.camera }
     private var cronometro: Cronometro { fontes.cronometro }
+    /// O vidro do chip da agenda e da linha do que está tocando muda de forma para o do item expandido.
+    @Namespace private var espaco
 
     var body: some View {
         let g = estado.geometria
@@ -123,7 +142,7 @@ struct IlhaView: View {
             : !mural.avisos.isEmpty ? .aviso
             : asa != .nada ? .compacta
             : .repouso
-        let tamanho = forma == .aberta ? tamanhoAberto(g, estado.aba, fontes) : tamanhoFechado(g, fontes)
+        let tamanho = forma == .aberta ? tamanhoAberto(g, estado, fontes) : tamanhoFechado(g, fontes)
         let contorno = FormaIlha(orelha: forma.orelha, raio: forma.raio)
 
         ZStack(alignment: .top) {
@@ -255,13 +274,26 @@ struct IlhaView: View {
                         } else if estado.aba == .kanji {
                             AbaKanji(estado: estado, kanji: fontes.kanji, mural: mural)
                         } else {
-                        if secoes.hoje { LinhaHoje(agenda: fontes.agenda, tempo: fontes.tempo) }
-                        if secoes.interesse { LinhaInteresse(interesses: fontes.interesses) }
-                        if secoes.sessoes > 0 { SecaoClaude(sessoes: fontes.claude) }
-                        if secoes.tocando { LinhaTocando(tocando: tocando) }
-                        if secoes.linhas > 0 { Lista(mural: mural, estado: estado) }
-                        if secoes.apps { LinhaApps(mac: fontes.mac) }
-                        if secoes.bandeja { FileiraDaBandeja(bandeja: bandeja, alvo: estado.alvo) }
+                        GlassEffectContainer {
+                            VStack(spacing: Geometria.espacoSecao) {
+                                switch expansaoAtual(estado, fontes) {
+                                case .agenda:
+                                    AgendaExpandida(estado: estado, agenda: fontes.agenda, espaco: espaco) { alternar(.agenda) }
+                                case .musica:
+                                    MusicaExpandida(estado: estado, tocando: tocando, espaco: espaco) { alternar(.musica) }
+                                case nil:
+                                    if secoes.hoje {
+                                        LinhaHoje(agenda: fontes.agenda, tempo: fontes.tempo, espaco: espaco) { alternar(.agenda) }
+                                    }
+                                    if secoes.interesse { LinhaInteresse(interesses: fontes.interesses) }
+                                    if secoes.sessoes > 0 { SecaoClaude(sessoes: fontes.claude) }
+                                    if secoes.tocando { LinhaTocando(tocando: tocando, espaco: espaco) { alternar(.musica) } }
+                                    if secoes.linhas > 0 { Lista(mural: mural, estado: estado) }
+                                    if secoes.apps { LinhaApps(mac: fontes.mac) }
+                                    if secoes.bandeja { FileiraDaBandeja(bandeja: bandeja, alvo: estado.alvo) }
+                                }
+                            }
+                        }
                         }
                     }
                     .padding(.top, g.faixaDoTopo + 8)
@@ -299,6 +331,17 @@ struct IlhaView: View {
 }
 
 extension IlhaView {
+    /// Expande o item, ou recolhe o que já está expandido. A agenda lê o mês só enquanto está expandida.
+    private func alternar(_ item: EstadoIlha.Expansao) {
+        let novo = estado.expandido == item ? nil : item
+        withAnimation(Movimento.ou(Movimento.expandir)) {
+            estado.expandido = novo
+            estado.diaEscolhido = nil
+            estado.mesInteiro = false
+            fontes.agenda.mostrar(novo == .agenda ? Calendario.intervalo(de: .now, calendario: .current) : nil)
+        }
+    }
+
     /// "8 min" até a reunião, ou "agora" quando já começou: cabe na asa.
     static func falta(_ inicio: Date, agora: Date) -> String {
         let minutos = Int((inicio.timeIntervalSince(agora) / 60).rounded(.up))
@@ -401,162 +444,26 @@ private struct Cabecalho: View {
 private struct LinhaHoje: View {
     let agenda: Agenda
     let tempo: Tempo
+    let espaco: Namespace.ID
+    /// Clique no chip: a agenda expande no lugar. O "Entrar" dentro dele continua sendo só o botão.
+    let aoClicar: () -> Void
 
     var body: some View {
         HStack(spacing: 8) {
-            ChipAgenda(agenda: agenda)
+            if agenda.proximo != nil {
+                ChipAgenda(agenda: agenda)
+                    .padding(.horizontal, 8)
+                    .vidro(id: "agenda", em: espaco)
+                    .contentShape(.rect)
+                    .onTapGesture(perform: aoClicar)
+                    .accessibilityAddTraits(.isButton)
+                    .transition(.blurReplace)
+            }
             Spacer(minLength: 0)
             ChipTempo(tempo: tempo).fixedSize()  // a máxima e a mínima não podem virar reticências
         }
         .padding(.horizontal, 14)
         .frame(height: Geometria.alturaHoje)
-    }
-}
-
-/// O que está tocando: a miniatura, o título e o artista (ou o nome do app, quando o player não conta a faixa).
-private struct LinhaTocando: View {
-    let tocando: TocandoAgora
-
-    var body: some View {
-        HStack(spacing: 12) {
-            Miniatura(tocando: tocando, lado: 40, raio: 9)
-            VStack(alignment: .leading, spacing: 1) {
-                // verbatim: título e artista vêm do player e não podem virar Markdown nem chave de tradução.
-                Text(verbatim: tocando.metadados?.titulo ?? tocando.nomeDoApp)
-                    .font(.callout.weight(.semibold))
-                Text(verbatim: tocando.metadados?.titulo == nil
-                     ? String(localized: "Tocando agora")
-                     : [tocando.metadados?.artista, tocando.nomeDoApp].compactMap { $0 }.joined(separator: " · "))
-                    .font(.caption).foregroundStyle(.secondary)
-            }
-            .lineLimit(1)
-            .contentTransition(.opacity)
-            Spacer(minLength: 8)
-            if let app = tocando.app, Controle.sabeControlar(app) {
-                Controles(app: app, pausado: tocando.pausado)
-            } else {
-                // Navegador: sem AppleScript para o player, vai a tecla de play/pause do teclado, que o macOS
-                // entrega a quem está tocando (o YouTube no Chrome ou no Safari).
-                HStack(spacing: 6) {
-                    Barras(altura: 16)
-                    Button("Tocar ou pausar", systemImage: "playpause.fill") { TeclaDeMidia.tocarOuPausar() }
-                        .labelStyle(.iconOnly)
-                        .buttonStyle(.plain)
-                        .font(.system(size: 16, weight: .semibold))
-                        .frame(width: 30, height: 30)
-                        .contentShape(.rect)
-                        .help(Text("Tocar ou pausar"))
-                }
-            }
-        }
-        .padding(.horizontal, 14)
-        .frame(height: Geometria.alturaTocando)
-    }
-}
-
-/// Anterior, tocar ou pausar, próxima. A ilha aberta aceita clique sem ativar o Kizami (painel que não vira key):
-/// o foco continua no app em que a pessoa está.
-private struct Controles: View {
-    let app: String
-    let pausado: Bool
-
-    var body: some View {
-        HStack(spacing: 2) {
-            botao("Anterior", "backward.fill", .anterior, tamanho: 13)
-            botao(pausado ? "Tocar" : "Pausar", pausado ? "play.fill" : "pause.fill", .alternar, tamanho: 18)
-                .contentTransition(.symbolEffect(.replace))
-            botao("Próxima", "forward.fill", .proxima, tamanho: 13)
-        }
-    }
-
-    private func botao(_ nome: LocalizedStringKey, _ simbolo: String, _ acao: Controle.Acao, tamanho: CGFloat) -> some View {
-        Button(nome, systemImage: simbolo) { Controle.enviar(acao, app: app) }
-            .labelStyle(.iconOnly)
-            .buttonStyle(.plain)
-            .font(.system(size: tamanho, weight: .semibold))
-            .frame(width: 30, height: 30)
-            .contentShape(.rect)
-            .help(Text(nome))
-    }
-}
-
-/// A capa, quando o player dá; senão o ícone do app que está tocando.
-private struct Miniatura: View {
-    let tocando: TocandoAgora
-    let lado: CGFloat
-    let raio: CGFloat
-
-    var body: some View {
-        Group {
-            if let capa = tocando.capa {
-                Image(nsImage: capa).resizable().aspectRatio(contentMode: .fill)
-                    .transition(.blurReplace)
-            } else if let icone = tocando.icone {
-                Image(nsImage: icone).resizable().aspectRatio(contentMode: .fit)
-            } else {
-                Image(systemName: "music.note").foregroundStyle(.secondary)
-            }
-        }
-        .frame(width: lado, height: lado)
-        .clipShape(.rect(cornerRadius: raio))
-        .animation(Movimento.ou(Movimento.conteudo), value: tocando.capa)
-    }
-}
-
-/// Equalizador de enfeite: as barras não leem o som (isso pediria gravar a saída), só mostram que há som.
-/// Animado pelo Core Animation, que roda no servidor de janelas: com um `TimelineView` a 15 quadros por segundo, o
-/// SwiftUI redesenhava a ilha inteira na CPU a cada quadro (capa, texto, sombra), e o Kizami ficava em ~33% de CPU
-/// enquanto qualquer coisa tocava (medido com `top` e `sample`).
-private struct Barras: View {
-    let altura: CGFloat
-
-    var body: some View {
-        CamadaDeBarras(altura: altura).frame(width: 4 * 3 + 3 * 2, height: altura)
-    }
-}
-
-private struct CamadaDeBarras: NSViewRepresentable {
-    let altura: CGFloat
-
-    func makeNSView(context: Context) -> NSView {
-        let vista = NSView()
-        vista.wantsLayer = true
-        let parado = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
-        for i in 0..<4 {
-            let barra = CALayer()
-            barra.backgroundColor = NSColor.white.withAlphaComponent(0.85).cgColor
-            barra.cornerRadius = 1.5
-            barra.transform = CATransform3DMakeScale(1, 0.6, 1)
-            if !parado {
-                // Durações e fases diferentes: as quatro nunca sobem juntas, como o seno de antes.
-                let pulso = CABasicAnimation(keyPath: "transform.scale.y")
-                pulso.fromValue = 0.3
-                pulso.toValue = 1
-                pulso.duration = 0.38 + Double(i) * 0.11
-                pulso.timeOffset = Double(i) * 0.21
-                pulso.autoreverses = true
-                pulso.repeatCount = .infinity
-                pulso.isRemovedOnCompletion = false  // a janela some em tela cheia e volta: a animação continua
-                pulso.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-                barra.add(pulso, forKey: "pulso")
-            }
-            vista.layer?.addSublayer(barra)
-        }
-        posicionar(vista)
-        return vista
-    }
-
-    func updateNSView(_ vista: NSView, context: Context) { posicionar(vista) }
-
-    /// `bounds` e `position` em vez de `frame`, que não vale numa layer com `transform`. Escala a partir do meio.
-    private func posicionar(_ vista: NSView) {
-        CATransaction.begin()
-        CATransaction.setDisableActions(true)
-        for (i, barra) in (vista.layer?.sublayers ?? []).enumerated() {
-            barra.bounds = CGRect(x: 0, y: 0, width: 3, height: altura)
-            barra.position = CGPoint(x: CGFloat(i) * 5 + 1.5, y: altura / 2)
-        }
-        CATransaction.commit()
     }
 }
 
