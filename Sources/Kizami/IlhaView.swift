@@ -117,30 +117,36 @@ extension Aba {
     let p = f.personalizacao
     let hoje = p.mostra(.hoje)
     let claude = p.mostra(.claude) ? f.claude.sessoes : []
+    let ocultos = avisosNoDestaque(f)
     return Painel(Painel.Entrada(
         precisaDeVoce: claude.contains { $0.estado == .precisaDeVoce },
         sessoes: claude.count,
         reuniao: hoje && f.agenda.emBreve != nil,
+        reuniaoComLink: f.agenda.emBreve?.link != nil,
         tocando: p.mostra(.tocando) && f.tocando.app != nil,
         timer: f.cronometro.ativo,
-        hoje: hoje,
+        // Sem cidade e sem acesso à agenda, o cartão do dia seria só a data: melhor não ter destaque.
+        hoje: hoje && (f.tempo.previsao != nil || f.agenda.acesso == .permitido),
         tempo: f.tempo.previsao != nil,
         agenda: f.agenda.proximo != nil,
         eventosHoje: f.agenda.acesso == .permitido ? f.agenda.hoje.count : 0,
         lembretes: f.lembretes.ligado ? f.lembretes.proximos.count : 0,
         interesse: p.mostra(.interesse) && !f.interesses.proximos.isEmpty,
         mac: p.mostra(.apps) && (!f.mac.emblemas.isEmpty || !f.mac.microfone.isEmpty || f.mac.camera || f.mac.bateria != nil),
-        atividades: f.mural.atividades.filter { !avisosNoDestaque(f).contains($0.id) }.count,
+        atividades: f.mural.atividades.filter { !ocultos.contains($0.id) }.count,
         bandeja: f.bandeja.arrastando || (p.mostra(.bandeja) && !f.bandeja.arquivos.isEmpty)))
 }
 
 /// A cor do que está em destaque, para o contorno da ilha aberta e o fundo do cartão: o Claude esperando, a reunião
 /// na cor do calendário, a música na cor da capa. Sem nada disso, nenhuma (o contorno fica neutro).
 @MainActor func corDoAssunto(_ f: Fontes) -> Color? {
-    if f.claude.sessoes.contains(where: { $0.estado == .precisaDeVoce }) { return .orange }
-    if let reuniao = f.agenda.emBreve { return corDoCalendario(reuniao) }
-    if f.tocando.app != nil { return f.tocando.corDeDestaque }
-    return nil
+    guard let destaque = painelAtual(f).fileiras.first, case .larga(let largo) = destaque else { return nil }
+    return switch largo {
+    case .claude: .orange
+    case .reuniao: f.agenda.emBreve.map(corDoCalendario)
+    case .musica: f.tocando.corDeDestaque
+    default: nil
+    }
 }
 
 /// A forma preta presa ao topo. Sempre à vista: sem nada, fica em repouso, só um pouco maior que o notch.
@@ -188,7 +194,7 @@ struct IlhaView: View {
                     // Atividade tem a vez (foi pedida por alguém); depois o som; por fim a bandeja.
                     let lado = ladoDaAsa(g.notch.height)
                     if fontes.volume.naAsa {
-                        AsaDoVolume(volume: fontes.volume, altura: g.notch.height)
+                        AsaDoVolume(volume: fontes.volume, mac: fontes.mac, altura: g.notch.height)
                     } else if asa == .reuniao, let reuniao = fontes.agenda.emBreve {
                         // Os dois lados na cor do calendário: a asa lê como uma coisa só (HIG, Live Activities).
                         let cor = corDoCalendario(reuniao)
@@ -709,6 +715,7 @@ private func cor(_ atividade: Atividade) -> Color {
 /// O volume mudou: o alto-falante de um lado e a barra do nível do outro, por 1,5 s. Lê o que o `Volume` já leu.
 private struct AsaDoVolume: View {
     let volume: Volume
+    let mac: Mac
     let altura: CGFloat
 
     var body: some View {
@@ -719,14 +726,17 @@ private struct AsaDoVolume: View {
                 .font(.system(size: 12, weight: .semibold))
                 .contentTransition(.symbolEffect(.replace))
         } direita: {
-            ZStack(alignment: .leading) {
-                Capsule().fill(.white.opacity(0.2))
-                Capsule().fill(.white).frame(width: 40 * nivel)
+            HStack(spacing: 4) {
+                IndicadorPrivacidade(mac: mac)  // o microfone de uma chamada não pode sumir atrás do volume
+                ZStack(alignment: .leading) {
+                    Capsule().fill(.white.opacity(0.2))
+                    Capsule().fill(.white).frame(width: 40 * nivel)
+                }
+                .frame(width: 40, height: 5)
+                .animation(Movimento.rapido, value: nivel)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(verbatim: volume.mudo ? String(localized: "Sem som") : "\(Int((nivel * 100).rounded()))%"))
             }
-            .frame(width: 40, height: 5)
-            .animation(Movimento.rapido, value: nivel)
         }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text(verbatim: volume.mudo ? String(localized: "Sem som") : "\(Int((nivel * 100).rounded()))%"))
     }
 }

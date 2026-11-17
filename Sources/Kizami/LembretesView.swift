@@ -29,7 +29,7 @@ struct AjustesLembretes: View {
     }
 }
 
-/// Os lembretes de hoje (e os atrasados) num quadrado: os dois primeiros, com o círculo que marca como feito.
+/// Os lembretes de hoje (e os atrasados) num quadrado, com o círculo que marca como feito.
 /// O "atrasado" depende da hora, e a lista só muda quando o app Lembretes muda: o relógio por minuto acerta o rótulo.
 struct WidgetLembretes: View {
     let lembretes: Lembretes
@@ -40,8 +40,8 @@ struct WidgetLembretes: View {
             Cabeca(rotulo: Text("Lembretes"), simbolo: "checklist", cor: .yellow)
             Spacer(minLength: 0)
             TimelineView(.everyMinute) { contexto in
-                VStack(alignment: .leading, spacing: 6) {
-                    ForEach(lembretes.proximos.prefix(2)) { lembrete in
+                VStack(alignment: .leading, spacing: 4) {
+                    ForEach(lembretes.proximos) { lembrete in  // até 3 (`Lembrete.maximo`): cabem nos 104 pt
                         HStack(spacing: 6) {
                             Button("Marcar como feito", systemImage: "circle") { lembretes.concluir(lembrete.id) }
                                 .labelStyle(.iconOnly)

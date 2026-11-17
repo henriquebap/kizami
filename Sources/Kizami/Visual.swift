@@ -42,15 +42,15 @@ extension View {
     /// controles; sobre o preto o vidro não tem cor atrás para refletir e virava uma placa cinza, e sobre a ilha de
     /// vidro seria vidro sobre vidro. Com `cor`, o canto de cima à esquerda tinge com o assunto (a capa, o calendário).
     /// `realce`: o cursor está em cima.
-    func cartao(cor: Color? = nil, raio: CGFloat = Geometria.raioDoCartao, realce: Bool = false) -> some View {
-        background { FundoDoCartao(cor: cor, raio: raio, realce: realce) }
-    }
-
-    /// Com um id, o fundo cresce até o do mesmo id quando um item expande ou recolhe (`matchedGeometryEffect`).
-    func cartao(cor: Color? = nil, raio: CGFloat = Geometria.raioDoCartao, id: String, em espaco: Namespace.ID) -> some View {
+    /// Com `id` e `espaco`, o fundo cresce até o do mesmo id quando um item expande ou recolhe (`matchedGeometryEffect`).
+    func cartao(cor: Color? = nil, raio: CGFloat = Geometria.raioDoCartao, realce: Bool = false,
+                id: String? = nil, em espaco: Namespace.ID? = nil) -> some View {
         background {
-            FundoDoCartao(cor: cor, raio: raio, realce: false)
-                .matchedGeometryEffect(id: id, in: espaco, properties: .frame)
+            if let id, let espaco {
+                FundoDoCartao(cor: cor, raio: raio, realce: realce).matchedGeometryEffect(id: id, in: espaco, properties: .frame)
+            } else {
+                FundoDoCartao(cor: cor, raio: raio, realce: realce)
+            }
         }
     }
 

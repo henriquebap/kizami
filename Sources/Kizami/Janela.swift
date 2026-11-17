@@ -131,6 +131,7 @@ final class Janela {
         // Só a ilha que tinha a agenda expandida para de ler o mês: a Agenda é a mesma em todos os monitores.
         if estado.expandido == .agenda { fontes.agenda.mostrar(nil) }
         estado.expandido = nil
+        estado.cartaoSobCursor = nil  // o fim do hover pode não chegar quando a view some ao fechar
         estado.diaEscolhido = nil
         estado.mesInteiro = false
         acertarCamera()

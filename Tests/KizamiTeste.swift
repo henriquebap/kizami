@@ -24,7 +24,8 @@ import Foundation
     conferir("Claude precisa de você vence a música, e as sessões não repetem num widget",
              Painel(E(precisaDeVoce: true, sessoes: 3, tocando: true)).fileiras, [.larga(.claude(outras: true)), .sozinha(.musica)])
     conferir("reunião em destaque esconde o widget da agenda",
-             Painel(E(reuniao: true, tempo: true, agenda: true)).fileiras, [.larga(.reuniao), .sozinha(.tempo)])
+             Painel(E(reuniao: true, tempo: true, agenda: true)).fileiras, [.larga(.reuniao(link: false)), .sozinha(.tempo)])
+    conferir("reunião sem link: sem a linha do botão", Painel.altura(.reuniao(link: false)) < Painel.altura(.reuniao(link: true)), true)
     conferir("no dia calmo, tempo e agenda estão no cartão do dia",
              Painel(E(tempo: true, agenda: true, mac: true)).fileiras, [.larga(.dia(eventos: 0)), .sozinha(.mac)])
     conferir("avisos logo depois do destaque, até 3",
@@ -237,7 +238,6 @@ import Foundation
 
     testarProgresso()
     testarDestaque()
-    testarVolume()
 
     var e = Estabilizador()
     conferir("um plim não liga", e.registrar(true), false)

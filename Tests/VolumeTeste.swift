@@ -24,12 +24,3 @@ import AppKit
     }
     conferir("média da capa", Capa.media(capa).map { [$0.x, $0.y, $0.z].map { ($0 * 10).rounded() / 10 } }, [0.5, 0, 0.5])
 }
-
-@MainActor func testarVolume() {
-    let agora = Date(timeIntervalSinceReferenceDate: 1000)
-    conferir("volume: nunca mudou, não aparece", Volume.visivel(mudouEm: nil, agora: agora), false)
-    conferir("volume: acabou de mudar, aparece", Volume.visivel(mudouEm: agora, agora: agora), true)
-    conferir("volume: 1,4 s depois ainda aparece", Volume.visivel(mudouEm: agora - 1.4, agora: agora), true)
-    conferir("volume: 1,5 s depois some", Volume.visivel(mudouEm: agora - 1.5, agora: agora), false)
-    conferir("volume: relógio voltou, não aparece", Volume.visivel(mudouEm: agora + 5, agora: agora), false)
-}

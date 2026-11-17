@@ -7,6 +7,8 @@ struct CartaoDia: View {
     let agenda: Agenda
     let tempo: Tempo
     let estado: EstadoIlha
+    /// O fundo cresce até a agenda expandida (mesmo id).
+    let espaco: Namespace.ID
     let aoClicar: () -> Void
 
     var body: some View {
@@ -15,7 +17,7 @@ struct CartaoDia: View {
         TimelineView(.everyMinute) { contexto in conteudo(agora: contexto.date) }
             .padding(14)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .cartao(raio: Geometria.raioDoWidget, realce: estado.cartaoSobCursor == "dia")
+            .cartao(raio: Geometria.raioDoWidget, realce: estado.cartaoSobCursor == "dia", id: "agenda", em: espaco)
             .contentShape(.rect)
             .realce("dia", estado)
             .onTapGesture(perform: aoClicar)

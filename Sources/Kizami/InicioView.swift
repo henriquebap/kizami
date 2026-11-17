@@ -37,7 +37,7 @@ struct InicioEmGrade: View {
         case .claude: CartaoClaude(sessoes: fontes.claude)
         case .reuniao: CartaoReuniao(agenda: fontes.agenda, espaco: espaco)
         case .musica: CartaoMusica(tocando: fontes.tocando, estado: estado, espaco: espaco) { alternar(.musica) }
-        case .dia: CartaoDia(agenda: fontes.agenda, tempo: fontes.tempo, estado: estado) { alternar(.agenda) }
+        case .dia: CartaoDia(agenda: fontes.agenda, tempo: fontes.tempo, estado: estado, espaco: espaco) { alternar(.agenda) }
         case .atividades: Lista(mural: fontes.mural, estado: estado, ocultos: avisosNoDestaque(fontes)).padding(.horizontal, -4)
         case .bandeja: FileiraDaBandeja(bandeja: fontes.bandeja, alvo: estado.alvo).padding(.horizontal, -6)
         }
@@ -46,7 +46,7 @@ struct InicioEmGrade: View {
     @ViewBuilder private func widget(_ w: Painel.Widget) -> some View {
         switch w {
         case .tempo: WidgetTempo(tempo: fontes.tempo, estado: estado)
-        case .agenda: WidgetAgenda(agenda: fontes.agenda, estado: estado) { alternar(.agenda) }
+        case .agenda: WidgetAgenda(agenda: fontes.agenda, estado: estado, espaco: espaco) { alternar(.agenda) }
         case .sessoes: WidgetSessoes(sessoes: fontes.claude, estado: estado)
         case .musica: WidgetMusica(tocando: fontes.tocando, estado: estado, espaco: espaco) { alternar(.musica) }
         case .timer: WidgetTimer(cronometro: fontes.cronometro, estado: estado)
@@ -58,8 +58,10 @@ struct InicioEmGrade: View {
 }
 
 /// O aviso "Claude precisa de você" da sessão que já está no cartão de destaque: na lista seria a mesma coisa duas vezes.
+/// Com a seção do Claude escondida não há cartão, e o aviso fica na lista.
 @MainActor func avisosNoDestaque(_ f: Fontes) -> Set<String> {
-    Set(f.claude.sessoes.filter { $0.estado == .precisaDeVoce }.map { "claude-\($0.id)" })
+    guard f.personalizacao.mostra(.claude) else { return [] }
+    return Set(f.claude.sessoes.filter { $0.estado == .precisaDeVoce }.map { "claude-\($0.id)" })
 }
 
 /// Um quadrado da grade: 12 pt de folga, o conteúdo de cima para baixo, o realce sob o cursor quando faz algo.
@@ -68,13 +70,17 @@ struct Quadro<Conteudo: View>: View {
     let estado: EstadoIlha
     let cor: Color?
     let acao: (() -> Void)?
+    /// Com o espaço, o fundo cresce até o item expandido de mesmo id (a agenda, a música).
+    let espaco: Namespace.ID?
     let conteudo: Conteudo
 
-    init(id: String, estado: EstadoIlha, cor: Color? = nil, acao: (() -> Void)? = nil, @ViewBuilder conteudo: () -> Conteudo) {
+    init(id: String, estado: EstadoIlha, cor: Color? = nil, acao: (() -> Void)? = nil, espaco: Namespace.ID? = nil,
+         @ViewBuilder conteudo: () -> Conteudo) {
         self.id = id
         self.estado = estado
         self.cor = cor
         self.acao = acao
+        self.espaco = espaco
         self.conteudo = conteudo()
     }
 
@@ -82,7 +88,8 @@ struct Quadro<Conteudo: View>: View {
         VStack(alignment: .leading, spacing: 4) { conteudo }
             .padding(12)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .cartao(cor: cor, raio: Geometria.raioDoWidget, realce: acao != nil && estado.cartaoSobCursor == id)
+            .cartao(cor: cor, raio: Geometria.raioDoWidget, realce: acao != nil && estado.cartaoSobCursor == id,
+                    id: espaco == nil ? nil : id, em: espaco)
             .contentShape(.rect(cornerRadius: Geometria.raioDoWidget))
             .realce(id, estado)
             .onTapGesture { acao?() }

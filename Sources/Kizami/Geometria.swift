@@ -16,21 +16,15 @@ struct Geometria: Equatable {
     static let maximoLinhas = 3
     /// A fileira de arquivos da bandeja, abaixo da lista.
     static let alturaBandeja: CGFloat = 64
-    /// A linha do que está tocando: miniatura, título e artista.
-    static let alturaTocando: CGFloat = 52
     static let espacoSecao: CGFloat = 10
     /// O canto das linhas (avisos, eventos) dentro da ilha aberta.
     static let raioDoCartao: CGFloat = 12
     /// O canto dos widgets e do cartão de destaque: concêntrico com o canto de 30 pt da ilha aberta, menos a folga.
     static let raioDoWidget: CGFloat = 20
-    /// A faixa de cima da ilha aberta: o próximo evento à esquerda, o tempo à direita.
-    static let alturaHoje: CGFloat = 40
     /// O topo da ilha aberta: as abas (Início, Atalhos) e a engrenagem dos Ajustes.
     static let alturaCabecalho: CGFloat = 26
     /// A fileira de atalhos: ícone, nome e teclas.
     static let alturaAtalhos: CGFloat = 62
-    /// Sessões do Claude na ilha aberta, uma por linha (`alturaLinha`), as que mais pedem atenção primeiro.
-    static let maximoSessoes = 3
     /// Altura mínima da ilha em tela sem notch. Com a altura da barra de menus (22 pt), a capa de 20 pt ficava
     /// encostada em cima e embaixo; lá não há câmera nem barra para respeitar no meio do topo.
     static let alturaSemNotch: CGFloat = 30
@@ -173,8 +167,9 @@ struct Painel: Equatable, Sendable {
     enum Largo: Hashable, Sendable {
         /// Uma sessão do Claude precisa de você; `outras`: há mais sessões, que viram pílulas embaixo.
         case claude(outras: Bool)
-        /// Uma reunião nos próximos 15 min (`Agenda.emBreve`).
-        case reuniao
+        /// Uma reunião prestes a começar (`Agenda.emBreve`: de 10 min antes a 5 min depois); `link`: tem o botão de
+        /// entrar, que pede uma linha a mais.
+        case reuniao(link: Bool)
         case musica
         /// O dia calmo: a data, a temperatura, a régua das 8h às 20h e até três eventos que faltam hoje.
         case dia(eventos: Int)
@@ -199,6 +194,7 @@ struct Painel: Equatable, Sendable {
         var precisaDeVoce = false
         var sessoes = 0
         var reuniao = false
+        var reuniaoComLink = false
         var tocando = false
         var timer = false
         /// A faixa "Hoje" (tempo e agenda) está à vista: sem ela, também não há o cartão do dia.
@@ -223,14 +219,14 @@ struct Painel: Equatable, Sendable {
         // O destaque: quem pede ação primeiro (o Claude parado esperando), depois o que tem hora (a reunião), depois
         // o que está acontecendo (a música). Sem nada disso, o dia.
         let destaque: Largo? = e.precisaDeVoce ? .claude(outras: e.sessoes > 1)
-            : e.reuniao ? .reuniao
+            : e.reuniao ? .reuniao(link: e.reuniaoComLink)
             : e.tocando ? .musica
             : e.hoje ? .dia(eventos: min(e.eventosHoje, 3))
             : nil
         let dia = destaque.map { if case .dia = $0 { true } else { false } } ?? false
         var widgets: [Widget] = []
         if e.hoje && e.tempo && !dia { widgets.append(.tempo) }
-        if e.hoje && e.agenda && !dia && destaque != .reuniao { widgets.append(.agenda) }
+        if e.hoje && e.agenda && !dia && !e.reuniao { widgets.append(.agenda) }
         if e.sessoes > 0 && !e.precisaDeVoce { widgets.append(.sessoes) }
         if e.tocando && destaque != .musica { widgets.append(.musica) }
         if e.timer { widgets.append(.timer) }
@@ -261,12 +257,13 @@ struct Painel: Equatable, Sendable {
         return alturas.reduce(0, +) + CGFloat(max(alturas.count - 1, 0)) * Self.espaco
     }
 
-    static let alturaWidget: CGFloat = 96
+    /// Rótulo, número de 28 pt e uma linha de detalhe com o botão Entrar, e 12 pt de folga em volta.
+    static let alturaWidget: CGFloat = 104
     /// O cartão de destaque: 14 pt de folga, a linha principal e a de baixo (pílulas, botões).
     static func altura(_ largo: Largo) -> CGFloat {
         switch largo {
         case .claude(let outras): outras ? 112 : 78
-        case .reuniao: 122
+        case .reuniao(let link): link ? 14 + 44 + 12 + 30 + 14 : 14 + 44 + 14
         case .musica: 84
         case .dia(let eventos): alturaDia(eventos: eventos)
         case .atividades(let n): Geometria.alturaLinhas(n)

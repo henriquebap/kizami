@@ -38,7 +38,7 @@ struct CartaoMusica: View {
         }
         .padding(14)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .cartao(cor: cor, raio: Geometria.raioDoWidget, realce: estado.cartaoSobCursor == "musica")
+        .cartao(cor: cor, raio: Geometria.raioDoWidget, realce: estado.cartaoSobCursor == "musica", id: "musica", em: espaco)
         .contentShape(.rect)
         .realce("musica", estado)
         .onTapGesture(perform: aoClicar)
@@ -54,7 +54,7 @@ struct WidgetMusica: View {
     let aoClicar: () -> Void
 
     var body: some View {
-        Quadro(id: "musica", estado: estado, cor: tocando.corDeDestaque, acao: aoClicar) {
+        Quadro(id: "musica", estado: estado, cor: tocando.corDeDestaque, acao: aoClicar, espaco: espaco) {
             HStack(spacing: 6) {
                 Miniatura(tocando: tocando, lado: 36, raio: 8).matchedGeometryEffect(id: "capa", in: espaco)
                 Spacer(minLength: 0)

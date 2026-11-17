@@ -5,11 +5,12 @@ import SwiftUI
 struct WidgetAgenda: View {
     let agenda: Agenda
     let estado: EstadoIlha
+    let espaco: Namespace.ID
     let aoClicar: () -> Void
 
     var body: some View {
         if let evento = agenda.proximo {
-            Quadro(id: "agenda", estado: estado, acao: aoClicar) {
+            Quadro(id: "agenda", estado: estado, acao: aoClicar, espaco: espaco) {
                 Cabeca(rotulo: Text("Próximo"), ponto: corDoCalendario(evento))
                 // Por minuto: "12 min" precisa andar sozinho, sem a Agenda publicar nada.
                 TimelineView(.everyMinute) { contexto in

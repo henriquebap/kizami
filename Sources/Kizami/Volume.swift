@@ -13,8 +13,6 @@ final class Volume {
     /// De 0 a 1; nil numa saída sem controle de volume (HDMI, por exemplo).
     private(set) var nivel: Double?
     private(set) var mudo = false
-    /// A última mudança feita pela pessoa. A leitura ao abrir e a troca de dispositivo não contam.
-    private(set) var mudouEm: Date?
     /// A asa mostra o nível agora: liga na mudança e desliga `mostrarPor` depois, por uma Task agendada, sem relógio
     /// redesenhando a ilha (a asa fechada não pode ter nada por segundo; ver Energy no ARCHITECTURE).
     private(set) var naAsa = false
@@ -25,13 +23,6 @@ final class Volume {
     @ObservationIgnored private var ouvido: (dispositivo: AudioObjectID, enderecos: [AudioObjectPropertyAddress],
                                              ouvinte: AudioObjectPropertyListenerBlock)?
     @ObservationIgnored private var ouvindoSistema = false
-
-    /// Se a asa mostra o nível em `agora`.
-    nonisolated static func visivel(mudouEm: Date?, agora: Date) -> Bool {
-        guard let mudouEm else { return false }
-        let passou = agora.timeIntervalSince(mudouEm)
-        return passou >= 0 && passou < mostrarPor
-    }
 
     // ponytail: ouvintes e leituras na thread principal; ler o volume é uma chamada só, ao contrário da lista de
     // processos do `TocandoAgora`. Passar para uma fila serial se a troca de dispositivo travar a ilha.
@@ -83,7 +74,6 @@ final class Volume {
     }
 
     private func mostrar() {
-        mudouEm = .now
         if !naAsa { naAsa = true }
         esconder?.cancel()
         esconder = Task { [weak self] in
