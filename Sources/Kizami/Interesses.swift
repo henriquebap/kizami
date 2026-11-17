@@ -512,8 +512,9 @@ final class Interesses {
     private(set) var seguidos: [Seguido] = []
     /// O próximo de cada fonte, até três, para a linha da ilha aberta.
     private(set) var proximos: [EventoInteresse] = []
-    /// O placar do jogo seguido que está acontecendo agora (`Placar.swift`); nil fora de jogo.
-    private(set) var aoVivo: Placar?
+    /// Os placares dos jogos e corridas seguidos que estão acontecendo agora, até dois, o que começou antes
+    /// primeiro (`Placar.swift`); vazio fora de jogo.
+    private(set) var aoVivo: [Placar] = []
 
     @ObservationIgnored private let mural: Mural
     /// Os que já deram "Fim de jogo": não avisam de novo nem voltam a ser consultados. Só da sessão: depois de
@@ -584,7 +585,8 @@ final class Interesses {
     func remover(_ seguido: Seguido) {
         seguidos.removeAll { $0 == seguido }
         porFonte[seguido] = nil
-        if let p = aoVivo, !seguidos.flatMap({ porFonte[$0] ?? [] }).contains(where: p.eDo) { aoVivo = nil }
+        let restantes = seguidos.flatMap { porFonte[$0] ?? [] }
+        aoVivo.removeAll { p in !restantes.contains(where: p.eDo) }
         salvar()
         conferir()
     }
@@ -685,15 +687,16 @@ final class Interesses {
         if !devidos.isEmpty { registro.info("interesses: \(devidos.count) lembretes de \(eventos.count) eventos") }
     }
 
-    /// A cada minuto, mas só vai à rede com um jogo seguido na janela do `Placar`. Ao terminar, o resultado vira
-    /// atividade e `aoVivo` zera na hora: o placar final já está nas asas pelo mural, mostrá-lo também ali repetiria.
-    // ponytail: um placar por vez (o jogo que começou antes); dois jogos seguidos ao mesmo tempo ganham os dois
-    // "Fim de jogo", mas só o primeiro aparece ao vivo.
+    /// A cada minuto, mas só vai à rede com um jogo ou corrida seguidos na janela do `Placar`. Ao terminar, o
+    /// resultado vira atividade e sai de `aoVivo` na hora: o placar final já está nas asas pelo mural, mostrá-lo
+    /// também ali repetiria.
+    // ponytail: dois ao vivo no máximo (`Placar.maximoAoVivo`); um terceiro ao mesmo tempo ganha o "Fim de jogo",
+    // mas só aparece ao vivo quando um dos dois acabar.
     private func acompanharPlacar() async {
         let agora = Date.now
         let naJanela = Placar.emJogo(seguidos.flatMap { porFonte[$0] ?? [] }, agora: agora, encerrados: encerrados)
         guard !naJanela.isEmpty else {
-            if aoVivo != nil { aoVivo = nil; conferir() }
+            if !aoVivo.isEmpty { aoVivo = []; conferir() }
             return
         }
         // Meia hora depois do início e ainda sem placar (atrasado pela chuva, adiado ou cancelado, que `ler` não
@@ -712,11 +715,13 @@ final class Interesses {
             encerrados.insert(p.eventoId)
             guard let e = jogos.first(where: p.eDo) else { continue }
             // 10 min: dá para ver o resultado, sem tirar o timer da asa por meia hora (`asaAtual`).
-            mural.receber(Atividade(id: "placar-\(p.eventoId)", titulo: p.texto, detalhe: String(localized: "Fim de jogo"),
+            // Na corrida o título é a ponta ("1 NOR · 2 VER · 3 HAD"): o vencedor vem primeiro.
+            mural.receber(Atividade(id: "placar-\(p.eventoId)", titulo: p.texto, detalhe: p.fim,
                                     simbolo: e.fonte.simbolo, cor: e.fonte.cor, expira: 600,
                                     prioridade: "normal")) { [weak self] in self?.abrir(e) }
         }
-        let novo = placares.first { !$0.encerrado }
+        // Os que saíram da janela também saem daqui: `naJanela` é recalculada a cada minuto.
+        let novo = Placar.aoVivo(lidos: placares, antes: aoVivo, naJanela: naJanela)
         if novo != aoVivo {
             aoVivo = novo
             conferir()

@@ -57,7 +57,7 @@ extension Aba {
         case .atividades: !f.mural.atividades.isEmpty
         case .timer: f.cronometro.ativo && !f.cronometro.pausado
         case .reuniao: f.agenda.emBreve != nil
-        case .placar: f.interesses.aoVivo != nil
+        case .placar: !f.interesses.aoVivo.isEmpty
         case .tocando: f.tocando.app != nil
         case .privacidade: !f.mac.microfone.isEmpty || f.mac.camera
         case .bandeja: !f.bandeja.arquivos.isEmpty
@@ -72,7 +72,7 @@ extension Aba {
     return switch asaAtual(f) {
     case .atividades: g.compacta(icones: f.mural.destaques.count)
     case .timer, .reuniao: g.compacta(icones: 2)  // "24:59" ou "10 min" não cabe na asa de um ícone
-    case .placar: g.compacta(icones: 3)  // "BUF 14" de um lado, "7 KC" do outro
+    case .placar: g.compacta(icones: 3)  // "BUF 14" de um lado, "7 KC" do outro; na F1, "1 NOR" e "2 VER": cabe qualquer um da vez
     case .tocando, .privacidade, .bandeja: g.compacta
     case .nada: g.repouso
     }
@@ -158,17 +158,22 @@ struct IlhaView: View {
                                 ContagemNaAsa(cronometro: cronometro)
                             }
                         }
-                    } else if asa == .placar, let placar = fontes.interesses.aoVivo {
-                        Asas(altura: g.notch.height) {
-                            Text(verbatim: "\(placar.visitante) \(placar.pontosVisitante)")
-                        } direita: {
-                            HStack(spacing: 4) {
-                                IndicadorPrivacidade(mac: fontes.mac)
-                                Text(verbatim: "\(placar.pontosCasa) \(placar.casa)")
+                    } else if asa == .placar {
+                        // Dois ao vivo: um de cada vez, trocando a cada 8 s só pelo relógio, sem consulta a mais.
+                        TimelineView(.periodic(from: Date(timeIntervalSinceReferenceDate: 0), by: Placar.vezNaAsa)) { contexto in
+                            if let lados = Placar.daVez(fontes.interesses.aoVivo, agora: contexto.date)?.asa {
+                                Asas(altura: g.notch.height) {
+                                    Text(verbatim: lados.esquerda)  // verbatim: siglas e pontos vêm da ESPN
+                                } direita: {
+                                    HStack(spacing: 4) {
+                                        IndicadorPrivacidade(mac: fontes.mac)
+                                        Text(verbatim: lados.direita)
+                                    }
+                                }
+                                .font(.caption.weight(.bold)).monospacedDigit()
+                                .contentTransition(.numericText())
                             }
                         }
-                        .font(.caption.weight(.bold)).monospacedDigit()
-                        .contentTransition(.numericText())
                     } else if asa == .atividades, let primeira = mural.destaques.first {
                         // Até três ícones, o mais importante encostado no canto: lado a lado, sem empilhar.
                         Asas(altura: g.notch.height) {
