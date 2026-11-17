@@ -17,6 +17,8 @@ struct Geometria: Equatable {
     /// A linha do que está tocando: miniatura, título e artista.
     static let alturaTocando: CGFloat = 52
     static let espacoSecao: CGFloat = 10
+    /// O canto dos cartões de vidro dentro da ilha aberta.
+    static let raioDoCartao: CGFloat = 12
     /// A faixa de cima da ilha aberta: o próximo evento à esquerda, o tempo à direita.
     static let alturaHoje: CGFloat = 40
     /// O topo da ilha aberta: as abas (Início, Atalhos) e a engrenagem dos Ajustes.
