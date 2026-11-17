@@ -46,6 +46,8 @@ Qualquer processo do Mac pode postar, então tudo o que chega é dado:
 
 ## As formas da ilha
 
+As escolhas da pessoa (`Personalizacao`: abas, seções do Início, a ordem das asas) são lidas onde cada decisão já mora (`Cabecalho`, `secoesAtuais`, `asaAtual`), nunca como `if` espalhado pelas views.
+
 A `Geometria` é pura. Ela é testada com medidas de telas reais e decide todos os tamanhos:
 
 | Estado | Forma |

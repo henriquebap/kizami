@@ -15,8 +15,7 @@ final class EstadoIlha {
     /// A linha da lista sob o cursor: só ela mostra o ✕ (a view não tem `@State` sem as macros).
     var linhaSobCursor: String?
 
-    /// `espelho` não tem botão no cabeçalho: abre pela aba Atalhos.
-    enum Aba { case inicio, hoje, timer, copiados, atalhos, kanji, espelho }
+
 
     init(geometria: Geometria) {
         self.geometria = geometria
@@ -114,7 +113,6 @@ final class Janela {
     private func recolher() {
         estado.aberta = false
         painel.ignoresMouseEvents = true
-        estado.aba = .inicio  // abre sempre no início, que é onde está o que chegou
         acertarCamera()
     }
 
@@ -177,6 +175,11 @@ final class Janela {
             if aberta {
                 estado.aberta = true
                 painel.ignoresMouseEvents = false  // aberta, o clique fica na ilha em vez de cair na janela de baixo
+                // Com aviso, atividade ou um arquivo sendo arrastado, abre no Início, onde estão a lista e a bandeja
+                // (o aviso se encerra logo abaixo); sem, na primeira aba da pessoa. Decidido ao abrir: a escolha pode
+                // ter mudado nos Ajustes.
+                let noInicio = !mural.atividades.isEmpty || !mural.avisos.isEmpty || bandeja.arrastando
+                estado.aba = noInicio ? .inicio : fontes.personalizacao.abaInicial
                 mural.encerrarAviso()
                 bandeja.podar()
             } else {

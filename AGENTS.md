@@ -11,7 +11,7 @@ Kizami is a menu-bar-only macOS app that draws a black island around the MacBook
 ```bash
 make app      # build/Kizami.app (swiftc only; signed with the local "Kanji Dev" certificate when present, so permissions survive rebuilds)
 make install  # /Applications/Kizami.app
-make teste    # pure rules: Geometria, Comando, Atividade, Som, Agenda, Tempo, Claude, Mac, Interesses, Placar, Cronometro, Copiados, Espelho, Downloads, GitHub
+make teste    # pure rules: Geometria, Comando, Atividade, Som, Agenda, Tempo, Claude, Mac, Interesses, Placar, Cronometro, Copiados, Espelho, Downloads, GitHub, Personalizacao, AtalhosApple
 ```
 
 **Constraints:**
@@ -45,6 +45,8 @@ make install && /Applications/Kizami.app/Contents/MacOS/Kizami enviar --titulo t
 | `Interesses.swift`, `InteressesView.swift` | Interests: ESPN schedules (teams, F1) and ICS feeds the person adds, the week / day-before / 1-hour reminders, the open-island row and its Settings section |
 | `Placar.swift` | Live score: ESPN scoreboard parsing and validation, when to poll, the live game in the Interests row |
 | `Cronometro.swift`, `CronometroView.swift` | Timer / pomodoro: the countdown, the focus → break cycle, the Timer tab and the countdown in the closed wings |
+| `Personalizacao.swift`, `PersonalizacaoView.swift` | The person's choices: tabs and order, hidden Home sections, the order of the wings (`Aba`, `Asa`); the Settings section |
+| `AtalhosApple.swift`, `AtalhosAppleView.swift` | Apple Shortcuts chosen in Settings, run with `/usr/bin/shortcuts run -- <name>`; the row in the Shortcuts tab |
 | `Copiados.swift`, `CopiadosView.swift` | Clipboard history (opt-in, memory only, password/key filter), the Copied tab, paste with ⌘V |
 | `GitHub.swift`, `GitHubView.swift` | CI failed / review requested through the logged-in `gh` (opt-in, read only), its Settings section |
 | `Downloads.swift`, `DownloadsView.swift` | Downloads in progress from `~/Downloads` partial files (opt-in), its Settings section |

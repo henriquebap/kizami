@@ -79,6 +79,13 @@ Passe o mouse no notch e a ilha abre. No topo:
 
 Só a aba escolhida mostra o nome; as outras mostram o ícone (o nome aparece com o cursor em cima).
 
+**Do seu jeito** (Ajustes › Abas da ilha e abaixo):
+- **Abas:** ligue ou desligue cada aba e mude a ordem; a ilha abre na primeira. O Início fica sempre.
+- **Início:** esconda as seções que você não quer (próximo evento e tempo, interesses, sessões do Claude, tocando agora, apps e Mac, a bandeja).
+- **Ilha fechada:** escolha o que tem a vez nas asas: o timer correndo, os avisos, o placar ao vivo ou a música. Reunião começando e o Claude pedindo permissão vêm sempre primeiro.
+- **Timer:** os minutos do foco e da pausa, e até 3 timers livres.
+- **Atalhos da Apple:** escolha até 6 atalhos do app Atalhos; eles viram botões na aba Atalhos e rodam com `shortcuts run`.
+
 **Placar ao vivo:** durante um jogo de um time que você segue, a ilha fechada mostra o placar em volta do notch (visitante à esquerda, mandante à direita), atualizado a cada minuto pela ESPN, e a linha dos Interesses mostra o placar com um ponto vermelho. No fim, um aviso "Fim de jogo" com o placar final; o clique abre a página da ESPN.
 
 **GitHub** (desligado por padrão, Ajustes › GitHub): um aviso quando a CI falha num PR seu aberto ou pedem a sua revisão, pelo `gh` que você já tem logado, a cada 5 minutos, só leitura. O clique abre o PR.

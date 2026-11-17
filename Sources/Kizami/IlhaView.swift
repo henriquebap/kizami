@@ -29,26 +29,40 @@ private enum Forma: Equatable {
     let cronometro: Cronometro
     let copiados: Copiados
     let espelho: Espelho
+    let personalizacao: Personalizacao
+    let atalhosApple: AtalhosApple
 }
 
-/// O que as asas da ilha fechada mostram. Uma coisa por vez: a primeira da lista em `asaAtual` que tem o que mostrar.
-enum Asa: Equatable {
-    case atividades, timer, placar, tocando, privacidade, bandeja, nada
+extension Aba {
+    /// O nome no cabeçalho e nos Ajustes. Literais, para a extração das strings achar cada um.
+    var nome: LocalizedStringKey {
+        switch self {
+        case .inicio: "Início"
+        case .hoje: "Hoje"
+        case .timer: "Timer"
+        case .copiados: "Copiados"
+        case .atalhos: "Atalhos"
+        case .kanji: "Kanji"
+        case .espelho: "Espelho"
+        }
+    }
 }
 
-/// A vez de cada coisa nas asas. O timer correndo é algo que a pessoa ligou e quer ver: só uma atividade alta ou
-/// urgente (reunião, permissão do Claude) passa na frente dele; a chuva ou o fim de jogo esperam na lista.
-/// Pausado, o timer sai da asa (fica na aba). O placar só existe durante o jogo; a música vem depois.
+/// A vez de cada coisa nas asas, na ordem que a pessoa escolheu (`Personalizacao.asa`). Por padrão o timer correndo
+/// vem primeiro: só uma atividade alta ou urgente passa na frente dele. Pausado, o timer sai da asa (fica na aba).
 @MainActor func asaAtual(_ f: Fontes) -> Asa {
-    let correndo = f.cronometro.ativo && !f.cronometro.pausado
     let importante = f.mural.atividades.contains { $0.peso >= 2 }  // "alta" ou "urgente" (`Atividade.prioridades`)
-    if correndo && !importante { return .timer }
-    if !f.mural.atividades.isEmpty { return .atividades }
-    if f.interesses.aoVivo != nil { return .placar }
-    if f.tocando.app != nil { return .tocando }
-    if !f.mac.microfone.isEmpty || f.mac.camera { return .privacidade }
-    if !f.bandeja.arquivos.isEmpty { return .bandeja }
-    return .nada
+    return Personalizacao.asa(ordem: f.personalizacao.asas, importante: importante) { asa in
+        switch asa {
+        case .atividades: !f.mural.atividades.isEmpty
+        case .timer: f.cronometro.ativo && !f.cronometro.pausado
+        case .placar: f.interesses.aoVivo != nil
+        case .tocando: f.tocando.app != nil
+        case .privacidade: !f.mac.microfone.isEmpty || f.mac.camera
+        case .bandeja: !f.bandeja.arquivos.isEmpty
+        case .nada: false
+        }
+    }
 }
 
 /// O tamanho da ilha fechada agora: o aviso, as asas ou o repouso. A janela mede a área do hover com a mesma conta.
@@ -64,10 +78,10 @@ enum Asa: Equatable {
 }
 
 /// O tamanho da ilha aberta na aba escolhida. A janela mede a área do hover com a mesma conta.
-@MainActor func tamanhoAberto(_ g: Geometria, _ aba: EstadoIlha.Aba, _ f: Fontes) -> CGSize {
+@MainActor func tamanhoAberto(_ g: Geometria, _ aba: Aba, _ f: Fontes) -> CGSize {
     switch aba {
     case .inicio: g.aberta(secoesAtuais(f))
-    case .atalhos: g.abertaAtalhos
+    case .atalhos: g.abertaComAba(Geometria.alturaComFileira(f.atalhosApple.escolhidos.count))
     case .kanji: g.abertaComAba(AbaKanji.altura(skills: f.kanji.skills.count))
     case .hoje: g.abertaComAba(Geometria.alturaDoDia(eventos: f.agenda.hoje.count))
     case .timer: g.abertaAtalhos
@@ -77,12 +91,16 @@ enum Asa: Equatable {
 }
 
 /// As seções da ilha aberta agora. A janela mede a área do hover com a mesma conta.
+/// Uma seção escondida nos Ajustes conta como vazia: some da ilha e da conta da altura juntas.
 @MainActor func secoesAtuais(_ f: Fontes) -> Secoes {
-    Secoes(tocando: f.tocando.app != nil, atividades: f.mural.atividades.count,
-           arquivos: f.bandeja.arquivos.count, arrastando: f.bandeja.arrastando,
-           sessoes: f.claude.sessoes.count, hoje: f.agenda.proximo != nil || f.tempo.previsao != nil,
-           apps: !f.mac.emblemas.isEmpty || !f.mac.microfone.isEmpty || f.mac.camera || f.mac.bateria != nil,
-           interesse: !f.interesses.proximos.isEmpty)
+    let p = f.personalizacao
+    return Secoes(tocando: p.mostra(.tocando) && f.tocando.app != nil, atividades: f.mural.atividades.count,
+                  arquivos: p.mostra(.bandeja) ? f.bandeja.arquivos.count : 0, arrastando: f.bandeja.arrastando,
+                  sessoes: p.mostra(.claude) ? f.claude.sessoes.count : 0,
+                  hoje: p.mostra(.hoje) && (f.agenda.proximo != nil || f.tempo.previsao != nil),
+                  apps: p.mostra(.apps) && (!f.mac.emblemas.isEmpty || !f.mac.microfone.isEmpty || f.mac.camera || f.mac.bateria != nil),
+                  interesse: p.mostra(.interesse) && !f.interesses.proximos.isEmpty,
+                  semBandejaVazia: !p.mostra(.bandeja))
 }
 
 /// A forma preta presa ao topo. Sempre à vista: sem nada, fica em repouso, só um pouco maior que o notch.
@@ -136,7 +154,7 @@ struct IlhaView: View {
                         }
                         .font(.caption.weight(.bold)).monospacedDigit()
                         .contentTransition(.numericText())
-                    } else if let primeira = mural.destaques.first {
+                    } else if asa == .atividades, let primeira = mural.destaques.first {
                         // Até três ícones, o mais importante encostado no canto: lado a lado, sem empilhar.
                         Asas(altura: g.notch.height) {
                             HStack(spacing: Geometria.iconeExtra - lado) {
@@ -152,7 +170,7 @@ struct IlhaView: View {
                                 Contador(total: mural.atividades.count, cor: cor(primeira))
                             }
                         }
-                    } else if tocando.app != nil {
+                    } else if asa == .tocando {
                         Asas(altura: g.notch.height) {
                             Miniatura(tocando: tocando, lado: lado, raio: lado / 4)
                                 .opacity(tocando.pausado ? 0.55 : 1)
@@ -196,9 +214,14 @@ struct IlhaView: View {
                     .padding(.top, g.faixaDoTopo)  // a faixa do notch é a câmera: o texto vem abaixo
                 case .aberta:
                     VStack(spacing: Geometria.espacoSecao) {
-                        Cabecalho(estado: estado, mural: mural)
+                        Cabecalho(estado: estado, mural: mural, personalizacao: fontes.personalizacao)
                         if estado.aba == .atalhos {
-                            GradeDeAtalhos(estado: estado, mural: mural)
+                            VStack(spacing: 6) {
+                                GradeDeAtalhos(estado: estado, mural: mural)
+                                if !fontes.atalhosApple.escolhidos.isEmpty {
+                                    FileiraAtalhosApple(estado: estado, atalhos: fontes.atalhosApple)
+                                }
+                            }
                         } else if estado.aba == .hoje {
                             AbaHoje(agenda: fontes.agenda)
                         } else if estado.aba == .timer {
@@ -285,15 +308,11 @@ struct FormaIlha: Shape {
 private struct Cabecalho: View {
     let estado: EstadoIlha
     let mural: Mural
+    let personalizacao: Personalizacao
 
     var body: some View {
         HStack(spacing: 4) {
-            aba("Início", "house.fill", .inicio)
-            aba("Hoje", "calendar", .hoje)
-            aba("Timer", "timer", .timer)
-            aba("Copiados", "doc.on.clipboard", .copiados)
-            aba("Atalhos", "command", .atalhos)
-            aba("Kanji", "waveform", .kanji)
+            ForEach(personalizacao.abas, id: \.self) { aba($0) }
             Spacer(minLength: 0)
             if estado.aba == .inicio && !mural.atividades.isEmpty {
                 // Duas sessões do Claude terminaram e os avisos ficaram: um clique tira todos.
@@ -323,8 +342,10 @@ private struct Cabecalho: View {
         .frame(height: Geometria.alturaCabecalho)
     }
 
-    private func aba(_ nome: LocalizedStringKey, _ simbolo: String, _ valor: EstadoIlha.Aba) -> some View {
+    private func aba(_ valor: Aba) -> some View {
         let escolhida = estado.aba == valor
+        let nome = valor.nome
+        let simbolo = valor.simbolo
         // Seis abas e o Limpar não cabem com nome em 340 pt: só a escolhida mostra o nome, as outras o ícone.
         return Button { estado.aba = valor } label: {
             Group {

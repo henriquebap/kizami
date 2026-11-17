@@ -20,6 +20,8 @@ struct AjustesView: View {
     let copiados: Copiados
     let downloads: Downloads
     let github: GitHub
+    let personalizacao: Personalizacao
+    let atalhosApple: AtalhosApple
     @AppStorage(Janela.chaveUrgenteEmTelaCheia) private var urgenteEmTelaCheia = false
 
     var body: some View {
@@ -59,6 +61,9 @@ struct AjustesView: View {
             AjustesCopiados(copiados: copiados)
             AjustesDownloads(downloads: downloads)
             AjustesGitHub(github: github)
+            AjustesIlha(personalizacao: personalizacao)
+            AjustesAtalhosApple(atalhos: atalhosApple)
+            AjustesTimer(cronometro: Kizami.shared.cronometro)
             Section("Tela cheia") {
                 Toggle("Avisos urgentes por cima da tela cheia", isOn: $urgenteEmTelaCheia)
                 Text("Em vídeo ou jogo em tela cheia, a ilha some. Ligado, ela volta só para o que é urgente: a reunião começando ou o Claude pedindo permissão.")

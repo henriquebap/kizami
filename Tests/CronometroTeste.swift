@@ -21,12 +21,45 @@ import Foundation
     conferir("pausar depois do fim termina", atrasado.ativo, false)
     atrasado.parar()
 
-    conferir("depois do foco, pausa de 5", Cronometro.proximo(depois: .foco).map { "\($0.minutos) \($0.modo)" }, "5 pausa")
-    conferir("depois da pausa, foco de 25", Cronometro.proximo(depois: .pausa).map { "\($0.minutos) \($0.modo)" }, "25 foco")
-    conferir("timer livre não encadeia", Cronometro.proximo(depois: .livre).map { "\($0.minutos)" }, nil)
+    typealias Preset = Cronometro.Preset
+    conferir("depois do foco, a pausa configurada", Cronometro.proximo(depois: .foco, foco: 30, pausa: 7), Preset(minutos: 7, modo: .pausa))
+    conferir("depois da pausa, o foco configurado", Cronometro.proximo(depois: .pausa, foco: 30, pausa: 7), Preset(minutos: 30, modo: .foco))
+    conferir("timer livre não encadeia", Cronometro.proximo(depois: .livre, foco: 30, pausa: 7), nil)
+
+    conferir("livres: vírgulas e espaços", Cronometro.livres(de: "10, 15 50"), [10, 15, 50])
+    conferir("livres: lixo sai", Cronometro.livres(de: "abc, 10min, 20,, ; 5.5"), [20])
+    conferir("livres: fora da faixa sai", Cronometro.livres(de: "0 -5 241 240 1"), [240, 1])
+    conferir("livres: repetidos saem, ordem fica", Cronometro.livres(de: "15 10 15 10 5"), [15, 10, 5])
+    conferir("livres: corta em 3", Cronometro.livres(de: "1 2 3 4 5"), [1, 2, 3])
+    conferir("livres: vazio", Cronometro.livres(de: "  "), [])
+    conferir("presets: foco, pausa e livres", Cronometro.presets(foco: 25, pausa: 5, livres: [10, 15]),
+             [Preset(minutos: 25, modo: .foco), Preset(minutos: 5, modo: .pausa), Preset(minutos: 10, modo: .livre), Preset(minutos: 15, modo: .livre)])
+    conferir("presets: no máximo 5 botões", Cronometro.presets(foco: 25, pausa: 5, livres: [1, 2, 3, 4]).count, 5)
+    conferir("presets: foco e pausa na faixa", Cronometro.presets(foco: 999, pausa: 0, livres: []),
+             [Preset(minutos: 180, modo: .foco), Preset(minutos: 1, modo: .pausa)])
+
+    // Ajustes numa suíte só do teste: o domínio do app fica intocado.
+    let suite = "io.github.henriquebap.kizami.teste-cronometro"
+    let padroes = UserDefaults(suiteName: suite)!
+    padroes.removePersistentDomain(forName: suite)
+    defer { padroes.removePersistentDomain(forName: suite) }
+    let padrao = Cronometro(mural: Mural(), padroes: padroes)
+    conferir("padrões: 25, 5 e [10, 15]", [padrao.minutosFoco, padrao.minutosPausa] + padrao.livres, [25, 5, 10, 15])
+    conferir("padrões: texto do campo", padrao.textoLivres, "10, 15")
+    padrao.minutosFoco = 40
+    padrao.textoLivres = "3, x, 3 90"
+    padrao.aplicarTextoLivres()
+    conferir("campo confirmado mostra o que ficou", padrao.textoLivres, "3, 90")
+    conferir("guardado: relido por outro", Cronometro(mural: Mural(), padroes: padroes).presets.map(\.minutos), [40, 5, 3, 90])
+    padroes.set(999, forKey: Cronometro.chaveFoco)
+    padroes.set("lixo", forKey: Cronometro.chavePausa)
+    padroes.set([0, 10, 10, 300, 20, 30, 40], forKey: Cronometro.chaveLivres)
+    let sujo = Cronometro(mural: Mural(), padroes: padroes)
+    conferir("disco sujo passa pelas regras", [sujo.minutosFoco, sujo.minutosPausa] + sujo.livres, [180, 5, 10, 20, 30])
 
     let mural = Mural()
-    let cronometro = Cronometro(mural: mural)
+    padroes.removePersistentDomain(forName: suite)
+    let cronometro = Cronometro(mural: mural, padroes: padroes)
     let t0 = Date(timeIntervalSinceReferenceDate: 800_000_000)
     conferir("parado: inativo", cronometro.ativo, false)
     conferir("parado: nada falta", cronometro.restante(agora: t0), 0)
@@ -62,6 +95,16 @@ import Foundation
     conferir("clique tira o aviso", mural.atividades.isEmpty, true)
     cronometro.terminar()
     conferir("fim da pausa também abre", mural.podeAbrir(Cronometro.idAviso), true)
+
+    // Com foco e pausa dos Ajustes, o clique no aviso usa os minutos configurados.
+    cronometro.minutosFoco = 30
+    cronometro.minutosPausa = 7
+    mural.abrir(Cronometro.idAviso)
+    conferir("fim da pausa: foco configurado", [cronometro.modo == .foco, Cronometro.texto(cronometro.restante(agora: .now)) == "30:00"], [true, true])
+    cronometro.terminar()
+    mural.abrir(Cronometro.idAviso)
+    conferir("fim do foco: pausa configurada", [cronometro.modo == .pausa, Cronometro.texto(cronometro.restante(agora: .now)) == "7:00"], [true, true])
+    cronometro.terminar()
     cronometro.iniciar(minutos: 10, modo: .livre, agora: t0)
     conferir("novo timer tira o aviso velho", mural.atividades.isEmpty, true)
     cronometro.terminar()

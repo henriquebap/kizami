@@ -5,11 +5,6 @@ struct AbaTimer: View {
     let estado: EstadoIlha
     let cronometro: Cronometro
 
-    /// Cabem cinco na largura da ilha, como os seis atalhos. Minutos únicos: servem de id.
-    static let presets: [(minutos: Int, modo: Cronometro.Modo)] = [
-        (Cronometro.minutosFoco, .foco), (Cronometro.minutosPausa, .pausa), (10, .livre), (15, .livre), (50, .foco),
-    ]
-
     init(estado: EstadoIlha, cronometro: Cronometro) {
         self.estado = estado
         self.cronometro = cronometro
@@ -26,7 +21,8 @@ struct AbaTimer: View {
 
     private var presets: some View {
         HStack(spacing: 4) {
-            ForEach(Self.presets, id: \.minutos) { preset in
+            // Os dos Ajustes: no máximo cinco (`Cronometro.maxLivres`), o que cabe na largura da ilha.
+            ForEach(cronometro.presets, id: \.self) { preset in
                 Button {
                     cronometro.iniciar(minutos: preset.minutos, modo: preset.modo)
                 } label: {
@@ -72,6 +68,35 @@ struct AbaTimer: View {
         }
         .buttonStyle(.plain)
         .help(ajuda)
+    }
+}
+
+/// A seção Timer dos Ajustes: os minutos do foco e da pausa do pomodoro e os timers livres da aba.
+struct AjustesTimer: View {
+    @Bindable var cronometro: Cronometro
+
+    init(cronometro: Cronometro) {
+        self.cronometro = cronometro
+    }
+
+    var body: some View {
+        Section("Timer") {
+            Stepper(value: $cronometro.minutosFoco, in: Cronometro.faixaFoco) {
+                Text("Foco: \(cronometro.minutosFoco) min")
+            }
+            Stepper(value: $cronometro.minutosPausa, in: Cronometro.faixaPausa) {
+                Text("Pausa: \(cronometro.minutosPausa) min")
+            }
+            HStack {
+                TextField("Timers livres (minutos)", text: $cronometro.textoLivres, prompt: Text(verbatim: "10, 15"))
+                    .onSubmit(cronometro.aplicarTextoLivres)
+                Button("Aplicar", action: cronometro.aplicarTextoLivres)
+                    .disabled(Cronometro.livres(de: cronometro.textoLivres) == cronometro.livres)
+            }
+            Text("Ao fim do foco, clique no aviso para começar a pausa; ao fim da pausa, para voltar ao foco. Até 3 timers livres, de 1 a 240 minutos.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
     }
 }
 

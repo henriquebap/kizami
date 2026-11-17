@@ -105,6 +105,19 @@ Events the person follows but doesn't keep in their calendar (Buffalo Bills, F1,
 - **Camera mirror:** `AVCaptureVideoPreviewLayer` in the open island from the Shortcuts tab; video only, off when the island closes.
 - **Urgent over full screen:** the same panel, kept on screen only for an urgent notice from Kizami's own sources. Off by default.
 
+### v0.12: Personalization (done)
+
+- Tabs on/off and their order; the island opens on the first. Home always stays.
+- Home sections can be hidden; a hidden section leaves the island and the height math together (`secoesAtuais`).
+- The order of the closed wings (`Personalizacao.asa`); important notices always first.
+- Timer: focus, break and up to 3 free timers in Settings.
+- Apple Shortcuts: up to 6 chosen shortcuts as buttons in the Shortcuts tab, run with `/usr/bin/shortcuts run -- <name>`.
+
+### Next
+
+- **v0.13, daily use:** open at login (`SMAppService`), the timer surviving a restart, the meeting countdown in the wings, images in Copied, new screenshots in `docs/`.
+- **v0.14, depth:** Kanji's live mic level (needs Kanji), opening the exact Claude session, two live games and F1 positions, energy profiling.
+
 ## Ideas (not scheduled)
 
 Ranked by value for daily use against the work it takes.

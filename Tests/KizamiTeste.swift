@@ -229,6 +229,8 @@ import Foundation
         testarEspelho()
         testarDownloads()
         testarGitHub()
+        testarPersonalizacao()
+        testarAtalhosApple()
         if falhas > 0 { exit(1) }
     }
 }

@@ -99,7 +99,10 @@ struct Geometria: Equatable {
     var abertaAtalhos: CGSize { abertaComAba(Self.alturaAtalhos) }
 
     /// A aba do Kanji: a fileira das ações e, com skills, a fileira delas (44 pt) logo abaixo.
-    static func alturaKanji(skills: Int) -> CGFloat { alturaAtalhos + (skills > 0 ? 6 + 44 : 0) }
+    static func alturaKanji(skills: Int) -> CGFloat { alturaComFileira(skills) }
+
+    /// A fileira de 62 pt e, se houver itens, uma segunda de 44 pt embaixo (skills do Kanji, Atalhos da Apple).
+    static func alturaComFileira(_ itens: Int) -> CGFloat { alturaAtalhos + (itens > 0 ? 6 + 44 : 0) }
 
     /// A aba Hoje: um evento por linha, até `maximoDoDia` (o último vira "mais N"), ou a linha do "nada mais".
     static let maximoDoDia = 5
@@ -166,8 +169,9 @@ struct Secoes: Equatable {
     let apps: Bool
     let bandeja: Bool
 
+    /// `semBandejaVazia`: a pessoa escondeu a bandeja; ela só aparece durante um arraste (é onde se solta).
     init(tocando: Bool, atividades: Int, arquivos: Int, arrastando: Bool, sessoes: Int = 0, hoje: Bool = false,
-         apps: Bool = false, interesse: Bool = false) {
+         apps: Bool = false, interesse: Bool = false, semBandejaVazia: Bool = false) {
         self.hoje = hoje
         self.interesse = interesse
         self.sessoes = min(sessoes, Geometria.maximoSessoes)
@@ -175,6 +179,7 @@ struct Secoes: Equatable {
         linhas = min(atividades, Geometria.maximoLinhas)
         self.apps = apps
         // Sem nada para mostrar, a ilha aberta oferece a bandeja vazia: é o que dá para fazer com ela.
-        bandeja = arquivos > 0 || arrastando || (atividades == 0 && !tocando && sessoes == 0 && !hoje && !apps && !interesse)
+        bandeja = arquivos > 0 || arrastando
+            || (!semBandejaVazia && atividades == 0 && !tocando && sessoes == 0 && !hoje && !apps && !interesse)
     }
 }
