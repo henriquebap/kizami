@@ -92,13 +92,16 @@ final class Kizami {
     let cronometro: Cronometro
     let copiados = Copiados()
     let espelho = Espelho()
+    let personalizacao = Personalizacao()
+    let atalhosApple: AtalhosApple
     let downloads: Downloads
     let github: GitHub
     let formulario = FormularioAjustes()
     let formularioInteresses = FormularioInteresses()
     private var fontes: Fontes { Fontes(mural: mural, bandeja: bandeja, tocando: tocando, agenda: agenda, tempo: tempo, claude: claude, mac: mac,
                                        interesses: interesses, kanji: kanji, cronometro: cronometro,
-                                       copiados: copiados, espelho: espelho) }
+                                       copiados: copiados, espelho: espelho,
+                                       personalizacao: personalizacao, atalhosApple: atalhosApple) }
     private var janelas: [Janela] = []
     private var ajustes: NSWindow?
     private var arrasto: Arrasto?
@@ -113,6 +116,7 @@ final class Kizami {
         cronometro = Cronometro(mural: mural)
         downloads = Downloads(mural: mural)
         github = GitHub(mural: mural)
+        atalhosApple = AtalhosApple(mural: mural)
     }
 
     func iniciar() {
@@ -199,7 +203,8 @@ final class Kizami {
         if ajustes == nil {
             let raiz = AjustesView(tempo: tempo, agenda: agenda, mac: mac, interesses: interesses, formulario: formulario,
                                    formularioInteresses: formularioInteresses, copiados: copiados,
-                                   downloads: downloads, github: github)
+                                   downloads: downloads, github: github,
+                                   personalizacao: personalizacao, atalhosApple: atalhosApple)
             let janela = NSWindow(contentViewController: NSHostingController(rootView: raiz))
             janela.title = String(localized: "Ajustes do Kizami")
             janela.styleMask = [.titled, .closable, .miniaturizable, .resizable]

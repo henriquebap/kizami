@@ -46,6 +46,8 @@ Any local process can post, so everything that arrives is data:
 
 ## The island's shapes
 
+The person's choices (`Personalizacao`: tabs, Home sections, the order of the wings) are read where each decision already lives (`Cabecalho`, `secoesAtuais`, `asaAtual`), never as `if`s spread across views.
+
 `Geometria` is pure. It is tested with real screen measurements and decides every size:
 
 | State | Shape |

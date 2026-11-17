@@ -79,6 +79,13 @@ Hover the notch and the island opens. At the top:
 
 Only the chosen tab shows its name; the others show their icon (hover for the name).
 
+**Make it yours** (Settings › Island tabs and below):
+- **Tabs:** turn each tab on or off and change their order; the island opens on the first one. Home always stays.
+- **Home:** hide the sections you don't want (next event and weather, interests, Claude sessions, now playing, apps and Mac, the file tray).
+- **Closed island:** choose what comes first in the wings: the running timer, notices, the live score or the music. A meeting starting and Claude asking for permission always come first.
+- **Timer:** the focus and break minutes, and up to 3 free timers.
+- **Apple Shortcuts:** pick up to 6 shortcuts from the Shortcuts app; they become buttons in the Shortcuts tab, run with `shortcuts run`.
+
 **Live score:** while a game of a team you follow is on, the closed island shows the score around the notch (away team on the left, home team on the right), refreshed every minute from ESPN, and the Interests row shows it with a red dot. At the end, a "Game over" notice with the final score; click it for the ESPN page.
 
 **GitHub** (off by default, Settings › GitHub): a notice when CI fails on one of your open PRs or someone requests your review, through the `gh` you already have logged in, every 5 minutes, read only. Clicking opens the PR.

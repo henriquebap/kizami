@@ -195,3 +195,35 @@
 "Funcionando: %lld PRs abertos, %lld revisões pedidas." = "Working: %lld open PRs, %lld review requests.";
 "CI falhou" = "CI failed";
 "Revisão pedida" = "Review requested";
+
+/* v0.12: personalização */
+"Abas da ilha" = "Island tabs";
+"A ilha abre na primeira aba ligada (no Início quando chega um aviso). O Espelho e os Atalhos da Apple ficam na aba Atalhos." = "The island opens on the first tab that is on (on Home when a notice arrives). The Mirror and Apple Shortcuts live in the Shortcuts tab.";
+"O que o Início mostra" = "What Home shows";
+"Ilha fechada: a vez de cada um" = "Closed island: what comes first";
+"Mostra o primeiro da lista que tem algo agora. Reunião começando e o Claude pedindo permissão passam na frente de tudo." = "Shows the first one in the list that has something now. A meeting starting and Claude asking for permission always come first.";
+"Subir" = "Move up";
+"Descer" = "Move down";
+"Próximo evento e tempo" = "Next event and weather";
+"Sessões do Claude" = "Claude sessions";
+"Bandeja de arquivos" = "File tray";
+"Timer correndo" = "Running timer";
+"Avisos" = "Notices";
+"Placar ao vivo" = "Live score";
+"Música tocando" = "Music playing";
+"Microfone e câmera" = "Microphone and camera";
+"Bandeja" = "Tray";
+"Nada" = "Nothing";
+"O atalho falhou" = "The shortcut failed";
+"Atalhos da Apple" = "Apple Shortcuts";
+"Não deu para ler os atalhos deste Mac." = "Couldn't read this Mac's shortcuts.";
+"Nenhum atalho no app Atalhos." = "No shortcuts in the Shortcuts app.";
+"Reler os atalhos" = "Reload shortcuts";
+"Os atalhos escolhidos viram botões na aba Atalhos da ilha." = "The shortcuts you choose become buttons in the island's Shortcuts tab.";
+"No máximo 6 atalhos" = "Up to 6 shortcuts";
+"Mover para a esquerda na ilha" = "Move left on the island";
+"Foco: %lld min" = "Focus: %lld min";
+"Pausa: %lld min" = "Break: %lld min";
+"Timers livres (minutos)" = "Free timers (minutes)";
+"Aplicar" = "Apply";
+"Ao fim do foco, clique no aviso para começar a pausa; ao fim da pausa, para voltar ao foco. Até 3 timers livres, de 1 a 240 minutos." = "When focus ends, click the notice to start the break; when the break ends, click it to get back to focus. Up to 3 free timers, 1 to 240 minutes.";
