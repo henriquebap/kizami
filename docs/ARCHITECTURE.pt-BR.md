@@ -75,6 +75,7 @@ O macOS desenha um painel no nível da ilha até num espaço de tela cheia, ent�
 | Play/pause do navegador, colar dos Copiados | Acessibilidade |
 | Espelho da câmera | Câmera |
 | Downloads | a pasta Downloads |
+| Lembretes | Lembretes |
 | GitHub | a CLI `gh` que a pessoa logou (o Kizami nunca vê o token) |
 
 Cada uma é opcional, e sem ela o resto continua funcionando. As chamadas de rede usam:
@@ -84,7 +85,7 @@ Cada uma é opcional, e sem ela o resto continua funcionando. As chamadas de red
 
 Conteúdo nunca vai para o log: títulos, nomes de pasta, a cidade, times, nomes de app e números de emblema. Só contagens e tempos.
 
-O texto copiado fica só na memória. Copiados, Downloads, GitHub e o urgente por cima da tela cheia ficam desligados até a pessoa ligar.
+O texto copiado fica só na memória. Copiados, Downloads, GitHub, Lembretes e o urgente por cima da tela cheia ficam desligados até a pessoa ligar.
 
 ## Energia
 
