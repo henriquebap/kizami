@@ -111,6 +111,14 @@ struct EventoInteresse: Equatable, Identifiable, Sendable {
             .min { ($0.inicio, $0.titulo) < ($1.inicio, $1.titulo) }  // título desempata: a escolha não pisca
     }
 
+    /// "hoje 20:15" ou "amanhã 00:30", sem contagem: o texto do lembrete de 1 hora, que fica parado na ilha.
+    static func diaEHora(_ e: EventoInteresse, agora: Date, calendario: Calendar = .current) -> String {
+        let hora = e.inicio.formatted(Date.FormatStyle(date: .omitted, time: .shortened, locale: calendario.locale ?? .current,
+                                                       calendar: calendario, timeZone: calendario.timeZone))
+        return calendario.isDate(e.inicio, inSameDayAs: agora) ? String(localized: "hoje \(hora)")
+            : String(localized: "amanhã \(hora)")
+    }
+
     /// "em 45 min", "hoje 20:15", "amanhã 14:00", "dom. 14:00". Contagem na última hora, quando "quanto falta"
     /// importa mais que "a que horas".
     static func quando(_ e: EventoInteresse, agora: Date, calendario: Calendar = .current) -> String {
@@ -660,8 +668,9 @@ final class Interesses {
             let expira = lembrete.tipo == .umaHora ? max(e.inicio.timeIntervalSince(agora), 1) : Atividade.expiraPadrao
             mural.receber(Atividade(id: "interesse-\(lembrete.chave)", titulo: e.titulo,
                                     // O de 1 hora fica até o início: "em 1 hora" ficaria parado; a hora não envelhece.
+                                    // Um jogo à 00:30 tem o lembrete às 23:30 da véspera: aí é "amanhã", não "hoje".
                                     detalhe: lembrete.tipo == .umaHora
-                                        ? String(localized: "hoje \(e.inicio.formatted(date: .omitted, time: .shortened))")
+                                        ? EventoInteresse.diaEHora(e, agora: agora)
                                         : EventoInteresse.quando(e, agora: agora),
                                     simbolo: e.fonte.simbolo, cor: e.fonte.cor, expira: expira,
                                     prioridade: lembrete.tipo == .umaHora ? "alta" : "normal")) { [weak self] in self?.abrir(e) }
