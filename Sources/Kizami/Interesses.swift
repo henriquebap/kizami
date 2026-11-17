@@ -706,10 +706,10 @@ final class Interesses {
         let jogos = naJanela.filter { e in
             agora.timeIntervalSince(e.inicio) < 1800 || minuto % 5 == 0 || Placar.idESPN(e).map(comPlacar.contains) == true
         }
-        guard !jogos.isEmpty, var placares = await Placar.buscar(jogos) else { return }  // sem rede: o último placar fica
+        guard !jogos.isEmpty, let resposta = await Placar.buscar(jogos) else { return }  // sem rede: o último placar fica
         // Deixou de seguir o time durante a consulta: o placar dele não volta para a ilha.
         let seguidosAgora = seguidos.flatMap { porFonte[$0] ?? [] }
-        placares = placares.filter { p in seguidosAgora.contains(where: p.eDo) }
+        let placares = resposta.placares.filter { p in seguidosAgora.contains(where: p.eDo) }
         comPlacar.formUnion(placares.map(\.eventoId))
         for p in placares where p.encerrado && !encerrados.contains(p.eventoId) {
             encerrados.insert(p.eventoId)
@@ -721,7 +721,7 @@ final class Interesses {
                                     prioridade: "normal")) { [weak self] in self?.abrir(e) }
         }
         // Os que saíram da janela também saem daqui: `naJanela` é recalculada a cada minuto.
-        let novo = Placar.aoVivo(lidos: placares, antes: aoVivo, naJanela: naJanela)
+        let novo = Placar.aoVivo(lidos: placares, consultados: resposta.consultados, antes: aoVivo, naJanela: naJanela)
         if novo != aoVivo {
             aoVivo = novo
             conferir()

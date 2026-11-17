@@ -159,8 +159,10 @@ struct IlhaView: View {
                             }
                         }
                     } else if asa == .placar {
-                        // Dois ao vivo: um de cada vez, trocando a cada 8 s só pelo relógio, sem consulta a mais.
-                        TimelineView(.periodic(from: Date(timeIntervalSinceReferenceDate: 0), by: Placar.vezNaAsa)) { contexto in
+                        // Dois ao vivo: um de cada vez, trocando a cada 8 s só pelo relógio, sem consulta a mais. Com um só,
+                        // o relógio quase não bate: nada muda na tela, e cada tique redesenharia a ilha.
+                        let vez = fontes.interesses.aoVivo.count > 1 ? Placar.vezNaAsa : 3600
+                        TimelineView(.periodic(from: Date(timeIntervalSinceReferenceDate: 0), by: vez)) { contexto in
                             if let lados = Placar.daVez(fontes.interesses.aoVivo, agora: contexto.date)?.asa {
                                 Asas(altura: g.notch.height) {
                                     Text(verbatim: lados.esquerda)  // verbatim: siglas e pontos vêm da ESPN
@@ -531,6 +533,7 @@ private struct CamadaDeBarras: NSViewRepresentable {
                 pulso.timeOffset = Double(i) * 0.21
                 pulso.autoreverses = true
                 pulso.repeatCount = .infinity
+                pulso.isRemovedOnCompletion = false  // a janela some em tela cheia e volta: a animação continua
                 pulso.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
                 barra.add(pulso, forKey: "pulso")
             }

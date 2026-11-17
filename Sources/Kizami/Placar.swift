@@ -202,13 +202,14 @@ struct Placar: Equatable, Sendable {
             .reduce(into: [EventoInteresse]()) { vistos, e in if !vistos.contains(where: { idESPN($0) == idESPN(e) }) { vistos.append(e) } }
     }
 
-    /// Os ao vivo, até `maximoAoVivo`, na ordem de `naJanela` (o que começou antes primeiro). O que não veio nesta
-    /// consulta (a liga não respondeu, ou só é consultado de 5 em 5 min) fica com o placar de antes: uma falha de
-    /// uma liga não apaga o jogo da outra. O encerrado sai.
-    static func aoVivo(lidos: [Placar], antes: [Placar], naJanela: [EventoInteresse]) -> [Placar] {
+    /// Os ao vivo, até `maximoAoVivo`, na ordem de `naJanela` (o que começou antes primeiro). O que não foi
+    /// consultado agora (a liga não respondeu, ou só é consultado de 5 em 5 min) fica com o placar de antes: uma falha
+    /// de uma liga não apaga o jogo da outra. O encerrado sai, e também o que a liga respondeu sem placar (jogo
+    /// suspenso, corrida sem a ordem): senão o último placar ficaria na ilha, como ao vivo, até 5 h depois do início.
+    static func aoVivo(lidos: [Placar], consultados: Set<String>, antes: [Placar], naJanela: [EventoInteresse]) -> [Placar] {
         let placares = naJanela.compactMap(idESPN).compactMap { id -> Placar? in
             if let lido = lidos.first(where: { $0.eventoId == id }) { return lido.encerrado ? nil : lido }
-            return antes.first { $0.eventoId == id }
+            return consultados.contains(id) ? nil : antes.first { $0.eventoId == id }
         }
         return Array(placares.prefix(maximoAoVivo))
     }
@@ -235,9 +236,9 @@ struct Placar: Equatable, Sendable {
         return c.url
     }
 
-    /// Um scoreboard por liga e dia, com a sessão e as regras de `RedeInteresses`. nil quando nenhum respondeu:
-    /// aí o placar de antes continua valendo.
-    static func buscar(_ jogos: [EventoInteresse]) async -> [Placar]? {
+    /// Um scoreboard por liga e dia, com a sessão e as regras de `RedeInteresses`: os placares lidos e os ids cuja
+    /// liga respondeu (com ou sem placar deles). nil quando nenhum respondeu: aí o placar de antes continua valendo.
+    static func buscar(_ jogos: [EventoInteresse]) async -> (placares: [Placar], consultados: Set<String>)? {
         var porURL: [URL: [EventoInteresse]] = [:]
         for jogo in jogos {
             // A F1 também aceita `dates=`: o dia da largada em Nova York traz o fim de semana dela (conferido com
@@ -250,14 +251,16 @@ struct Placar: Equatable, Sendable {
             if let endereco { porURL[endereco, default: []].append(jogo) }
         }
         var placares: [Placar] = []
+        var consultados: Set<String> = []
         var responderam = 0
         for (url, daqui) in porURL {
             guard url.host() == ESPN.host, let dados = await RedeInteresses.baixar(url, teto: ESPN.tamanhoMaximo) else { continue }
             responderam += 1
+            consultados.formUnion(daqui.compactMap(idESPN))
             placares += daqui.compactMap { e in
                 idESPN(e).flatMap { e.fonte == .f1 ? lerCorrida(dados, corridaId: $0) : ler(dados, eventoId: $0) }
             }
         }
-        return responderam == 0 && !porURL.isEmpty ? nil : placares
+        return responderam == 0 && !porURL.isEmpty ? nil : (placares, consultados)
     }
 }

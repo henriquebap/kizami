@@ -105,17 +105,21 @@ import Foundation
     }
     let naJanela = Placar.emJogo([jogo, terceiro, outro], agora: agora, encerrados: [])
     conferir("dois ao vivo: o que começou antes primeiro, no máximo dois",
-             Placar.aoVivo(lidos: [placar("401879301", 1), placar("401873065", 2), placar("401879300", 3)], antes: [],
+             Placar.aoVivo(lidos: [placar("401879301", 1), placar("401873065", 2), placar("401879300", 3)], consultados: [], antes: [],
                            naJanela: naJanela).map(\.eventoId), ["401879300", "401873065"])
     conferir("dois ao vivo: a liga que não respondeu fica com o placar de antes",
-             Placar.aoVivo(lidos: [placar("401873065", 7)], antes: [placar("401879300", 3), placar("401873065", 2)],
+             Placar.aoVivo(lidos: [placar("401873065", 7)], consultados: [], antes: [placar("401879300", 3), placar("401873065", 2)],
                            naJanela: naJanela), [placar("401879300", 3), placar("401873065", 7)])
     conferir("dois ao vivo: o que acabou sai e o terceiro entra",
              Placar.aoVivo(lidos: [placar("401879300", 3, encerrado: true), placar("401879301", 1)],
-                           antes: [placar("401879300", 2), placar("401873065", 2)], naJanela: naJanela).map(\.eventoId),
+                           consultados: [], antes: [placar("401879300", 2), placar("401873065", 2)], naJanela: naJanela).map(\.eventoId),
              ["401873065", "401879301"])
+    conferir("dois ao vivo: a liga respondeu sem o placar (jogo suspenso): sai, não fica o de antes",
+             Placar.aoVivo(lidos: [placar("401873065", 7)], consultados: ["401879300", "401873065"],
+                           antes: [placar("401879300", 3), placar("401873065", 2)], naJanela: naJanela).map(\.eventoId),
+             ["401873065"])
     conferir("dois ao vivo: fora da janela, sai mesmo com placar de antes",
-             Placar.aoVivo(lidos: [], antes: [placar("401879300", 2)], naJanela: [jogo]), [])
+             Placar.aoVivo(lidos: [], consultados: [], antes: [placar("401879300", 2)], naJanela: [jogo]), [])
     conferir("dois ao vivo: seguir os dois times do mesmo jogo dá um jogo só",
              Placar.emJogo([jogo, EventoInteresse(id: jogo.id, titulo: "Ravens x Chargers", inicio: jogo.inicio,
                                                   fonte: .espnTime(esporte: "football", liga: "nfl", time: "33", nome: "Ravens"))],
