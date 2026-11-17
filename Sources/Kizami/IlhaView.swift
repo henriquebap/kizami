@@ -337,34 +337,38 @@ private struct Cabecalho: View {
     let estado: EstadoIlha
     let mural: Mural
     let personalizacao: Personalizacao
+    /// A pílula de vidro da aba escolhida tem um id só: trocar de aba faz o vidro deslizar até a nova.
+    @Namespace private var espaco
 
     var body: some View {
-        HStack(spacing: 4) {
-            ForEach(personalizacao.abas, id: \.self) { aba($0) }
-            Spacer(minLength: 0)
-            if estado.aba == .inicio && !mural.atividades.isEmpty {
-                // Duas sessões do Claude terminaram e os avisos ficaram: um clique tira todos.
-                Button { mural.limpar() } label: {
-                    Label("Limpar", systemImage: "xmark.circle.fill")
-                        .font(.caption.weight(.semibold))
-                        .padding(.horizontal, 8)
-                        .frame(height: 22)
-                        .background(Capsule().fill(.white.opacity(0.1)))
-                        .contentShape(.capsule)
+        GlassEffectContainer(spacing: 4) {
+            HStack(spacing: 4) {
+                ForEach(personalizacao.abas, id: \.self) { aba($0) }
+                Spacer(minLength: 0)
+                if estado.aba == .inicio && !mural.atividades.isEmpty {
+                    // Duas sessões do Claude terminaram e os avisos ficaram: um clique tira todos.
+                    Button { mural.limpar() } label: {
+                        Label("Limpar", systemImage: "xmark.circle.fill")
+                            .font(.caption.weight(.semibold))
+                            .padding(.horizontal, 8)
+                            .frame(height: 22)
+                            .glassEffect(.regular, in: .capsule)
+                            .contentShape(.capsule)
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.secondary)
+                    .help(Text("Tirar todos os avisos da ilha"))
+                    .transition(.opacity)
                 }
-                .buttonStyle(.plain)
-                .foregroundStyle(.secondary)
-                .help(Text("Tirar todos os avisos da ilha"))
-                .transition(.opacity)
+                Button("Ajustes", systemImage: "gearshape.fill") { Kizami.shared.abrirAjustes() }
+                    .labelStyle(.iconOnly)
+                    .buttonStyle(.plain)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 26, height: 26)
+                    .contentShape(.rect)
+                    .help(Text("Ajustes"))
             }
-            Button("Ajustes", systemImage: "gearshape.fill") { Kizami.shared.abrirAjustes() }
-                .labelStyle(.iconOnly)
-                .buttonStyle(.plain)
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(.secondary)
-                .frame(width: 26, height: 26)
-                .contentShape(.rect)
-                .help(Text("Ajustes"))
         }
         .padding(.horizontal, 10)
         .frame(height: Geometria.alturaCabecalho)
@@ -382,7 +386,8 @@ private struct Cabecalho: View {
             .font(.caption.weight(.semibold))
             .padding(.horizontal, escolhida ? 10 : 7)
             .frame(height: 22)
-            .background(Capsule().fill(.white.opacity(escolhida ? 0.16 : 0)))
+            .glassEffect(escolhida ? .regular : .identity, in: .capsule)
+            .glassEffectID(escolhida ? "aba" : valor.rawValue, in: espaco)
             .foregroundStyle(escolhida ? .primary : .secondary)
             .contentShape(.capsule)
         }
