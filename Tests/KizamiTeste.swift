@@ -126,6 +126,23 @@ import Foundation
     fila.receber(Atividade(id: "alta", titulo: "alta", expira: 0, prioridade: "alta"))
     fila.receber(Atividade(id: "normal", titulo: "normal", expira: 0))
     conferir("na pilha, a alta vem antes da normal mais nova", fila.avisos.map(\.id), ["alta", "normal"])
+
+    // A alta ou urgente manda nas asas só nos primeiros 2 min (v0.15).
+    conferir("a alta que acabou de chegar manda nas asas", fila.importante, true)
+    fila.remover(id: "alta")
+    conferir("tirada a alta, as asas voltam à ordem", fila.importante, false)
+    let t0 = Date(timeIntervalSinceReferenceDate: 1_000_000)
+    func chegou(_ id: String, _ prioridade: String?, _ chegada: Date) -> Atividade {
+        var a = Atividade(id: id, titulo: id, expira: 0, prioridade: prioridade)
+        a.chegada = chegada
+        return a
+    }
+    let urgente = chegou("u", "urgente", t0)
+    conferir("janela da urgente: 2 min depois da chegada", Mural.importanteAte([urgente]), t0 + 120)
+    conferir("com 1 min, ainda manda", Mural.importanteAte([urgente]).map { $0 > t0 + 60 }, true)
+    conferir("com 2 min, já não manda", Mural.importanteAte([urgente]).map { $0 > t0 + 120 }, false)
+    conferir("normal e baixa nunca mandam", Mural.importanteAte([chegou("n", nil, t0), chegou("b", "baixa", t0)]), nil)
+    conferir("vale a janela da mais recente", Mural.importanteAte([urgente, chegou("a", "alta", t0 + 90)]), t0 + 210)
 }
 
 @MainActor func testarBandeja() {
