@@ -103,7 +103,10 @@ struct Geometria: Equatable {
 
     /// A aba Hoje: um evento por linha, até `maximoDoDia` (o último vira "mais N"), ou a linha do "nada mais".
     static let maximoDoDia = 5
-    static func alturaDoDia(eventos: Int) -> CGFloat { alturaLinhas(max(1, min(eventos, maximoDoDia))) }
+    static func alturaDoDia(eventos: Int) -> CGFloat { alturaDaLista(itens: eventos) }
+
+    /// Uma aba em lista (Hoje, Copiados): até `maximoDoDia` linhas, ou a linha do vazio.
+    static func alturaDaLista(itens: Int) -> CGFloat { alturaLinhas(max(1, min(itens, maximoDoDia))) }
 
     /// `n` linhas da lista com o espaço entre elas.
     static func alturaLinhas(_ n: Int) -> CGFloat { n > 0 ? CGFloat(n) * alturaLinha + CGFloat(n - 1) * espacoLinha : 0 }

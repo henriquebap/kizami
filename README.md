@@ -15,9 +15,11 @@ Free and open source (Apache 2.0). No private APIs and no third-party dependenci
 **Every permission is optional**, and each one turns on one thing:
 - **Automation:** the artwork and media buttons of the song that is playing.
 - **Calendars:** your next event.
-- **Accessibility:** the Dock badges, the Shortcuts tab and the Kanji tab.
+- **Accessibility:** the Dock badges, the Shortcuts and Kanji tabs, browser play/pause and pasting from Copied.
+- **Camera:** the mirror, only while it is open.
+- **Downloads folder:** downloads in progress, if you turn them on.
 
-**The network goes only to services that need no key:** Open-Meteo for the weather, ESPN's public schedules for the games you follow, and the calendar links you paste in Settings. Audio, files and what you type never leave the Mac.
+**The network goes only to services that need no key:** Open-Meteo for the weather, ESPN's public schedules and scores for the games you follow, and the calendar links you paste in Settings. If you turn GitHub on, your own logged-in `gh` asks GitHub for your PRs; Kizami never sees the token. Audio, files and what you type never leave the Mac.
 
 ## Build
 
@@ -69,13 +71,21 @@ Hover the notch and the island opens. At the top:
 - **Home**: everything below (today, interests, Claude sessions, now playing, activities, apps, tray).
 - **Today**: the rest of the day's calendar, one event per line, with **Join** on the ones that have a meeting link.
 - **Timer**: presets (Focus 25, Break 5, 10, 15, Focus 50). While it runs, the closed island shows the countdown around the notch. When a focus session ends, clicking the notice starts the 5-minute break, and the break's notice starts the next focus. No sound yet.
+- **Copied** (off by default, Settings › Copied): the last 10 texts you copied, click one to paste it into the app you're in. They stay in memory only, never on disk, and vanish when Kizami quits; whatever password managers mark as concealed, and anything that looks like a key or token, is left out.
 - **Shortcuts**: one click for the Mac's shortcuts, with the keys written under each one so you learn them: full screenshot (⇧⌘3), area (⇧⌘4), screenshot and recording (⇧⌘5), Mission Control, emoji (⌃⌘Space) and lock screen (⌃⌘Q). Sending keys needs the Accessibility permission, asked on the first click.
 - **Kanji**: [Kanji](https://github.com/henriquebap/kanji-local-dictation), the dictation app, in one click: dictate, transcribe the Mac's audio, open Kanji, and one button per skill (dictate already rewritten as a LinkedIn reply, an informal message, a prompt…). They are Kanji's own shortcuts, read from its settings, so they change when you change them there. Same Accessibility permission as Shortcuts.
+  The last button, **Mirror**, shows your camera in the island to check yourself before a call (asks for the camera; video only, never recorded, off as soon as the island closes).
 - **⚙︎**: opens Settings (also in Kizami's menu bar item, or ⌘, with its menu open).
 
 Only the chosen tab shows its name; the others show their icon (hover for the name).
 
 **Live score:** while a game of a team you follow is on, the closed island shows the score around the notch (away team on the left, home team on the right), refreshed every minute from ESPN, and the Interests row shows it with a red dot. At the end, a "Game over" notice with the final score; click it for the ESPN page.
+
+**GitHub** (off by default, Settings › GitHub): a notice when CI fails on one of your open PRs or someone requests your review, through the `gh` you already have logged in, every 5 minutes, read only. Clicking opens the PR.
+
+**Downloads** (off by default, Settings › Downloads): a file being downloaded in Chrome, Safari or Firefox shows with its size or percentage, then "Download complete"; click to show it in Finder. Asks for the Downloads folder.
+
+**Urgent over full screen** (off by default, Settings › Full screen): during a full-screen video or game the island hides; with this on, it comes back only for a meeting starting or Claude asking for permission.
 
 **Browser play/pause:** when a browser is playing (YouTube), the now-playing row gets a play/pause button. It sends the keyboard's play/pause key, which macOS hands to whoever is playing (Accessibility, like Shortcuts).
 

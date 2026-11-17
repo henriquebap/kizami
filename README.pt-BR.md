@@ -15,9 +15,11 @@ Gratuito e open source (Apache 2.0). Não usa API privada nem tem dependências 
 **Toda permissão é opcional**, e cada uma liga uma coisa:
 - **Automação:** a capa e os botões da música que está tocando.
 - **Calendários:** o seu próximo evento.
-- **Acessibilidade:** os emblemas do Dock, a aba Atalhos e a aba Kanji.
+- **Acessibilidade:** os emblemas do Dock, as abas Atalhos e Kanji, o play/pause do navegador e colar dos Copiados.
+- **Câmera:** o espelho, só enquanto está aberto.
+- **Pasta Downloads:** os downloads em andamento, se você ligar.
 
-**A rede só vai a serviços que não pedem chave:** Open-Meteo para o tempo, as agendas públicas da ESPN para os jogos que você segue, e os links de calendário que você cola nos Ajustes. Áudio, arquivos e o que você digita nunca saem do Mac.
+**A rede só vai a serviços que não pedem chave:** Open-Meteo para o tempo, as agendas e placares públicos da ESPN para os jogos que você segue, e os links de calendário que você cola nos Ajustes. Se você ligar o GitHub, o seu próprio `gh` logado pede ao GitHub os seus PRs; o Kizami nunca vê o token. Áudio, arquivos e o que você digita nunca saem do Mac.
 
 ## Compilar
 
@@ -69,13 +71,21 @@ Passe o mouse no notch e a ilha abre. No topo:
 - **Início**: tudo o que está abaixo (hoje, interesses, sessões do Claude, tocando agora, atividades, apps, bandeja).
 - **Hoje**: o resto da agenda do dia, um evento por linha, com **Entrar** nos que têm link de reunião.
 - **Timer**: atalhos prontos (Foco 25, Pausa 5, 10, 15, Foco 50). Enquanto corre, a ilha fechada mostra a contagem em volta do notch. No fim de um foco, clicar no aviso começa a pausa de 5 minutos, e o aviso da pausa começa o próximo foco. Ainda sem som.
+- **Copiados** (desligado por padrão, Ajustes › Copiados): os últimos 10 textos que você copiou; clique num para colar no app em que você está. Ficam só na memória, nunca em disco, e somem ao fechar o Kizami; o que os gerenciadores de senha marcam como oculto, e o que parece chave ou token, fica de fora.
 - **Atalhos**: os atalhos do Mac num clique, com as teclas escritas embaixo de cada um para você ir aprendendo: captura da tela (⇧⌘3), de uma área (⇧⌘4), captura e gravação (⇧⌘5), Mission Control, emojis (⌃⌘Espaço) e bloquear a tela (⌃⌘Q). Mandar teclas pede a permissão de Acessibilidade, pedida no primeiro clique.
 - **Kanji**: o [Kanji](https://github.com/henriquebap/kanji-local-dictation), o app de ditado, num clique: ditar, transcrever o áudio do Mac, abrir o Kanji e um botão por skill (ditar já reescrevendo como resposta de LinkedIn, mensagem informal, prompt…). São os próprios atalhos do Kanji, lidos dos ajustes dele, então mudam quando você muda lá. A mesma permissão de Acessibilidade dos Atalhos.
+  O último botão, **Espelho**, mostra a câmera na ilha para você se ver antes de uma chamada (pede a câmera; só vídeo, nunca gravado, desligado assim que a ilha fecha).
 - **⚙︎**: abre os Ajustes (também no item do Kizami na barra de menus, ou ⌘, com o menu aberto).
 
 Só a aba escolhida mostra o nome; as outras mostram o ícone (o nome aparece com o cursor em cima).
 
 **Placar ao vivo:** durante um jogo de um time que você segue, a ilha fechada mostra o placar em volta do notch (visitante à esquerda, mandante à direita), atualizado a cada minuto pela ESPN, e a linha dos Interesses mostra o placar com um ponto vermelho. No fim, um aviso "Fim de jogo" com o placar final; o clique abre a página da ESPN.
+
+**GitHub** (desligado por padrão, Ajustes › GitHub): um aviso quando a CI falha num PR seu aberto ou pedem a sua revisão, pelo `gh` que você já tem logado, a cada 5 minutos, só leitura. O clique abre o PR.
+
+**Downloads** (desligado por padrão, Ajustes › Downloads): um arquivo sendo baixado no Chrome, Safari ou Firefox aparece com o tamanho ou a porcentagem, depois "Download concluído"; o clique mostra o arquivo no Finder. Pede a pasta Downloads.
+
+**Urgente por cima da tela cheia** (desligado por padrão, Ajustes › Tela cheia): em vídeo ou jogo em tela cheia a ilha some; ligado, ela volta só para a reunião começando ou o Claude pedindo permissão.
 
 **Play/pause do navegador:** quando um navegador está tocando (YouTube), a linha do que está tocando ganha um botão de tocar ou pausar. Ele manda a tecla de play/pause do teclado, que o macOS entrega a quem está tocando (Acessibilidade, como os Atalhos).
 

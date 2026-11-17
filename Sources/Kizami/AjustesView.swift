@@ -17,6 +17,10 @@ struct AjustesView: View {
     let interesses: Interesses
     @Bindable var formulario: FormularioAjustes
     let formularioInteresses: FormularioInteresses
+    let copiados: Copiados
+    let downloads: Downloads
+    let github: GitHub
+    @AppStorage(Janela.chaveUrgenteEmTelaCheia) private var urgenteEmTelaCheia = false
 
     var body: some View {
         Form {
@@ -52,6 +56,14 @@ struct AjustesView: View {
             }
             AjustesInteresses(interesses: interesses, formulario: formularioInteresses)
             AjustesMac(mac: mac)
+            AjustesCopiados(copiados: copiados)
+            AjustesDownloads(downloads: downloads)
+            AjustesGitHub(github: github)
+            Section("Tela cheia") {
+                Toggle("Avisos urgentes por cima da tela cheia", isOn: $urgenteEmTelaCheia)
+                Text("Em vídeo ou jogo em tela cheia, a ilha some. Ligado, ela volta só para o que é urgente: a reunião começando ou o Claude pedindo permissão.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
             Section("Claude Code") {
                 Text("As sessões aparecem na ilha quando os hooks do Claude Code chamam o Kizami (docs/CLAUDE-HOOKS.md).")
             }

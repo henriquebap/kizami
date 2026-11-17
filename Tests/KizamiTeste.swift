@@ -225,6 +225,10 @@ import Foundation
         testarKanjiAba()
         testarPlacar()
         testarCronometro()
+        testarCopiados()
+        testarEspelho()
+        testarDownloads()
+        testarGitHub()
         if falhas > 0 { exit(1) }
     }
 }

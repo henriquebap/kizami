@@ -18,6 +18,7 @@ fontes ──► Mural ──► IlhaView (uma por monitor, dentro de uma Janela
   - os lembretes da agenda (`Agenda`);
   - os lembretes dos interesses e o placar ao vivo (`Interesses`, `Placar`);
   - o aviso de chuva (`Tempo`) e o fim do timer (`Cronometro`);
+  - a CI e as revisões do GitHub (`GitHub`) e os downloads em andamento (`Downloads`);
   - a bateria e os emblemas do Dock (`Mac`);
   - os avisos dos atalhos (`Atalhos`, `KanjiAba`).
 - **`Mural`** guarda as atividades:
@@ -69,7 +70,10 @@ O macOS desenha um painel no nível da ilha até num espaço de tela cheia, ent�
 | Emblemas do Dock, aba Atalhos, aba Kanji | Acessibilidade |
 | Tempo | rede: Open-Meteo |
 | Interesses, placar ao vivo | rede: o JSON público da ESPN e os links ICS que a pessoa cola |
-| Play/pause do navegador | Acessibilidade |
+| Play/pause do navegador, colar dos Copiados | Acessibilidade |
+| Espelho da câmera | Câmera |
+| Downloads | a pasta Downloads |
+| GitHub | a CLI `gh` que a pessoa logou (o Kizami nunca vê o token) |
 
 Cada uma é opcional, e sem ela o resto continua funcionando. As chamadas de rede usam:
 - só HTTPS, com timeout e teto de tamanho;
@@ -77,6 +81,8 @@ Cada uma é opcional, e sem ela o resto continua funcionando. As chamadas de red
 - uma sessão efêmera.
 
 Conteúdo nunca vai para o log: títulos, nomes de pasta, a cidade, times, nomes de app e números de emblema. Só contagens e tempos.
+
+O texto copiado fica só na memória. Copiados, Downloads, GitHub e o urgente por cima da tela cheia ficam desligados até a pessoa ligar.
 
 ## Testes
 

@@ -18,6 +18,7 @@ sources ──► Mural ──► IlhaView (one per display, inside a Janela)
   - calendar reminders (`Agenda`);
   - interests reminders and the live score (`Interesses`, `Placar`);
   - the rain alert (`Tempo`) and the timer's end (`Cronometro`);
+  - GitHub CI and reviews (`GitHub`) and downloads in progress (`Downloads`);
   - battery and Dock badges (`Mac`);
   - the shortcut prompts (`Atalhos`, `KanjiAba`).
 - **`Mural`** keeps the activities:
@@ -69,7 +70,10 @@ macOS draws a panel at the island's level even on a full-screen Space, so Kizami
 | Dock badges, Shortcuts tab, Kanji tab | Accessibility |
 | Weather | network: Open-Meteo |
 | Interests, live score | network: ESPN's public JSON, plus the ICS links the person pastes |
-| Browser play/pause | Accessibility |
+| Browser play/pause, pasting from Copied | Accessibility |
+| Camera mirror | Camera |
+| Downloads | the Downloads folder |
+| GitHub | the `gh` CLI the person logged in (Kizami never sees the token) |
 
 Each one is optional, and the rest keeps working without it. Network calls use:
 - HTTPS only, with a timeout and a size cap;
@@ -77,6 +81,8 @@ Each one is optional, and the rest keeps working without it. Network calls use:
 - an ephemeral session.
 
 Content never goes to the log: titles, folder names, the city, teams, app names and badge counts. Only counts and timings do.
+
+Copied text stays in memory only. Copied, Downloads, GitHub and urgent-over-full-screen are off until the person turns them on.
 
 ## Tests
 
