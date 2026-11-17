@@ -189,7 +189,9 @@ enum Calendario {
     }
 
     private static func dias(desde inicio: Date, total: Int, calendario: Calendar) -> [Date] {
-        (0..<total).compactMap { calendario.date(byAdding: .day, value: $0, to: inicio) }
+        // O começo de cada dia, e não "início + n dias": num fuso em que a meia-noite não existe no dia do horário de
+        // verão (Santiago, Havana), a semana começa à 1 h e os outros dias herdariam a 1 h, sem bater com o dia escolhido.
+        (0..<total).compactMap { calendario.date(byAdding: .day, value: $0, to: inicio).map(calendario.startOfDay) }
     }
 }
 

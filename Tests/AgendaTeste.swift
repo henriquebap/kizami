@@ -116,6 +116,14 @@ import Foundation
     }
     func numeros(_ dias: [Date]) -> [Int] { dias.map { domingo.component(.day, from: $0) } }
     let terca = dia(2026, 11, 17, 15)  // terça-feira, 15 h
+    // Santiago: a meia-noite de 6/9/2026 não existe (o relógio pula para a 1 h). Cada dia da semana tem de ser o
+    // começo do próprio dia, senão o dia escolhido (sempre `startOfDay`) nunca acende.
+    var santiago = domingo
+    santiago.timeZone = TimeZone(identifier: "America/Santiago")!
+    let semanaDST = Calendario.semana(de: santiago.date(from: DateComponents(year: 2026, month: 9, day: 8, hour: 12))!,
+                                      calendario: santiago)
+    conferir("semana com horário de verão: todo dia começa no começo do dia",
+             semanaDST.allSatisfy { $0 == santiago.startOfDay(for: $0) }, true)
 
     conferir("semana começando no domingo", numeros(Calendario.semana(de: terca, calendario: domingo)), [15, 16, 17, 18, 19, 20, 21])
     conferir("semana começando na segunda", numeros(Calendario.semana(de: terca, calendario: segunda)), [16, 17, 18, 19, 20, 21, 22])

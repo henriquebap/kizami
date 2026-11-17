@@ -238,6 +238,11 @@ final class Janela {
         }
         acertarCamera()  // entrou ou saiu da aba Espelho com a ilha aberta
         acertarProgresso()  // expandiu ou recolheu a música
+        // Trocou de aba com a agenda expandida: ela recolhe e o mês para de ser lido, que fora da tela ninguém vê.
+        if estado.expandido == .agenda && expansaoAtual(estado, fontes) != .agenda {
+            fontes.agenda.mostrar(nil)
+            estado.expandido = nil
+        }
         let pertoDoTopo = g.tela.contains(cursor) && cursor.y > g.tela.maxY - 120
         return .milliseconds(estado.aberta || pertoDoTopo ? 50 : 250)
     }

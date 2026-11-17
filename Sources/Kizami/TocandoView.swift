@@ -222,12 +222,12 @@ private struct BarraDoTempo: View {
     let app: String
 
     var body: some View {
-        if let progresso = estado.progresso, progresso.tocando, estado.arrastandoEm == nil {
-            TimelineView(.periodic(from: progresso.lidoEm, by: 1)) { contexto in
-                conteudo(progresso, agora: contexto.date)
-            }
-        } else {
-            conteudo(estado.progresso, agora: estado.progresso?.lidoEm ?? .now)
+        // Uma view só, com o relógio pausado em vez de trocado: com um `if`, o primeiro toque na barra (que liga o
+        // `arrastandoEm`) trocava a view no meio do gesto, o gesto era cancelado e a barra ficava presa sem pular.
+        let progresso = estado.progresso
+        let parado = !(progresso?.tocando ?? false) || estado.arrastandoEm != nil
+        TimelineView(.animation(minimumInterval: 1, paused: parado)) { contexto in
+            conteudo(progresso, agora: parado ? (progresso?.lidoEm ?? .now) : contexto.date)
         }
     }
 
