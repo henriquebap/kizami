@@ -15,6 +15,8 @@
 	<key>NSSupportsAutomaticTermination</key><false/>
 	<key>NSAppleEventsUsageDescription</key><string>O Kizami pede ao Music e ao Spotify a capa da música que está tocando, para mostrar no notch.</string>
 	<key>NSSupportsSuddenTermination</key><false/>
+	<key>NSCameraUsageDescription</key><string>O Kizami mostra a sua câmera no notch quando você pede o espelho, para se ver antes de uma chamada. A imagem não é gravada nem sai do Mac.</string>
+	<key>NSDownloadsFolderUsageDescription</key><string>O Kizami acompanha os arquivos sendo baixados para mostrar o andamento no notch, se você ligar isso nos Ajustes.</string>
 	<key>NSCalendarsFullAccessUsageDescription</key><string>O Kizami mostra no notch o seu próximo evento e avisa 15 minutos antes de ele começar.</string>
 </dict>
 </plist>
