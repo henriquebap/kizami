@@ -294,6 +294,7 @@ import Foundation
         testarGitHub()
         testarPersonalizacao()
         testarAtalhosApple()
+        testarLembretes()
         if falhas > 0 { exit(1) }
     }
 }

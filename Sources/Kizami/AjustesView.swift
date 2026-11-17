@@ -20,6 +20,7 @@ struct AjustesView: View {
     let copiados: Copiados
     let downloads: Downloads
     let github: GitHub
+    let lembretes: Lembretes
     let personalizacao: Personalizacao
     let atalhosApple: AtalhosApple
     let login: Login
@@ -62,6 +63,7 @@ struct AjustesView: View {
             AjustesCopiados(copiados: copiados)
             AjustesDownloads(downloads: downloads)
             AjustesGitHub(github: github)
+            AjustesLembretes(lembretes: lembretes)
             Section("Geral") {
                 Toggle("Abrir o Kizami no login", isOn: Binding(get: { login.ligado }, set: { login.alternar(para: $0) }))
                 if login.precisaAprovar {

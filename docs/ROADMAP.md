@@ -141,6 +141,10 @@ Events the person follows but doesn't keep in their calendar (Buffalo Bills, F1,
 - Not done: the artwork and the meeting dot moving from the closed wing into the open island (`matchedGeometryEffect`).
 - To test by hand: iTerm2 may start the shell under `iTermServer`, outside the `.app`; if so, the click finds neither the app nor the tab.
 
+### v0.16 (in progress)
+
+- **Reminders** (off by default, Settings › Reminders): up to 3 from the Reminders app through EventKit, overdue and due today first (by due date), then undated (by priority); tomorrow onward stays in the Reminders app. Clicking marks one completed, the only thing Kizami writes there. Refreshed on `EKEventStoreChanged` and at the day change, no polling.
+
 ### Next
 
 Later: Kanji's live mic level (it needs Kanji, which would post a level, never text, on the existing protocol), new screenshots in `docs/`, and focusing a session in VS Code or the Claude app if a link that picks the right window gets documented.
