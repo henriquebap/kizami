@@ -167,7 +167,7 @@ extension AtalhosApple {
 
     /// Roda o atalho e devolve o status (-1 se nem começou ou morreu por sinal). Sem entrada e sem saída:
     /// nada da pessoa vai para o atalho além do nome, e nada dele volta além do status.
-    private nonisolated static func executar(_ nome: String) async -> Int32 {
+    nonisolated static func executar(_ nome: String) async -> Int32 {
         let processo = Process()
         processo.executableURL = shortcuts
         processo.arguments = argumentos(rodar: nome)

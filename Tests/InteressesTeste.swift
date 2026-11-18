@@ -64,9 +64,19 @@ import Foundation
         {"id":"401839137","date":"2026-11-22T04:00Z","type":{"id":"3","abbreviation":"Race"},"status":{"type":{"completed":false}}}]}]}
         """
     let corridas = ESPN.corridas(de: Data(f1Real.utf8)) ?? []
-    conferir("F1: só a corrida", corridas.map(\.id), ["f1-401839137-\(Int(utc("2026-11-22T04:00Z").timeIntervalSince1970))"])
-    conferir("F1: título da ESPN", corridas.first?.titulo, "Heineken Las Vegas GP")
-    conferir("F1: largada", corridas.first?.inicio, utc("2026-11-22T04:00Z"))
+    conferir("F1: o fim de semana todo; a corrida com o id do placar, as sessões com f1s", corridas.map(\.id), [
+        "f1s-401839133-\(Int(utc("2026-11-20T00:30Z").timeIntervalSince1970))",
+        "f1s-401839136-\(Int(utc("2026-11-21T04:00Z").timeIntervalSince1970))",
+        "f1-401839137-\(Int(utc("2026-11-22T04:00Z").timeIntervalSince1970))"])
+    conferir("F1: nome das sessões, a corrida sem", corridas.map { $0.sessao ?? "corrida" }, ["Treino 1", "Classificação", "corrida"])
+    conferir("F1: título da ESPN", corridas.last?.titulo, "Heineken Las Vegas GP")
+    conferir("F1: largada", corridas.last?.inicio, utc("2026-11-22T04:00Z"))
+    conferir("F1: o placar ao vivo só vê a corrida", corridas.compactMap(Placar.idESPN), ["401839137"])
+    conferir("F1: sessão não lembra, a corrida sim",
+             EventoInteresse.lembretes(corridas, agora: utc("2026-11-19T23:45Z"), disparados: []).map(\.evento.sessao),
+             [nil as String?])
+    conferir("sigla nova de sessão aparece como veio", ESPN.nomeDaSessao("SQ"), "SQ")
+    conferir("sigla vazia: a sessão sai", ESPN.nomeDaSessao(""), nil as String?)
 
     // Lista real de times do Brasileirão e da NFL, cortada.
     let timesReais = """
@@ -100,6 +110,21 @@ import Foundation
     conferir("ftp não", Seguido.calendario("ftp://exemplo.com/a.ics"), nil)
     conferir("usuário no endereço não", Seguido.calendario("https://exemplo.com@evil.example/a.ics"), nil)
     conferir("ICS colado é válido", Seguido.calendario("https://exemplo.com/a.ics")?.valido, true)
+
+    // MARK: Categorias (F2, WEC, IMSA)
+
+    let salvas = try? JSONEncoder().encode([Seguido.f1, .categoria(.wec)])
+    conferir("categoria sobrevive ao salvar", salvas.flatMap { try? JSONDecoder().decode([Seguido].self, from: $0) },
+             [.f1, .categoria(.wec)])
+    conferir("categorias em https e com host", Categoria.allCases.allSatisfy { $0.url.scheme == "https" && $0.url.host() != nil },
+             true)
+    conferir("sessões pelo título", ["F2: Practice (Qatar)", "F2: Qualifying (Qatar)", "F2: Sprint (Qatar)",
+                                      "F2: Feature (Qatar)", "WTSC Race", "FIA WEC | [TEST] Prologue",
+                                      "Roar Before The Rolex 24", "FIA WEC | 6 Hours of Imola"].map(Categoria.sessao),
+             ["Treino", "Classificação", nil, nil, nil, "Teste", "Teste", nil])
+    conferir("categoria sem placar da ESPN",
+             Placar.idESPN(EventoInteresse(id: "ics-1795000000-abc", titulo: "WTSC Race", inicio: .now,
+                                           fonte: .categoria(.imsa))), nil)
 
     // MARK: ICS
 

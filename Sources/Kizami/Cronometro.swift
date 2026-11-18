@@ -46,6 +46,11 @@ final class Cronometro {
     static let chavePausa = "timer.pausa"
     static let chaveLivres = "timer.livres"
     static let chaveEstado = "timer.estado"
+    static let chaveNaoPerturbe = "timer.naoPerturbe"
+    /// O macOS não deixa um app ligar o Foco por API pública; o app Atalhos deixa (ação "Definir Foco").
+    /// A pessoa cria estes dois atalhos, e o que eles ligam (Não Perturbe ou outro Foco) é escolha dela.
+    static let atalhoLigar = "Kizami Foco"
+    static let atalhoDesligar = "Kizami Fim do Foco"
     static let focoPadrao = 25
     static let pausaPadrao = 5
     static let livresPadrao = [10, 15]
@@ -93,6 +98,8 @@ final class Cronometro {
     var minutosFoco: Int { didSet { padroes.set(minutosFoco, forKey: Self.chaveFoco) } }
     var minutosPausa: Int { didSet { padroes.set(minutosPausa, forKey: Self.chavePausa) } }
     var livres: [Int] { didSet { padroes.set(livres, forKey: Self.chaveLivres) } }
+    /// Opt-in: roda os atalhos do Foco ao entrar e sair do foco do pomodoro.
+    var naoPerturbe: Bool { didSet { padroes.set(naoPerturbe, forKey: Self.chaveNaoPerturbe) } }
     /// O que está no campo dos Ajustes antes do Enter. Mora aqui porque a view não tem `@State` (sem macros)
     /// e assim sobrevive a redesenhar a janela.
     var textoLivres: String
@@ -104,6 +111,10 @@ final class Cronometro {
     private let padroes: UserDefaults
     /// Uma só tarefa dormindo até o fim: pausar, parar ou reiniciar cancela a anterior, senão um timer velho avisaria.
     @ObservationIgnored private var vigia: Task<Void, Never>?
+    /// O último estado de foco que passou pelos atalhos: só a troca roda um atalho, pausar o foco não desliga nada.
+    @ObservationIgnored private(set) var emFoco = false
+    /// Um atalho espera o anterior: parar e recomeçar o foco rápido não pode ligar antes de desligar.
+    @ObservationIgnored private var filaDoFoco: Task<Void, Never>?
 
     init(mural: Mural, padroes: UserDefaults = .standard) {
         self.mural = mural
@@ -113,6 +124,7 @@ final class Cronometro {
         let livres = Self.limpar(padroes.array(forKey: Self.chaveLivres) as? [Int] ?? Self.livresPadrao)
         self.livres = livres
         textoLivres = Self.texto(livres: livres)
+        naoPerturbe = padroes.bool(forKey: Self.chaveNaoPerturbe)
         restaurarEstado(agora: .now)
     }
 
@@ -127,6 +139,7 @@ final class Cronometro {
             restantePausado = restante
         case .terminou(let modo):
             self.modo = modo
+            emFoco = modo == .foco  // o foco acabou com o app fechado: o Não Perturbe ficou ligado, desliga
             terminar()  // publica o aviso e limpa o disco
         case .nada:
             padroes.removeObject(forKey: Self.chaveEstado)
@@ -136,12 +149,32 @@ final class Cronometro {
 
     /// Chamado a cada mudança de estado. Parado não deixa nada no disco.
     private func guardarEstado() {
+        sincronizarFoco()
         let salvo: Salvo? = fim.map { Salvo(modo: modo, fim: $0) } ?? restantePausado.map { Salvo(modo: modo, restante: $0) }
         guard let dados = salvo.flatMap(Self.codificar) else {
             padroes.removeObject(forKey: Self.chaveEstado)
             return
         }
         padroes.set(dados, forKey: Self.chaveEstado)
+    }
+
+    /// Foco correndo ou pausado liga; terminar, parar ou trocar para pausa ou timer livre desliga.
+    private func sincronizarFoco() {
+        let foco = ativo && modo == .foco
+        guard foco != emFoco else { return }
+        emFoco = foco
+        guard naoPerturbe else { return }
+        let nome = foco ? Self.atalhoLigar : Self.atalhoDesligar
+        let anterior = filaDoFoco
+        filaDoFoco = Task { [mural] in
+            await anterior?.value
+            let status = await AtalhosApple.executar(nome)
+            guard status != 0 else { return }
+            registro.notice("timer: o atalho do Foco falhou (status \(status))")
+            mural.receber(Atividade(id: "kizami-timer-foco", titulo: String(localized: "O Não Perturbe não mudou"),
+                                    detalhe: String(localized: "Crie o atalho “\(nome)” no app Atalhos"),
+                                    simbolo: "moon.zzz.fill", cor: "laranja", expira: 10, prioridade: "normal"))
+        }
     }
 
     static func codificar(_ salvo: Salvo) -> Data? {

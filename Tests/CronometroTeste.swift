@@ -112,6 +112,26 @@ import Foundation
     conferir("timer livre: aviso sem clique", [mural.atividades.count == 1, mural.podeAbrir(Cronometro.idAviso)], [true, false])
     cronometro.parar()
 
+    // Não Perturbe: só a troca de foco para fora (ou de volta) conta. Os Ajustes de teste deixam os atalhos
+    // desligados (`naoPerturbe` falso), então nada roda; aqui só a regra de quando rodaria.
+    conferir("Não Perturbe começa desligado", cronometro.naoPerturbe, false)
+    cronometro.iniciar(minutos: 25, modo: .foco, agora: t0)
+    conferir("foco: em foco", cronometro.emFoco, true)
+    cronometro.pausar(agora: t0 + 10)
+    conferir("foco pausado continua em foco", cronometro.emFoco, true)
+    cronometro.iniciar(minutos: 5, modo: .pausa, agora: t0)
+    conferir("pausa do pomodoro sai do foco", cronometro.emFoco, false)
+    cronometro.iniciar(minutos: 25, modo: .foco, agora: t0)
+    cronometro.iniciar(minutos: 10, modo: .livre, agora: t0)
+    conferir("timer livre sai do foco", cronometro.emFoco, false)
+    cronometro.iniciar(minutos: 25, modo: .foco, agora: t0)
+    cronometro.terminar()
+    conferir("fim do foco sai do foco", cronometro.emFoco, false)
+    cronometro.iniciar(minutos: 25, modo: .foco, agora: t0)
+    cronometro.parar()
+    conferir("parar sai do foco", cronometro.emFoco, false)
+    mural.remover(id: Cronometro.idAviso)
+
     testarEstadoSalvo(padroes)
 }
 

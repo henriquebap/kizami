@@ -25,6 +25,8 @@ enum Seguido: Codable, Hashable, Sendable {
     case espnTime(esporte: String, liga: String, time: String, nome: String)
     case f1
     case ics(url: URL)
+    /// Categoria fora da ESPN, por um calendário ICS de endereço fixo (`Categoria.url`).
+    case categoria(Categoria)
 
     static let bills = Seguido.espnTime(esporte: "football", liga: "nfl", time: "2", nome: "Buffalo Bills")
 
@@ -34,7 +36,7 @@ enum Seguido: Codable, Hashable, Sendable {
             Liga.todas.contains { $0.esporte == esporte && $0.liga == liga }
                 && !time.isEmpty && time.count <= 10 && time.allSatisfy { $0.isASCII && ($0.isLetter || $0.isNumber) }
                 && !nome.isEmpty && nome.count <= 60
-        case .f1: true
+        case .f1, .categoria: true
         case .ics(let url): Seguido.calendario(url.absoluteString) == self
         }
     }
@@ -56,6 +58,7 @@ enum Seguido: Codable, Hashable, Sendable {
         case .espnTime(_, _, _, let nome): nome
         case .f1: String(localized: "Fórmula 1")
         case .ics(let url): url.host() ?? url.absoluteString
+        case .categoria(let c): c.nome
         }
     }
 
@@ -69,7 +72,7 @@ enum Seguido: Codable, Hashable, Sendable {
             case "soccer": "soccerball"
             default: "sportscourt.fill"
             }
-        case .f1: "flag.checkered"
+        case .f1, .categoria: "flag.checkered"
         case .ics: "calendar"
         }
     }
@@ -80,7 +83,44 @@ enum Seguido: Codable, Hashable, Sendable {
         case .espnTime: "azul"
         case .f1: "vermelho"
         case .ics: "roxo"
+        case .categoria: "laranja"
         }
+    }
+}
+
+/// Categorias de corrida que a ESPN não tem (a API devolve 400), seguidas por um calendário público de endereço fixo.
+/// Os endereços são uma decisão do ROADMAP (regra 8 do AGENTS): trocar ou somar um é decisão de novo.
+enum Categoria: String, Codable, CaseIterable, Sendable {
+    case f2, wec, imsa
+
+    var nome: String {
+        switch self {
+        case .f2: String(localized: "Fórmula 2")
+        case .wec: "WEC"
+        case .imsa: "IMSA"
+        }
+    }
+
+    /// F2: o do f1calendar.com (projeto aberto `sportstimes/f1`), com as quatro sessões. WEC e IMSA: calendários
+    /// públicos do Google mantidos por fãs (o do WEC é da Radio Le Mans), os que o sync2cal.com indica.
+    // ponytail: calendário de terceiro pode parar de ser atualizado; aí a página some da box e nada quebra.
+    var url: URL {
+        switch self {
+        case .f2: URL(string: "https://files-f2.motorsportcalendars.com/f2-calendar_p_q_sprint_feature.ics")!
+        case .wec: URL(string: "https://calendar.google.com/calendar/ical/61jccgg4rshh1temqk0dj4lens%40group.calendar.google.com/public/basic.ics")!
+        case .imsa: URL(string: "https://calendar.google.com/calendar/ical/b374eec704f6714ca47308cc76b0c599b75bdcd2df4693d5414b7a30baa3ad4e%40group.calendar.google.com/public/basic.ics")!
+        }
+    }
+
+    /// Treino, classificação ou teste pelo título ("F2: Practice (Qatar)", "WTSC Qualifying", "[TEST] Prologue"):
+    /// vira `sessao`, que aparece na box mas não lembra, como na F1. nil é corrida.
+    // ponytail: palavras em inglês, as que os três calendários usam; um calendário em outra língua lembraria de tudo.
+    static func sessao(_ titulo: String) -> String? {
+        let t = titulo.lowercased()
+        if t.contains("qualif") { return String(localized: "Classificação") }
+        if t.contains("practice") || t.contains("warm") { return String(localized: "Treino") }
+        if t.contains("test") || t.contains("prologue") || t.contains("roar") { return String(localized: "Teste") }
+        return nil
     }
 }
 
@@ -94,13 +134,16 @@ struct EventoInteresse: Equatable, Identifiable, Sendable {
     var fonte: Seguido
     /// A página do jogo ou da corrida na ESPN, aberta no clique. Só https em www.espn.com (`ESPN.pagina`).
     var link: URL? = nil
+    /// Na F1, o treino, a classificação ou a sprint ("Treino 1"); nil na corrida e em tudo que não é F1.
+    /// Sessão aparece na box, mas não lembra nem tem placar: cinco sessões por fim de semana encheriam a ilha de avisos.
+    var sessao: String? = nil
 
     static let horizonte: TimeInterval = 7 * 24 * 3600
 
     /// O da linha da ilha: o primeiro que ainda não começou, nos próximos 7 dias.
     /// Os da linha da ilha: o próximo de cada fonte seguida, lado a lado, o mais perto primeiro. Um só "próximo"
     /// escondia o jogo dos Bills atrás da corrida da F1 da véspera (pedido da pessoa: ver os dois).
-    static func proximos(_ eventos: [EventoInteresse], agora: Date, maximo: Int = 3) -> [EventoInteresse] {
+    static func proximos(_ eventos: [EventoInteresse], agora: Date, maximo: Int = 5) -> [EventoInteresse] {
         let porFonte = Dictionary(grouping: eventos, by: \.fonte).compactMap { proximo($0.value, agora: agora) }
         return Array(porFonte.sorted { ($0.inicio, $0.titulo) < ($1.inicio, $1.titulo) }.prefix(maximo))
     }
@@ -161,7 +204,7 @@ extension EventoInteresse {
     static func lembretes(_ eventos: [EventoInteresse], agora: Date, disparados: Set<String>,
                           calendario: Calendar = .current) -> [LembreteInteresse] {
         eventos.compactMap { e in
-            guard let tipo = tipoDevido(e, agora: agora, calendario: calendario) else { return nil }
+            guard e.sessao == nil, let tipo = tipoDevido(e, agora: agora, calendario: calendario) else { return nil }
             let lembrete = LembreteInteresse(evento: e, tipo: tipo)
             return disparados.contains(lembrete.chave) ? nil : lembrete
         }
@@ -294,20 +337,35 @@ enum ESPN {
         }
     }
 
-    /// O placar da F1 só traz o fim de semana atual (ou o próximo): treinos, classificação e corrida. Fica a corrida.
-    // ponytail: só a corrida do fim de semana que o placar mostra; o `calendar` da resposta tem o ano todo, mas só com
+    /// O placar da F1 só traz o fim de semana atual (ou o próximo): treinos, classificação, sprint e corrida, todos.
+    /// A corrida fica com o id `f1-…` (o do placar ao vivo); as outras sessões, `f1s-…`, que o `Placar` não consulta.
+    // ponytail: só o fim de semana que o placar mostra; o `calendar` da resposta tem o ano todo, mas só com
     // o intervalo do fim de semana, sem a hora da largada. Ler o evento de cada etapa se a pessoa quiser a de daqui a duas semanas.
     static func corridas(de dados: Data) -> [EventoInteresse]? {
         guard let r = try? JSONDecoder().decode(RespostaAgenda.self, from: dados), let eventos = r.events else { return nil }
         return eventos.flatMap { e in
             (e.competitions ?? []).compactMap { c -> EventoInteresse? in
-                guard c.type?.abbreviation == "Race", c.status?.type?.completed != true, let id = c.id,
+                guard let sigla = c.type?.abbreviation, c.status?.type?.completed != true, let id = c.id,
                       let inicio = c.date.flatMap(data) else { return nil }
                 let titulo = Atividade.limpo(e.shortName ?? e.name ?? "", ate: 60)
-                guard !titulo.isEmpty else { return nil }
-                return EventoInteresse(id: "f1-\(Atividade.limpo(id, ate: 20))-\(Int(inicio.timeIntervalSince1970))",
-                                       titulo: titulo, inicio: inicio, fonte: .f1, link: pagina(e.links))
+                let sessao = sigla == "Race" ? nil : nomeDaSessao(sigla)
+                guard !titulo.isEmpty, sigla == "Race" || sessao != nil else { return nil }
+                return EventoInteresse(id: "\(sessao == nil ? "f1" : "f1s")-\(Atividade.limpo(id, ate: 20))-\(Int(inicio.timeIntervalSince1970))",
+                                       titulo: titulo, inicio: inicio, fonte: .f1, link: pagina(e.links), sessao: sessao)
             }
+        }
+    }
+
+    /// "FP1" → "Treino 1". Sigla que não está aqui (a ESPN muda o formato da sprint de um ano para o outro) aparece
+    /// como veio, limpa; vazia, a sessão sai.
+    static func nomeDaSessao(_ sigla: String) -> String? {
+        switch sigla {
+        case "FP1": String(localized: "Treino 1")
+        case "FP2": String(localized: "Treino 2")
+        case "FP3": String(localized: "Treino 3")
+        case "Qual": String(localized: "Classificação")
+        case "Sprint": String(localized: "Sprint")
+        default: { let limpa = Atividade.limpo(sigla, ate: 20); return limpa.isEmpty ? nil : limpa }()
         }
     }
 
@@ -494,6 +552,14 @@ enum RedeInteresses {
             guard seguido.valido, let dados = await baixar(url, teto: ICS.tamanhoMaximo) else { return nil }
             // ponytail: o endereço (que pode ter token) fica no UserDefaults em texto puro; Keychain se virar problema.
             return ICS.eventos(de: String(decoding: dados, as: UTF8.self), fonte: seguido)
+        case .categoria(let c):
+            guard let dados = await baixar(c.url, teto: ICS.tamanhoMaximo),
+                  let eventos = ICS.eventos(de: String(decoding: dados, as: UTF8.self), fonte: seguido) else { return nil }
+            return eventos.map { e in
+                var marcado = e
+                marcado.sessao = Categoria.sessao(e.titulo)
+                return marcado
+            }
         }
     }
 }
@@ -510,8 +576,12 @@ final class Interesses {
     private static let intervalo: Duration = .seconds(6 * 3600)
 
     private(set) var seguidos: [Seguido] = []
-    /// O próximo de cada fonte, até três, para a linha da ilha aberta.
+    /// O próximo de cada fonte, até cinco: as páginas da box (`WidgetInteresse`).
     private(set) var proximos: [EventoInteresse] = []
+    /// O próximo de cada fonte sem contar treinos e classificação: na página da F1 com um treino, a corrida no pé.
+    private(set) var principais: [EventoInteresse] = []
+    /// A página que a box mostra. Só da sessão: ao abrir o app, a box começa no que vem primeiro.
+    var fonteNaBox: Seguido?
     /// Os placares dos jogos e corridas seguidos que estão acontecendo agora, até dois, o que começou antes
     /// primeiro (`Placar.swift`); vazio fora de jogo.
     private(set) var aoVivo: [Placar] = []
@@ -659,6 +729,8 @@ final class Interesses {
         let eventos = seguidos.flatMap { porFonte[$0] ?? [] }.filter { vistos.insert($0.id).inserted }
         let novos = Placar.comAoVivo(EventoInteresse.proximos(eventos, agora: agora), eventos: eventos, aoVivo: aoVivo)
         if novos != proximos { proximos = novos }
+        let corridas = EventoInteresse.proximos(eventos.filter { $0.sessao == nil }, agora: agora, maximo: Interesses.maximoSeguidos)
+        if corridas != principais { principais = corridas }
 
         // No máximo três por minuto, o mais perto de começar primeiro: um calendário com 20 eventos na semana
         // encheria a ilha (máximo 8) e empurraria o resto para fora. Os outros saem nos minutos seguintes.
