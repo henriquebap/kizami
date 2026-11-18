@@ -265,6 +265,9 @@
 "AirPods, Beats e outros fones: o nome e a bateria aparecem na ilha por alguns segundos. O macOS pede acesso ao Bluetooth." = "AirPods, Beats and other headphones: the name and battery show on the island for a few seconds. macOS asks for Bluetooth access.";
 
 /* v0.16: Início em grade */
+"carregando" = "charging";
+"na tomada" = "plugged in";
+"bateria" = "battery";
 "Agora" = "Now";
 "Próximo" = "Next";
 "Reunião" = "Meeting";

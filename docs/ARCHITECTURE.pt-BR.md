@@ -76,6 +76,7 @@ O macOS desenha um painel no nível da ilha até num espaço de tela cheia, ent�
 | Espelho da câmera | Câmera |
 | Downloads | a pasta Downloads |
 | Lembretes | Lembretes |
+| Fones conectados | Bluetooth |
 | GitHub | a CLI `gh` que a pessoa logou (o Kizami nunca vê o token) |
 
 Cada uma é opcional, e sem ela o resto continua funcionando. As chamadas de rede usam:
@@ -85,7 +86,7 @@ Cada uma é opcional, e sem ela o resto continua funcionando. As chamadas de red
 
 Conteúdo nunca vai para o log: títulos, nomes de pasta, a cidade, times, nomes de app e números de emblema. Só contagens e tempos.
 
-O texto copiado fica só na memória. Copiados, Downloads, GitHub, Lembretes e o urgente por cima da tela cheia ficam desligados até a pessoa ligar.
+O texto copiado fica só na memória. Copiados, Downloads, GitHub, Lembretes, Fones e o urgente por cima da tela cheia ficam desligados até a pessoa ligar.
 
 ## Energia
 
@@ -93,6 +94,7 @@ O SwiftUI desenha a ilha na CPU, e cada quadro de animação redesenha a ilha in
 - nada anima sem parar com a ilha fechada: um enfeite contínuo (o equalizador) é uma layer do Core Animation, que roda no servidor de janelas;
 - o que muda todo segundo (o timer nas asas) muda sem animação;
 - uma fonte só escreve numa propriedade observada quando algo na tela muda (`SessoesClaude.mesmasNaTela`).
+- o conteúdo aberto é montado uma vez no tamanho final e a forma só o revela ao crescer; as transições de conteúdo esmaecem em vez de desfocar. Deixar a grade seguir a largura da mola refazia o layout a cada quadro, e o `.blurReplace` desfocava a ilha inteira: juntos, eram quase metade da CPU de abrir.
 
 - o que vem de fora só é lido enquanto está na tela: a posição do player uma vez por segundo só com a música expandida (`Janela.acertarProgresso`), o mês visível só com a agenda expandida (`Agenda.mostrar`);
 - um aviso importante só passa na frente nas asas nos primeiros 2 minutos, virado por uma única Task agendada (`Mural.importante`), sem consulta repetida.

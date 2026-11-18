@@ -4,3 +4,4 @@
 "NSCameraUsageDescription" = "Kizami shows your camera in the notch when you ask for the mirror, so you can check yourself before a call. The image is never recorded and never leaves the Mac.";
 "NSDownloadsFolderUsageDescription" = "Kizami watches files being downloaded to show their progress in the notch, if you turn that on in Settings.";
 "NSRemindersFullAccessUsageDescription" = "Kizami shows today's reminders at the notch and marks the one you click as completed, if you turn that on in Settings.";
+"NSBluetoothAlwaysUsageDescription" = "Kizami lets you know at the notch when Bluetooth headphones connect and shows their battery, if you turn that on in Settings. It never connects or disconnects devices.";

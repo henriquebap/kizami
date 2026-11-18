@@ -88,7 +88,7 @@ final class Personalizacao {
 
     // MARK: Regras puras
 
-    /// A opacidade salva, entre `opacidadeMinima` e 1. Sem nada salvo (ou outro tipo), a ilha preta.
+    /// A opacidade salva, entre `opacidadeMinima` e 1. Sem nada salvo (ou outro tipo), o vidro escurecido padrão.
     static func opacidade(_ bruta: Any?) -> Double {
         guard let valor = bruta as? Double, valor.isFinite else { return opacidadePadrao }
         return min(max(valor, opacidadeMinima), 1)

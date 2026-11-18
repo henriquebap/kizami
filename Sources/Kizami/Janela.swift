@@ -184,7 +184,7 @@ final class Janela {
         vigia = Task { [weak self] in
             while !Task.isCancelled {
                 guard let intervalo = self?.conferir() else { return }
-                try? await Task.sleep(for: intervalo)
+                try? await Task.sleep(for: intervalo, tolerance: .milliseconds(10))  // deixa o macOS juntar os despertares
             }
         }
     }

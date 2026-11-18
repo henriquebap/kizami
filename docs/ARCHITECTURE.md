@@ -76,6 +76,7 @@ macOS draws a panel at the island's level even on a full-screen Space, so Kizami
 | Camera mirror | Camera |
 | Downloads | the Downloads folder |
 | Reminders | Reminders |
+| Headphones connected | Bluetooth |
 | GitHub | the `gh` CLI the person logged in (Kizami never sees the token) |
 
 Each one is optional, and the rest keeps working without it. Network calls use:
@@ -85,7 +86,7 @@ Each one is optional, and the rest keeps working without it. Network calls use:
 
 Content never goes to the log: titles, folder names, the city, teams, app names and badge counts. Only counts and timings do.
 
-Copied text stays in memory only. Copied, Downloads, GitHub, Reminders and urgent-over-full-screen are off until the person turns them on.
+Copied text stays in memory only. Copied, Downloads, GitHub, Reminders, Headphones and urgent-over-full-screen are off until the person turns them on.
 
 ## Energy
 
@@ -93,6 +94,7 @@ SwiftUI draws the island on the CPU, and every animation frame redraws all of it
 - nothing animates forever while the island is closed: a continuous decoration (the equalizer) is a Core Animation layer, which runs in the window server;
 - what changes every second (the timer in the wings) changes without an animation;
 - a source only writes an observed property when something on screen changes (`SessoesClaude.mesmasNaTela`).
+- the open content is laid out once at its final size and the shape only reveals it as it grows; content transitions fade instead of blurring. Letting the grid follow the spring's width relaid it every frame, and `.blurReplace` blurred the whole island: together they were about half the CPU of opening.
 
 - what is read from outside only while it's on screen: the player position once a second only while the music is expanded (`Janela.acertarProgresso`), the visible month only while the calendar is expanded (`Agenda.mostrar`);
 - an important notice leads the wings for its first 2 minutes only, flipped by one scheduled Task (`Mural.importante`), not by polling.
