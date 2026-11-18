@@ -14,7 +14,8 @@ struct WidgetInteresse: View {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 0) {
                         ForEach(eventos, id: \.fonte) { evento in
-                            pagina(evento).containerRelativeFrame(.horizontal)
+                            pagina(evento, reserva: eventos.count > 1 ? CGFloat(eventos.count) * Self.larguraPonto : 0)
+                                .containerRelativeFrame(.horizontal)
                         }
                     }
                     .scrollTargetLayout()
@@ -29,7 +30,11 @@ struct WidgetInteresse: View {
         }
     }
 
-    private func pagina(_ evento: EventoInteresse) -> some View {
+    /// A área de clique de cada ponto do canto.
+    private static let larguraPonto: CGFloat = 12
+
+    /// `reserva`: a largura dos pontos, que ficam no canto da linha do pé; sem ela cobririam a hora da corrida.
+    private func pagina(_ evento: EventoInteresse, reserva: CGFloat) -> some View {
         let placar = interesses.aoVivo.first { $0.eDo(evento) }
         // Página da F1 num treino: a corrida no pé, para saber quando é a que importa.
         let corrida = evento.sessao == nil ? nil : interesses.principais.first { $0.fonte == evento.fonte }
@@ -58,6 +63,7 @@ struct WidgetInteresse: View {
                         Text(verbatim: EventoInteresse.quando(corrida, agora: contexto.date))
                             .foregroundStyle(.secondary).layoutPriority(1)
                     }
+                    .padding(.trailing, reserva)
                 }
             }
         }
@@ -73,7 +79,7 @@ struct WidgetInteresse: View {
                 } label: {
                     Circle().fill(evento.fonte == atual.fonte ? Color.primary : Color.secondary.opacity(0.5))
                         .frame(width: 5, height: 5)
-                        .frame(width: 12, height: Painel.alturaRodape)
+                        .frame(width: Self.larguraPonto, height: Painel.alturaRodape)
                         .contentShape(.rect)
                 }
                 .buttonStyle(.plain)

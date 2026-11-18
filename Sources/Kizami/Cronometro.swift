@@ -47,6 +47,7 @@ final class Cronometro {
     static let chaveLivres = "timer.livres"
     static let chaveEstado = "timer.estado"
     static let chaveNaoPerturbe = "timer.naoPerturbe"
+    static let chaveNaoPerturbeLigado = "timer.naoPerturbeLigado"
     /// O macOS não deixa um app ligar o Foco por API pública; o app Atalhos deixa (ação "Definir Foco").
     /// A pessoa cria estes dois atalhos, e o que eles ligam (Não Perturbe ou outro Foco) é escolha dela.
     static let atalhoLigar = "Kizami Foco"
@@ -99,7 +100,13 @@ final class Cronometro {
     var minutosPausa: Int { didSet { padroes.set(minutosPausa, forKey: Self.chavePausa) } }
     var livres: [Int] { didSet { padroes.set(livres, forKey: Self.chaveLivres) } }
     /// Opt-in: roda os atalhos do Foco ao entrar e sair do foco do pomodoro.
-    var naoPerturbe: Bool { didSet { padroes.set(naoPerturbe, forKey: Self.chaveNaoPerturbe) } }
+    /// Desligar no meio do foco roda o atalho de desligar; ligar no meio do foco roda o de ligar.
+    var naoPerturbe: Bool {
+        didSet {
+            padroes.set(naoPerturbe, forKey: Self.chaveNaoPerturbe)
+            sincronizarFoco()
+        }
+    }
     /// O que está no campo dos Ajustes antes do Enter. Mora aqui porque a view não tem `@State` (sem macros)
     /// e assim sobrevive a redesenhar a janela.
     var textoLivres: String
@@ -111,14 +118,22 @@ final class Cronometro {
     private let padroes: UserDefaults
     /// Uma só tarefa dormindo até o fim: pausar, parar ou reiniciar cancela a anterior, senão um timer velho avisaria.
     @ObservationIgnored private var vigia: Task<Void, Never>?
-    /// O último estado de foco que passou pelos atalhos: só a troca roda um atalho, pausar o foco não desliga nada.
-    @ObservationIgnored private(set) var emFoco = false
+    /// O Kizami rodou "ligar" e ainda não rodou "desligar". No disco: o app pode fechar ou cair no meio do foco, e
+    /// ao abrir de novo sem foco nenhum (fim antigo, parado) ainda tem de desligar o que ligou.
+    @ObservationIgnored private(set) var naoPerturbeLigado: Bool {
+        didSet { padroes.set(naoPerturbeLigado, forKey: Self.chaveNaoPerturbeLigado) }
+    }
+    /// Injetável: os testes não rodam o app Atalhos de verdade.
+    @ObservationIgnored private let executarAtalho: @Sendable (String) async -> Int32
     /// Um atalho espera o anterior: parar e recomeçar o foco rápido não pode ligar antes de desligar.
     @ObservationIgnored private var filaDoFoco: Task<Void, Never>?
 
-    init(mural: Mural, padroes: UserDefaults = .standard) {
+    init(mural: Mural, padroes: UserDefaults = .standard,
+         executarAtalho: @escaping @Sendable (String) async -> Int32 = { await AtalhosApple.executar($0) }) {
         self.mural = mural
         self.padroes = padroes
+        self.executarAtalho = executarAtalho
+        naoPerturbeLigado = padroes.bool(forKey: Self.chaveNaoPerturbeLigado)
         minutosFoco = Self.limitar(padroes.object(forKey: Self.chaveFoco) as? Int ?? Self.focoPadrao, a: Self.faixaFoco)
         minutosPausa = Self.limitar(padroes.object(forKey: Self.chavePausa) as? Int ?? Self.pausaPadrao, a: Self.faixaPausa)
         let livres = Self.limpar(padroes.array(forKey: Self.chaveLivres) as? [Int] ?? Self.livresPadrao)
@@ -139,12 +154,12 @@ final class Cronometro {
             restantePausado = restante
         case .terminou(let modo):
             self.modo = modo
-            emFoco = modo == .foco  // o foco acabou com o app fechado: o Não Perturbe ficou ligado, desliga
             terminar()  // publica o aviso e limpa o disco
         case .nada:
             padroes.removeObject(forKey: Self.chaveEstado)
         }
         if restauro != .nada { registro.info("timer restaurado do disco") }
+        sincronizarFoco()  // fim antigo ou lixo no disco: o que ficou ligado da outra vez desliga agora
     }
 
     /// Chamado a cada mudança de estado. Parado não deixa nada no disco.
@@ -158,17 +173,17 @@ final class Cronometro {
         padroes.set(dados, forKey: Self.chaveEstado)
     }
 
-    /// Foco correndo ou pausado liga; terminar, parar ou trocar para pausa ou timer livre desliga.
+    /// Foco correndo ou pausado liga; terminar, parar ou trocar para pausa ou timer livre desliga. Só a troca roda
+    /// um atalho: pausar o foco não desliga nada.
     private func sincronizarFoco() {
-        let foco = ativo && modo == .foco
-        guard foco != emFoco else { return }
-        emFoco = foco
-        guard naoPerturbe else { return }
-        let nome = foco ? Self.atalhoLigar : Self.atalhoDesligar
+        let ligar = naoPerturbe && ativo && modo == .foco
+        guard ligar != naoPerturbeLigado else { return }
+        naoPerturbeLigado = ligar  // marca já na fila: um atalho que falta falharia de novo a cada abertura
+        let nome = ligar ? Self.atalhoLigar : Self.atalhoDesligar
         let anterior = filaDoFoco
-        filaDoFoco = Task { [mural] in
+        filaDoFoco = Task { [mural, executarAtalho] in
             await anterior?.value
-            let status = await AtalhosApple.executar(nome)
+            let status = await executarAtalho(nome)
             guard status != 0 else { return }
             registro.notice("timer: o atalho do Foco falhou (status \(status))")
             mural.receber(Atividade(id: "kizami-timer-foco", titulo: String(localized: "O Não Perturbe não mudou"),

@@ -112,14 +112,15 @@ enum Categoria: String, Codable, CaseIterable, Sendable {
         }
     }
 
-    /// Treino, classificação ou teste pelo título ("F2: Practice (Qatar)", "WTSC Qualifying", "[TEST] Prologue"):
-    /// vira `sessao`, que aparece na box mas não lembra, como na F1. nil é corrida.
+    /// Treino, classificação ou teste pelo título ("F2: Practice (Qatar)", "ILMC qual : 24 Heures du Mans",
+    /// "[TEST] Prologue"): vira `sessao`, que aparece na box mas não lembra, como na F1. nil é corrida.
+    /// Palavra inteira: "Contest" não é teste.
     // ponytail: palavras em inglês, as que os três calendários usam; um calendário em outra língua lembraria de tudo.
     static func sessao(_ titulo: String) -> String? {
-        let t = titulo.lowercased()
-        if t.contains("qualif") { return String(localized: "Classificação") }
-        if t.contains("practice") || t.contains("warm") { return String(localized: "Treino") }
-        if t.contains("test") || t.contains("prologue") || t.contains("roar") { return String(localized: "Teste") }
+        let palavras = Set(titulo.lowercased().split { !$0.isLetter && !$0.isNumber }.map(String.init))
+        if !palavras.isDisjoint(with: ["qualifying", "qualif", "qual", "hyperpole"]) { return String(localized: "Classificação") }
+        if !palavras.isDisjoint(with: ["practice", "warmup", "warm"]) { return String(localized: "Treino") }
+        if !palavras.isDisjoint(with: ["test", "prologue", "roar"]) { return String(localized: "Teste") }
         return nil
     }
 }
@@ -613,7 +614,7 @@ final class Interesses {
         guard relogio == nil else { return }
         let padroes = UserDefaults.standard
         if let dados = padroes.data(forKey: Self.chaveSeguidos) {
-            seguidos = ((try? JSONDecoder().decode([Seguido].self, from: dados)) ?? []).filter(\.valido)
+            seguidos = Self.lerSeguidos(dados)
         } else {
             seguidos = [.bills]  // só na primeira vez: lista vazia de propósito continua vazia
             salvar()
@@ -645,6 +646,16 @@ final class Interesses {
         }
     }
 
+    /// Um por um: um item que não decodifica (versão mais nova do app, categoria que saiu) cai sozinho, sem levar
+    /// os times seguidos junto no próximo `salvar()`.
+    static func lerSeguidos(_ dados: Data) -> [Seguido] {
+        struct Talvez: Decodable {
+            let valor: Seguido?
+            init(from decoder: any Decoder) throws { valor = try? Seguido(from: decoder) }
+        }
+        return ((try? JSONDecoder().decode([Talvez].self, from: dados)) ?? []).compactMap(\.valor).filter(\.valido)
+    }
+
     func adicionar(_ seguido: Seguido) {
         guard seguido.valido, !seguidos.contains(seguido), seguidos.count < Self.maximoSeguidos else { return }
         seguidos.append(seguido)
@@ -655,6 +666,7 @@ final class Interesses {
     func remover(_ seguido: Seguido) {
         seguidos.removeAll { $0 == seguido }
         porFonte[seguido] = nil
+        if fonteNaBox == seguido { fonteNaBox = nil }
         let restantes = seguidos.flatMap { porFonte[$0] ?? [] }
         aoVivo.removeAll { p in !restantes.contains(where: p.eDo) }
         salvar()
@@ -795,6 +807,11 @@ final class Interesses {
         // Os que saíram da janela também saem daqui: `naJanela` é recalculada a cada minuto.
         let novo = Placar.aoVivo(lidos: placares, consultados: resposta.consultados, antes: aoVivo, naJanela: naJanela)
         if novo != aoVivo {
+            // Um jogo que começou agora vira a página da box: "Ao vivo" numa página escondida não serve.
+            if let comecou = novo.first(where: { p in !aoVivo.contains { $0.eventoId == p.eventoId } }),
+               let fonte = jogos.first(where: comecou.eDo)?.fonte {
+                fonteNaBox = fonte
+            }
             aoVivo = novo
             conferir()
         }

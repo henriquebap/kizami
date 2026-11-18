@@ -120,8 +120,11 @@ import Foundation
              true)
     conferir("sessões pelo título", ["F2: Practice (Qatar)", "F2: Qualifying (Qatar)", "F2: Sprint (Qatar)",
                                       "F2: Feature (Qatar)", "WTSC Race", "FIA WEC | [TEST] Prologue",
-                                      "Roar Before The Rolex 24", "FIA WEC | 6 Hours of Imola"].map(Categoria.sessao),
-             ["Treino", "Classificação", nil, nil, nil, "Teste", "Teste", nil])
+                                      "Roar Before The Rolex 24", "FIA WEC | 6 Hours of Imola", "ILMC qual : 24 Heures du Mans",
+                                      "LM: Qualifying Practice", "WEC - Le Mans Test Day", "Protest Cup"].map(Categoria.sessao),
+             ["Treino", "Classificação", nil, nil, nil, "Teste", "Teste", nil, "Classificação", "Classificação", "Teste", nil])
+    let comCategoriaNova = Data(#"[{"f1":{}},{"categoria":{"_0":"motogp"}},{"espnTime":{"esporte":"football","liga":"nfl","time":"2","nome":"Buffalo Bills"}}]"#.utf8)
+    conferir("item que não decodifica cai sozinho", Interesses.lerSeguidos(comCategoriaNova), [.f1, .bills])
     conferir("categoria sem placar da ESPN",
              Placar.idESPN(EventoInteresse(id: "ics-1795000000-abc", titulo: "WTSC Race", inicio: .now,
                                            fonte: .categoria(.imsa))), nil)
