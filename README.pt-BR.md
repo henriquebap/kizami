@@ -8,7 +8,9 @@ Uma pequena ilha em volta do notch do MacBook que mostra o que outros apps e scr
 
 | Fechada | Chegou uma atividade | Com o mouse em cima |
 |---|---|---|
-| ![fechada](docs/fechada.png) | ![aviso](docs/aviso.png) | ![aberta](docs/aberta.png) |
+| ![fechada, com música tocando](docs/v016-fechada.png) | ![aviso](docs/aviso.png) | ![aberta num dia calmo](docs/v016-dia.png) |
+
+<sub>Fechada e com o mouse em cima: render do design da v0.16.</sub>
 
 Gratuito e open source (Apache 2.0). Não usa API privada nem tem dependências de terceiros.
 
@@ -67,7 +69,9 @@ Com o mouse em cima, o Music e o Spotify ganham os botões **anterior, tocar/pau
 
 Só apps de mídia contam (players e navegadores): o Core Audio diz quais apps estão com a saída de áudio aberta, não se algo audível está tocando, e alguns apps mantêm a saída aberta em silêncio.
 
-![tocando agora](docs/tocando.png)
+![tocando agora: o cartão tingido pela capa no topo da ilha aberta](docs/v016-musica.png)
+
+<sub>Render do design da v0.16.</sub>
 
 ## A ilha aberta
 
@@ -83,9 +87,16 @@ Passe o mouse no notch e a ilha abre. Fechada, ela continua preta para se fundir
 
 Só a aba escolhida mostra o nome; as outras mostram o ícone (o nome aparece com o cursor em cima).
 
+| Reunião chegando | Claude precisa de você |
+|---|---|
+| ![uma reunião em 8 minutos, com o botão Entrar](docs/v016-reuniao.png) | ![uma sessão do Claude Code esperando permissão](docs/v016-claude.png) |
+
+<sub>Render do design da v0.16.</sub>
+
 **No dia a dia:**
 - **Abrir no login:** Ajustes › Geral (o macOS pode pedir para você aprovar em Itens de Início).
 - **Reunião chegando:** de 10 minutos antes até 5 minutos depois de uma reunião começar, a ilha fechada mostra a contagem em volta do notch, na cor do calendário.
+- **Música pausada:** clique no play da asa fechada para voltar a tocar, sem abrir a ilha.
 - **Volume:** quando você muda o volume, a ilha fechada mostra o nível por 1,5 s (o indicador do sistema continua aparecendo).
 - **O timer sobrevive ao reinício:** um timer correndo ou pausado volta quando o Kizami reabre. Se acabou com o Kizami fechado (há menos de uma hora), chega o aviso de fim.
 - **Imagens nos Copiados:** os Copiados guardam também imagens PNG e TIFF (até 10 MB cada, 50 MB no total), só na memória, com miniatura.

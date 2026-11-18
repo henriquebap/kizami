@@ -8,7 +8,9 @@ A small island around the MacBook notch that shows what other apps and scripts a
 
 | Closed | Something arrived | Hovered |
 |---|---|---|
-| ![closed](docs/fechada.png) | ![arrived](docs/aviso.png) | ![open](docs/aberta.png) |
+| ![closed, with music playing](docs/v016-fechada.png) | ![arrived](docs/aviso.png) | ![open on a calm day](docs/v016-dia.png) |
+
+<sub>Closed and hovered: v0.16 design renders.</sub>
 
 Free and open source (Apache 2.0). No private APIs and no third-party dependencies.
 
@@ -67,7 +69,9 @@ Hovered, Music and Spotify get **previous, play/pause and next** buttons, throug
 
 Only media apps count (players and browsers): Core Audio tells which apps have their audio output open, not whether anything audible is playing, and some apps keep it open in silence.
 
-![now playing](docs/tocando.png)
+![now playing: the album-tinted card on top of the open island](docs/v016-musica.png)
+
+<sub>v0.16 design render.</sub>
 
 ## The open island
 
@@ -83,9 +87,16 @@ Hover the notch and the island opens. Closed, it stays black so it blends into t
 
 Only the chosen tab shows its name; the others show their icon (hover for the name).
 
+| Meeting coming up | Claude needs you |
+|---|---|
+| ![a meeting in 8 minutes, with a Join button](docs/v016-reuniao.png) | ![a Claude Code session waiting for permission](docs/v016-claude.png) |
+
+<sub>v0.16 design renders.</sub>
+
 **Every day:**
 - **Open at login:** Settings › General (macOS may ask you to approve it in Login Items).
 - **Meeting coming up:** from 10 minutes before a meeting until 5 minutes after it starts, the closed island shows its countdown around the notch, in the calendar's colour.
+- **Paused music:** click the play glyph in the closed wing to resume, without opening the island.
 - **Volume:** when you change the volume, the closed island shows the level for 1.5 s (the system indicator still shows too).
 - **The timer survives a restart:** a running or paused timer comes back when Kizami reopens. If it ended while Kizami was closed (less than an hour ago), you get the end notice.
 - **Copied images:** Copied also keeps PNG and TIFF images (up to 10 MB each, 50 MB in all), in memory only, with a thumbnail.
