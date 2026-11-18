@@ -115,6 +115,9 @@ enum Categoria: String, Codable, CaseIterable, Sendable {
     }
 
     /// A liga no caminho da ESPN (`racing/<liga>/scoreboard`); nil nas que vêm de ICS.
+    // ponytail: o scoreboard traz só o evento da vez; depois da corrida de domingo a próxima só aparece quando a ESPN
+    // vira a página (na semana dela). `leagues[0].calendar` tem a temporada, mas com horários que não batem com a
+    // largada (Monterey: 21:30Z no calendário, 18:30Z na corrida); ler dali como dia inteiro se a semana não bastar.
     var ligaESPN: String? {
         switch self {
         case .indycar: "irl"
@@ -140,6 +143,8 @@ enum Categoria: String, Codable, CaseIterable, Sendable {
 
     /// As sessões de um calendário de categoria: pelo título (`sessao`) e, na IMSA, o evento de dia inteiro do fim de
     /// semana quando a corrida com hora está nele. Sem isso os dois lembravam. O WEC, só com dias inteiros, não muda.
+    // ponytail: qualquer dia inteiro até 4 dias antes de uma corrida com hora vira sessão; um dia inteiro sem relação
+    // (uma premiação) também calaria. O calendário da IMSA não tem; olhar o título se aparecer.
     static func marcar(_ eventos: [EventoInteresse]) -> [EventoInteresse] {
         let porTitulo = eventos.map { e in
             var marcado = e
@@ -227,7 +232,10 @@ struct EventoInteresse: Equatable, Identifiable, Sendable {
             return hora.map { String(localized: "amanhã \($0)") } ?? String(localized: "amanhã")
         }
         let formato = Date.FormatStyle(locale: locale, calendar: calendario, timeZone: calendario.timeZone)
-        let dia = falta < horizonte ? e.inicio.formatted(formato.weekday(.abbreviated))
+        // Dias de calendário, não horas: quarta 22:00 → quarta seguinte 08:00 são 7 dias, e "qua." pareceria hoje.
+        let dias = calendario.dateComponents([.day], from: calendario.startOfDay(for: agora),
+                                             to: calendario.startOfDay(for: e.inicio)).day ?? 7
+        let dia = dias < 7 ? e.inicio.formatted(formato.weekday(.abbreviated))
             : e.inicio.formatted(formato.day().month(.abbreviated))
         return [dia, hora].compactMap { $0 }.joined(separator: " ")
     }

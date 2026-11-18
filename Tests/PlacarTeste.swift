@@ -177,6 +177,8 @@ import Foundation
         """.utf8)
     conferir("IndyCar: a ponta sem `type`", Placar.lerCorrida(indy, corridaId: "202609061784").map { [$0.texto, $0.situacao] },
              ["1 MCL · 2 KIR · 3 ROS", "Lap 40"])
+    conferir("NASCAR: Jr. não derruba a sigla", ["R. Stenhouse Jr.", "D. Earnhardt Jr", "L. Norris", "X. Y."].map(Placar.siglaPiloto),
+             ["STE", "EAR", "NOR", nil])
     conferir("IndyCar: scoreboard do dia", Placar.url(esporte: "racing", liga: "irl", inicio: utc("2026-09-06T18:30Z"))?.absoluteString,
              "https://site.api.espn.com/apis/site/v2/sports/racing/irl/scoreboard?dates=20260906")
     conferir("F1: asa", emCorrida.map { [$0.asa.esquerda, $0.asa.direita] }, ["1 NOR", "2 VER"])

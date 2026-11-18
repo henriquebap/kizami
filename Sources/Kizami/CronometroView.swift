@@ -125,6 +125,7 @@ struct AjustesTimer: View {
             Text(verbatim: nome)
             Spacer()
             switch existe {
+            case _ where !atalhos.leu: ProgressView().controlSize(.mini)
             case true?: Label("Criado", systemImage: "checkmark.circle.fill").foregroundStyle(.green)
             case false?: Label("Falta criar", systemImage: "exclamationmark.triangle.fill").foregroundStyle(.orange)
             case nil: Label("Não deu para conferir", systemImage: "questionmark.circle").foregroundStyle(.secondary)

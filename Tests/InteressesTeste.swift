@@ -266,6 +266,9 @@ import Foundation
     conferir("quando: amanhã", quando("2026-11-21T20:00Z"), "amanhã 15:00")
     conferir("quando: dia da semana", quando("2026-11-16T12:00Z"), "dom. 15:00")
     conferir("quando: mais de 7 dias, dia e mês", quando("2026-11-10T12:00Z"), "22 de nov. 15:00")
+    // Quarta 22:00 → quarta seguinte 08:00: menos de 7×24 h, mas 7 dias de calendário; "qua." pareceria hoje.
+    let quartaQueVem = EventoInteresse(id: "q", titulo: "q", inicio: utc("2026-11-25T11:00Z"), fonte: .bills)
+    conferir("quando: mesmo dia da semana que vem, com a data", quando("2026-11-19T01:00Z", quartaQueVem), "25 de nov. 8:00")
     conferir("quando: começou", quando("2026-11-22T18:00Z"), "agora")
     conferir("quando: dia inteiro amanhã", quando("2026-11-21T12:00Z", diaInteiro), "amanhã")
 

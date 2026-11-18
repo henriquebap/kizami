@@ -156,7 +156,12 @@ struct Placar: Equatable, Sendable {
     static func siglaPiloto(_ nome: String?) -> String? {
         guard let nome, nome.count <= 30, let ponto = nome.firstIndex(of: "."),
               nome[..<ponto].count == 1, nome[nome.startIndex].isLetter else { return nil }
-        let sobrenome = nome[nome.index(after: ponto)...].trimmingCharacters(in: .init(charactersIn: " "))
+        var sobrenome = nome[nome.index(after: ponto)...].trimmingCharacters(in: .init(charactersIn: " "))
+        // NASCAR: "R. Stenhouse Jr." O sufixo sai antes de conferir as letras, senão o ponto derrubava o pódio todo.
+        for sufixo in [" Jr.", " Sr.", " Jr", " Sr", " II", " III"] where sobrenome.hasSuffix(sufixo) {
+            sobrenome = String(sobrenome.dropLast(sufixo.count))
+            break
+        }
         guard (2...24).contains(sobrenome.count),
               sobrenome.allSatisfy({ $0.isLetter || $0 == " " || $0 == "-" || $0 == "'" }) else { return nil }
         let letras = sobrenome.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: nil).filter(\.isLetter)

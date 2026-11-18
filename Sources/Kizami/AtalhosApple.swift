@@ -12,6 +12,8 @@ final class AtalhosApple {
 
     /// Os atalhos da pessoa, na ordem da `shortcuts list`.
     private(set) var disponiveis: [String] = []
+    /// Já houve uma leitura (respondendo ou não): antes dela os Ajustes esperam em vez de dizer "não deu para conferir".
+    private(set) var leu = false
     /// A última leitura não respondeu: os Ajustes avisam em vez de mostrar uma lista vazia como se fosse real.
     private(set) var leituraFalhou = false
     /// A ordem é a dos botões na ilha. O `UserDefaults` guarda só esta lista de nomes.
@@ -30,6 +32,7 @@ final class AtalhosApple {
     /// travado ou lento não pode apagar a escolha da pessoa.
     func recarregar() async {
         let inicio = ContinuousClock.now
+        defer { leu = true }
         guard let saida = await Self.listar() else {
             leituraFalhou = true
             registro.notice("atalhos da Apple: a lista não respondeu")
