@@ -161,6 +161,11 @@ Events the person follows but doesn't keep in their calendar (Buffalo Bills, F1,
 - **F2, WEC and IMSA** (a Settings toggle each, `Categoria`): a new network decision (rule 8). Three fixed ICS addresses, read by the same ICS reader and `RedeInteresses.baixar` as a pasted calendar: F2 from `files-f2.motorsportcalendars.com` (the open-source `sportstimes/f1` project behind f1calendar.com), WEC and IMSA from public Google calendars kept by fans (`calendar.google.com`, the WEC one by Radio Le Mans), the ones sync2cal.com points to. Practice, qualifying and test titles become sessions: in the box, no reminders. Third-party calendars may stop being updated; the page then just leaves the box.
 - **Porsche Cup Brasil:** no public calendar found (no ICS on the official site, ESPN, sync2cal or racingcalendar.net). Following it needs someone's ICS pasted in Settings.
 
+### v0.18
+
+- **Sports box up to 30 days ahead** (#10): the box shows the next event of each source within 30 days (it was 7, so F2 nine days out and WEC between seasons left it empty). Past a week the label is "27 Nov 06:00", since a weekday alone would be ambiguous. Reminders are unchanged.
+- **IndyCar and NASCAR Cup** (#11): `Categoria` cases backed by ESPN (`racing/irl`, `racing/nascar-premier`), parsed like F1. Their scoreboard has one competition per event with no `type`, so no sigla means the race. Live top 3 and the "Race over" notice, as in F1. Between seasons the scoreboard is empty, as with F1.
+
 ### Next
 
 Later: Kanji's live mic level (it needs Kanji, which would post a level, never text, on the existing protocol), new screenshots in `docs/`, and focusing a session in VS Code or the Claude app if a link that picks the right window gets documented.

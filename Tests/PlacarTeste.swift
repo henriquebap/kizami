@@ -168,6 +168,17 @@ import Foundation
              Placar(eventoId: "401839132", lances: .corrida(["NOR", "VER", "HAD"]), situacao: "Lap 23", encerrado: false,
                     link: URL(string: "https://www.espn.com/f1/race/_/id/600057448")))
     conferir("F1: texto", emCorrida?.texto, "1 NOR · 2 VER · 3 HAD")
+    // IndyCar e NASCAR: a corrida sem `type` (forma vista na IndyCar, 18/11/2026).
+    let indy = Data("""
+        {"events":[{"id":"202609061784","status":{"type":{"state":"in","completed":false}},"competitions":[
+         {"id":"202609061784","status":{"type":{"state":"in","completed":false,"shortDetail":"Lap 40"}},
+          "competitors":[{"order":1,"athlete":{"shortName":"S. McLaughlin"}},{"order":2,"athlete":{"shortName":"K. Kirkwood"}},
+                         {"order":3,"athlete":{"shortName":"A. Rossi"}}]}]}]}
+        """.utf8)
+    conferir("IndyCar: a ponta sem `type`", Placar.lerCorrida(indy, corridaId: "202609061784").map { [$0.texto, $0.situacao] },
+             ["1 MCL · 2 KIR · 3 ROS", "Lap 40"])
+    conferir("IndyCar: scoreboard do dia", Placar.url(esporte: "racing", liga: "irl", inicio: utc("2026-09-06T18:30Z"))?.absoluteString,
+             "https://site.api.espn.com/apis/site/v2/sports/racing/irl/scoreboard?dates=20260906")
     conferir("F1: asa", emCorrida.map { [$0.asa.esquerda, $0.asa.direita] }, ["1 NOR", "2 VER"])
     conferir("F1: terminada, com o vencedor primeiro",
              Placar.lerCorrida(corridaJSON(estado: "post", completo: true, pilotos: grid), corridaId: "401839132")

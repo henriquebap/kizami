@@ -75,6 +75,18 @@ import Foundation
     conferir("F1: sessão não lembra, a corrida sim",
              EventoInteresse.lembretes(corridas, agora: utc("2026-11-19T23:45Z"), disparados: []).map(\.evento.sessao),
              [nil as String?])
+    // IndyCar como a ESPN manda (forma vista em 18/11/2026): uma competição, sem `type`. A terminada sai.
+    let indy = """
+        {"events":[{"id":"202609061784","name":"Grand Prix of Monterey","shortName":"Monterey","competitions":[
+        {"id":"202609061784","date":"2026-09-06T18:30Z","status":{"type":{"completed":true}}}]},
+        {"id":"202703011700","name":"Grand Prix of St. Petersburg","shortName":"St. Petersburg","competitions":[
+        {"id":"202703011700","date":"2027-03-01T17:00Z","status":{"type":{"completed":false}}}]}]}
+        """
+    let indyCar = ESPN.corridas(de: Data(indy.utf8), fonte: .categoria(.indycar)) ?? []
+    conferir("IndyCar: sem sigla é corrida, a terminada sai", indyCar.map(\.id),
+             ["corrida-202703011700-\(Int(utc("2027-03-01T17:00Z").timeIntervalSince1970))"])
+    conferir("IndyCar: placar ao vivo pela ESPN", indyCar.compactMap(Placar.idESPN), ["202703011700"])
+    conferir("IndyCar lembra", indyCar.first.map { $0.sessao == nil && $0.fonte.corrida }, true)
     conferir("sigla nova de sessão aparece como veio", ESPN.nomeDaSessao("SQ"), "SQ")
     conferir("sigla vazia: a sessão sai", ESPN.nomeDaSessao(""), nil as String?)
 
@@ -116,8 +128,10 @@ import Foundation
     let salvas = try? JSONEncoder().encode([Seguido.f1, .categoria(.wec)])
     conferir("categoria sobrevive ao salvar", salvas.flatMap { try? JSONDecoder().decode([Seguido].self, from: $0) },
              [.f1, .categoria(.wec)])
-    conferir("categorias em https e com host", Categoria.allCases.allSatisfy { $0.url.scheme == "https" && $0.url.host() != nil },
-             true)
+    conferir("categorias: ICS em https ou liga da ESPN, nunca os dois",
+             Categoria.allCases.allSatisfy { c in
+                 c.ics.map { $0.scheme == "https" && $0.host() != nil && c.ligaESPN == nil } ?? (c.ligaESPN != nil)
+             }, true)
     conferir("sessões pelo título", ["F2: Practice (Qatar)", "F2: Qualifying (Qatar)", "F2: Sprint (Qatar)",
                                       "F2: Feature (Qatar)", "WTSC Race", "FIA WEC | [TEST] Prologue",
                                       "Roar Before The Rolex 24", "FIA WEC | 6 Hours of Imola", "ILMC qual : 24 Heures du Mans",

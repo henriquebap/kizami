@@ -25,7 +25,8 @@ enum Seguido: Codable, Hashable, Sendable {
     case espnTime(esporte: String, liga: String, time: String, nome: String)
     case f1
     case ics(url: URL)
-    /// Categoria fora da ESPN, por um calendário ICS de endereço fixo (`Categoria.url`).
+    /// Categoria de corrida além da F1: pelo scoreboard da ESPN (IndyCar, NASCAR) ou por um calendário ICS de endereço
+    /// fixo (F2, WEC, IMSA, que a ESPN não tem).
     case categoria(Categoria)
 
     static let bills = Seguido.espnTime(esporte: "football", liga: "nfl", time: "2", nome: "Buffalo Bills")
@@ -62,6 +63,15 @@ enum Seguido: Codable, Hashable, Sendable {
         }
     }
 
+    /// Corrida da ESPN (F1, IndyCar, NASCAR): o placar ao vivo é a ponta, não o placar de dois lados.
+    var corrida: Bool {
+        switch self {
+        case .f1: true
+        case .categoria(let c): c.ligaESPN != nil
+        case .espnTime, .ics: false
+        }
+    }
+
     var simbolo: String {
         switch self {
         case .espnTime(let esporte, _, _, _):
@@ -88,24 +98,37 @@ enum Seguido: Codable, Hashable, Sendable {
     }
 }
 
-/// Categorias de corrida que a ESPN não tem (a API devolve 400), seguidas por um calendário público de endereço fixo.
+/// Categorias de corrida além da F1. IndyCar e NASCAR vêm do scoreboard da ESPN, como a F1 (com placar ao vivo e
+/// pódio); F2, WEC e IMSA a ESPN não tem (a API devolve 400) e vêm de um calendário público de endereço fixo.
 /// Os endereços são uma decisão do ROADMAP (regra 8 do AGENTS): trocar ou somar um é decisão de novo.
 enum Categoria: String, Codable, CaseIterable, Sendable {
-    case f2, wec, imsa
+    case indycar, nascar, f2, wec, imsa
 
     var nome: String {
         switch self {
+        case .indycar: "IndyCar"
+        case .nascar: "NASCAR Cup"
         case .f2: String(localized: "Fórmula 2")
         case .wec: "WEC"
         case .imsa: "IMSA"
         }
     }
 
+    /// A liga no caminho da ESPN (`racing/<liga>/scoreboard`); nil nas que vêm de ICS.
+    var ligaESPN: String? {
+        switch self {
+        case .indycar: "irl"
+        case .nascar: "nascar-premier"
+        case .f2, .wec, .imsa: nil
+        }
+    }
+
     /// F2: o do f1calendar.com (projeto aberto `sportstimes/f1`), com as quatro sessões. WEC e IMSA: calendários
     /// públicos do Google mantidos por fãs (o do WEC é da Radio Le Mans), os que o sync2cal.com indica.
     // ponytail: calendário de terceiro pode parar de ser atualizado; aí a página some da box e nada quebra.
-    var url: URL {
+    var ics: URL? {
         switch self {
+        case .indycar, .nascar: nil
         case .f2: URL(string: "https://files-f2.motorsportcalendars.com/f2-calendar_p_q_sprint_feature.ics")!
         case .wec: URL(string: "https://calendar.google.com/calendar/ical/61jccgg4rshh1temqk0dj4lens%40group.calendar.google.com/public/basic.ics")!
         case .imsa: URL(string: "https://calendar.google.com/calendar/ical/b374eec704f6714ca47308cc76b0c599b75bdcd2df4693d5414b7a30baa3ad4e%40group.calendar.google.com/public/basic.ics")!
@@ -318,6 +341,7 @@ enum ESPN {
     }
     static func urlTimes(_ liga: Liga) -> URL? { url("\(liga.esporte)/\(liga.liga)/teams") }
     static let urlF1 = url("racing/f1/scoreboard")
+    static func urlCorridas(liga: String) -> URL? { url("racing/\(liga)/scoreboard") }
 
     /// "2026-11-22T18:00Z": sem segundos, que o ISO 8601 da Foundation exige.
     static func data(_ texto: String) -> Date? {
@@ -346,17 +370,20 @@ enum ESPN {
     /// A corrida fica com o id `f1-…` (o do placar ao vivo); as outras sessões, `f1s-…`, que o `Placar` não consulta.
     // ponytail: só o fim de semana que o placar mostra; o `calendar` da resposta tem o ano todo, mas só com
     // o intervalo do fim de semana, sem a hora da largada. Ler o evento de cada etapa se a pessoa quiser a de daqui a duas semanas.
-    static func corridas(de dados: Data) -> [EventoInteresse]? {
+    /// F1, IndyCar ou NASCAR. A F1 lista cada sessão com sigla ("FP1", "Race"); IndyCar e NASCAR trazem só a corrida,
+    /// sem `type`: sem sigla é corrida. Id "f1-…" na F1 e "corrida-…" nas outras (`Placar.idESPN` lê o prefixo).
+    static func corridas(de dados: Data, fonte: Seguido = .f1) -> [EventoInteresse]? {
         guard let r = try? JSONDecoder().decode(RespostaAgenda.self, from: dados), let eventos = r.events else { return nil }
+        let prefixo = fonte == .f1 ? "f1" : "corrida"
         return eventos.flatMap { e in
             (e.competitions ?? []).compactMap { c -> EventoInteresse? in
-                guard let sigla = c.type?.abbreviation, c.status?.type?.completed != true, let id = c.id,
-                      let inicio = c.date.flatMap(data) else { return nil }
+                let sigla = c.type?.abbreviation ?? "Race"
+                guard c.status?.type?.completed != true, let id = c.id, let inicio = c.date.flatMap(data) else { return nil }
                 let titulo = Atividade.limpo(e.shortName ?? e.name ?? "", ate: 60)
                 let sessao = sigla == "Race" ? nil : nomeDaSessao(sigla)
                 guard !titulo.isEmpty, sigla == "Race" || sessao != nil else { return nil }
-                return EventoInteresse(id: "\(sessao == nil ? "f1" : "f1s")-\(Atividade.limpo(id, ate: 20))-\(Int(inicio.timeIntervalSince1970))",
-                                       titulo: titulo, inicio: inicio, fonte: .f1, link: pagina(e.links), sessao: sessao)
+                return EventoInteresse(id: "\(prefixo)\(sessao == nil ? "" : "s")-\(Atividade.limpo(id, ate: 20))-\(Int(inicio.timeIntervalSince1970))",
+                                       titulo: titulo, inicio: inicio, fonte: fonte, link: pagina(e.links), sessao: sessao)
             }
         }
     }
@@ -557,8 +584,12 @@ enum RedeInteresses {
             guard seguido.valido, let dados = await baixar(url, teto: ICS.tamanhoMaximo) else { return nil }
             // ponytail: o endereço (que pode ter token) fica no UserDefaults em texto puro; Keychain se virar problema.
             return ICS.eventos(de: String(decoding: dados, as: UTF8.self), fonte: seguido)
+        case .categoria(let c) where c.ligaESPN != nil:
+            guard let url = c.ligaESPN.flatMap(ESPN.urlCorridas), let dados = await baixar(url, teto: ESPN.tamanhoMaximo)
+            else { return nil }
+            return ESPN.corridas(de: dados, fonte: seguido)
         case .categoria(let c):
-            guard let dados = await baixar(c.url, teto: ICS.tamanhoMaximo),
+            guard let url = c.ics, let dados = await baixar(url, teto: ICS.tamanhoMaximo),
                   let eventos = ICS.eventos(de: String(decoding: dados, as: UTF8.self), fonte: seguido) else { return nil }
             return eventos.map { e in
                 var marcado = e
