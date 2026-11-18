@@ -347,10 +347,15 @@ struct IlhaView: View {
                         }
                     }
                     .padding(.top, g.faixaDoTopo + 8)
+                    // O conteúdo já nasce no tamanho final e a forma só o revela ao crescer. Solto, ele recebia a
+                    // largura de cada quadro da mola: a grade inteira refazia o layout 120 vezes por segundo e o texto
+                    // encolhia e voltava (o `minimumScaleFactor`) no meio da abertura, que parecia travar.
+                    .frame(width: tamanho.width - 2 * forma.orelha, height: tamanho.height, alignment: .top)
                 }
             }
             .padding(.horizontal, forma.orelha)
-            .transition(.blurReplace)
+            // Só o esmaecer: o `.blurReplace` desfocava a ilha inteira a cada quadro e custava ~30% da CPU de abrir.
+            .transition(.opacity)
         }
         .frame(width: tamanho.width, height: tamanho.height)
         .clipShape(contorno)

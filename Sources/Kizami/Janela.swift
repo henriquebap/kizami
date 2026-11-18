@@ -177,7 +177,8 @@ final class Janela {
     }
 
     // ponytail: consulta a posição do cursor em cada monitor: a cada 50 ms com o cursor perto do topo ou a ilha aberta,
-    // a cada 250 ms longe dele. É o jeito que não depende de evento chegar a
+    // a cada 100 ms longe dele (com 250 ms, o cursor jogado direto no notch esperava até 250 ms para ser visto, mais os
+    // 150 ms de permanência, e a ilha parecia lenta para responder). É o jeito que não depende de evento chegar a
     // uma janela que nunca vira key; trocar por um monitor global de .mouseMoved se o consumo de energia aparecer.
     private func vigiar() {
         vigia = Task { [weak self] in
@@ -258,6 +259,6 @@ final class Janela {
             estado.expandido = nil
         }
         let pertoDoTopo = g.tela.contains(cursor) && cursor.y > g.tela.maxY - 120
-        return .milliseconds(estado.aberta || pertoDoTopo ? 50 : 250)
+        return .milliseconds(estado.aberta || pertoDoTopo ? 50 : 100)
     }
 }

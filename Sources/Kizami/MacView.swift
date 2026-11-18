@@ -118,15 +118,17 @@ private struct AnelDaBateria: View {
     var body: some View {
         let cor: Color = bateria.carregando || bateria.ligadaNaTomada ? .green
             : bateria.porcento <= 20 ? .red : .white
+        // 26 pt e o traço por dentro: com 30 pt (a altura do trilho inteira) e o traço centrado na borda, o anel
+        // vazava 1,5 pt e encostava no "80% na tomada" de baixo, enquanto o número dos vizinhos tem folga embaixo.
         ZStack {
-            Circle().stroke(.white.opacity(0.12), lineWidth: 3)
-            Circle()
+            Circle().inset(by: 1.5).stroke(.white.opacity(0.12), lineWidth: 3)
+            Circle().inset(by: 1.5)
                 .trim(from: 0, to: CGFloat(min(max(bateria.porcento, 0), 100)) / 100)
                 .stroke(cor, style: StrokeStyle(lineWidth: 3, lineCap: .round))
                 .rotationEffect(.degrees(-90))
-            Text(verbatim: "\(bateria.porcento)").font(.system(size: 10, weight: .semibold, design: .rounded)).monospacedDigit()
+            Text(verbatim: "\(bateria.porcento)").font(.system(size: 9, weight: .semibold, design: .rounded)).monospacedDigit()
         }
-        .frame(width: Painel.alturaValor, height: Painel.alturaValor)
+        .frame(width: 26, height: 26)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(verbatim: "\(bateria.porcento)%"))
     }
