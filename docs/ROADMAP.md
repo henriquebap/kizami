@@ -166,6 +166,7 @@ Events the person follows but doesn't keep in their calendar (Buffalo Bills, F1,
 - **Sports box up to 30 days ahead** (#10): the box shows the next event of each source within 30 days (it was 7, so F2 nine days out and WEC between seasons left it empty). Past a week the label is "27 Nov 06:00", since a weekday alone would be ambiguous. Reminders are unchanged.
 - **IndyCar and NASCAR Cup** (#11): `Categoria` cases backed by ESPN (`racing/irl`, `racing/nascar-premier`), parsed like F1. Their scoreboard has one competition per event with no `type`, so no sigla means the race. Live top 3 and the "Race over" notice, as in F1. Between seasons the scoreboard is empty, as with F1.
 - **Porsche Cup Brasil and Stock Car** (#12): still no public calendar (official sites, ESPN, sync2cal, racingcalendar.net, GitHub, checked 18/11/2026). The way in is a calendar the person keeps (Google Calendar, public, ICS address pasted in Settings), explained in Settings. A pasted calendar now shows its own name (`X-WR-CALNAME`, read from the header only, cleaned, kept in memory) instead of its host.
+- **IMSA, one reminder per race** (#13): the IMSA calendar has an all-day event for the weekend and the timed race inside it. `Categoria.marcar` makes the all-day event a "Weekend" session (in the box, no reminder) when a timed race starts within 4 days of it; WEC, all-day only, is unchanged.
 
 ### Next
 

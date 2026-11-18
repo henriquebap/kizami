@@ -144,6 +144,14 @@ import Foundation
              ["Treino", "Classificação", nil, nil, nil, "Teste", "Teste", nil, "Classificação", "Classificação", "Teste", nil])
     let comCategoriaNova = Data(#"[{"f1":{}},{"categoria":{"_0":"motogp"}},{"espnTime":{"esporte":"football","liga":"nfl","time":"2","nome":"Buffalo Bills"}}]"#.utf8)
     conferir("item que não decodifica cai sozinho", Interesses.lerSeguidos(comCategoriaNova), [.f1, .bills])
+    let imsa = [EventoInteresse(id: "a", titulo: "Motul Petit Le Mans", inicio: utc("2026-10-01T03:00Z"), diaInteiro: true,
+                                fonte: .categoria(.imsa)),
+                EventoInteresse(id: "b", titulo: "WTSC Qualifying", inicio: utc("2026-10-02T18:20Z"), fonte: .categoria(.imsa)),
+                EventoInteresse(id: "c", titulo: "WTSC Race", inicio: utc("2026-10-03T16:10Z"), fonte: .categoria(.imsa)),
+                EventoInteresse(id: "d", titulo: "Rolex 24 at Daytona", inicio: utc("2027-01-27T03:00Z"), diaInteiro: true,
+                                fonte: .categoria(.imsa))]
+    conferir("IMSA: o dia inteiro com a corrida dentro não lembra; sem corrida com hora, lembra",
+             Categoria.marcar(imsa).map { $0.sessao ?? "corrida" }, ["Fim de semana", "Classificação", "corrida", "corrida"])
     conferir("categoria sem placar da ESPN",
              Placar.idESPN(EventoInteresse(id: "ics-1795000000-abc", titulo: "WTSC Race", inicio: .now,
                                            fonte: .categoria(.imsa))), nil)

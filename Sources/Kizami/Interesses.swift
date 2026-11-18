@@ -135,6 +135,27 @@ enum Categoria: String, Codable, CaseIterable, Sendable {
         }
     }
 
+    /// Quanto o evento de dia inteiro do fim de semana cobre: "Motul Petit Le Mans" começa na quinta e a corrida é no sábado.
+    static let fimDeSemana: TimeInterval = 4 * 24 * 3600
+
+    /// As sessões de um calendário de categoria: pelo título (`sessao`) e, na IMSA, o evento de dia inteiro do fim de
+    /// semana quando a corrida com hora está nele. Sem isso os dois lembravam. O WEC, só com dias inteiros, não muda.
+    static func marcar(_ eventos: [EventoInteresse]) -> [EventoInteresse] {
+        let porTitulo = eventos.map { e in
+            var marcado = e
+            marcado.sessao = sessao(e.titulo)
+            return marcado
+        }
+        let corridasComHora = porTitulo.filter { !$0.diaInteiro && $0.sessao == nil }.map(\.inicio)
+        return porTitulo.map { e in
+            guard e.diaInteiro, e.sessao == nil,
+                  corridasComHora.contains(where: { $0 >= e.inicio && $0.timeIntervalSince(e.inicio) < fimDeSemana }) else { return e }
+            var marcado = e
+            marcado.sessao = String(localized: "Fim de semana")
+            return marcado
+        }
+    }
+
     /// Treino, classificação ou teste pelo título ("F2: Practice (Qatar)", "ILMC qual : 24 Heures du Mans",
     /// "[TEST] Prologue"): vira `sessao`, que aparece na box mas não lembra, como na F1. nil é corrida.
     /// Palavra inteira: "Contest" não é teste.
@@ -606,11 +627,7 @@ enum RedeInteresses {
         case .categoria(let c):
             guard let url = c.ics, let dados = await baixar(url, teto: ICS.tamanhoMaximo),
                   let eventos = ICS.eventos(de: String(decoding: dados, as: UTF8.self), fonte: seguido) else { return nil }
-            return (eventos.map { e in
-                var marcado = e
-                marcado.sessao = Categoria.sessao(e.titulo)
-                return marcado
-            }, nil)
+            return (Categoria.marcar(eventos), nil)
         }
     }
 }
