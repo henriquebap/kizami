@@ -74,9 +74,11 @@ struct AbaTimer: View {
 /// A seção Timer dos Ajustes: os minutos do foco e da pausa do pomodoro e os timers livres da aba.
 struct AjustesTimer: View {
     @Bindable var cronometro: Cronometro
+    let atalhos: AtalhosApple
 
-    init(cronometro: Cronometro) {
+    init(cronometro: Cronometro, atalhos: AtalhosApple) {
         self.cronometro = cronometro
+        self.atalhos = atalhos
     }
 
     var body: some View {
@@ -101,9 +103,34 @@ struct AjustesTimer: View {
                 Text("No app Atalhos, crie “\(Cronometro.atalhoLigar)” com a ação Definir Foco (Não Perturbe, ligado) e “\(Cronometro.atalhoDesligar)” com a mesma ação desligando. O foco roda o primeiro; a pausa, o fim ou parar rodam o segundo.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                Link("Abrir o app Atalhos", destination: URL(string: "shortcuts://")!)
+                ForEach([Cronometro.atalhoLigar, Cronometro.atalhoDesligar], id: \.self) { nome in
+                    estado(nome)
+                }
+                HStack {
+                    Link("Abrir o app Atalhos", destination: URL(string: "shortcuts://")!)
+                    Spacer()
+                    Button("Conferir de novo") { Task { await atalhos.recarregar() } }
+                }
             }
         }
+        // Lê a lista ao abrir os Ajustes e ao ligar a opção: quem acabou de criar o atalho vê o ✓ sem reabrir nada.
+        .task(id: cronometro.naoPerturbe) {
+            if cronometro.naoPerturbe { await atalhos.recarregar() }
+        }
+    }
+
+    private func estado(_ nome: String) -> some View {
+        let existe = atalhos.existe(nome)
+        return HStack {
+            Text(verbatim: nome)
+            Spacer()
+            switch existe {
+            case true?: Label("Criado", systemImage: "checkmark.circle.fill").foregroundStyle(.green)
+            case false?: Label("Falta criar", systemImage: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+            case nil: Label("Não deu para conferir", systemImage: "questionmark.circle").foregroundStyle(.secondary)
+            }
+        }
+        .font(.caption)
     }
 }
 

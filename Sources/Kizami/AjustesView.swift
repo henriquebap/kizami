@@ -88,7 +88,7 @@ struct AjustesView: View {
             }
             AjustesIlha(personalizacao: personalizacao)
             AjustesAtalhosApple(atalhos: atalhosApple)
-            AjustesTimer(cronometro: Kizami.shared.cronometro)
+            AjustesTimer(cronometro: Kizami.shared.cronometro, atalhos: atalhosApple)
             Section("Tela cheia") {
                 Toggle("Avisos urgentes por cima da tela cheia", isOn: $urgenteEmTelaCheia)
                 Text("Em vídeo ou jogo em tela cheia, a ilha some. Ligado, ela volta só para o que é urgente: a reunião começando ou o Claude pedindo permissão.")

@@ -45,6 +45,17 @@ final class AtalhosApple {
         registro.info("atalhos da Apple: \(self.disponiveis.count) na lista, \(self.escolhidos.count) escolhidos (\(ContinuousClock.now - inicio, privacy: .public))")
     }
 
+    /// Para os Ajustes do Timer: o atalho está na lista (true), não está (false) ou não dá para saber (nil): a lista
+    /// não respondeu, veio vazia (o app Atalhos sincronizando) ou cortada no teto.
+    func existe(_ nome: String) -> Bool? {
+        Self.existe(nome, disponiveis: disponiveis, leituraFalhou: leituraFalhou)
+    }
+
+    static func existe(_ nome: String, disponiveis: [String], leituraFalhou: Bool) -> Bool? {
+        if disponiveis.contains(nome) { return true }
+        return leituraFalhou || disponiveis.isEmpty || disponiveis.count >= maximoNaLista ? nil : false
+    }
+
     /// Roda um escolhido. Relê a lista antes (leva ~15 ms) para só rodar o que existe agora no app Atalhos.
     /// Sem prazo: um atalho pode demorar ou esperar a pessoa responder um diálogo dele.
     func rodar(_ nome: String) {

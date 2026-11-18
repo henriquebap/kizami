@@ -13,6 +13,12 @@ import Foundation
     conferir("tira o que não existe mais, mantém a ordem da pessoa",
              AtalhosApple.conciliar(["C", "Sumiu", "A"], disponiveis: disponiveis), ["C", "A"])
     conferir("sem lista lida, não tira nada", AtalhosApple.conciliar(["C", "Sumiu"], disponiveis: nil), ["C", "Sumiu"])
+    conferir("existe: está na lista", AtalhosApple.existe("Kizami Foco", disponiveis: ["A", "Kizami Foco"], leituraFalhou: false), true)
+    conferir("existe: lista inteira sem ele", AtalhosApple.existe("Kizami Foco", disponiveis: ["A"], leituraFalhou: false), false)
+    conferir("existe: lista vazia não sabe", AtalhosApple.existe("Kizami Foco", disponiveis: [], leituraFalhou: false), nil as Bool?)
+    conferir("existe: leitura falhou não sabe", AtalhosApple.existe("Kizami Foco", disponiveis: ["A"], leituraFalhou: true), nil as Bool?)
+    conferir("existe: lista no teto não sabe",
+             AtalhosApple.existe("X", disponiveis: (0..<AtalhosApple.maximoNaLista).map(String.init), leituraFalhou: false), nil as Bool?)
     conferir("sem vazio nem repetido", AtalhosApple.conciliar(["A", "", "A", "B"], disponiveis: nil), ["A", "B"])
     conferir("no máximo 6", AtalhosApple.conciliar((1...9).map { "\($0)" }, disponiveis: nil).count, 6)
 
