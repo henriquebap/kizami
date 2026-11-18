@@ -38,27 +38,28 @@ struct WidgetLembretes: View {
     var body: some View {
         Quadro(id: "lembretes", estado: estado) {
             Cabeca(rotulo: Text("Lembretes"), simbolo: "checklist", cor: .yellow)
-            Spacer(minLength: 0)
             TimelineView(.everyMinute) { contexto in
                 VStack(alignment: .leading, spacing: 2) {
-                    ForEach(lembretes.proximos) { lembrete in  // até 3 (`Lembrete.maximo`): cabem nos 92 pt
+                    ForEach(lembretes.proximos) { lembrete in  // até 3 (`Lembrete.maximo`): cabem no quadro
                         HStack(spacing: 6) {
                             Button("Marcar como feito", systemImage: "circle") { lembretes.concluir(lembrete.id) }
                                 .labelStyle(.iconOnly)
                                 .buttonStyle(EstiloBotao())
-                                .font(.system(size: 13))
+                                .font(.system(size: 12))
                                 .foregroundStyle(.secondary)
                                 .help(Text("Marcar como feito"))
                             // verbatim: o título vem do app Lembretes.
-                            Text(verbatim: lembrete.titulo).font(.system(size: 12, weight: .medium)).lineLimit(1)
+                            Text(verbatim: lembrete.titulo).font(Tipo.corpo).lineLimit(1)
                             Spacer(minLength: 2)
                             if let quando = lembrete.quando(agora: contexto.date) {
-                                Text(verbatim: quando).font(.system(size: 11)).monospacedDigit()
+                                Text(verbatim: quando).font(Tipo.legenda).monospacedDigit()
                                     .foregroundStyle(lembrete.atrasado(agora: contexto.date) ? .red : .secondary)
                             }
                         }
+                        .frame(height: Painel.alturaDetalhe)
                     }
                 }
+                .padding(.top, 6)
             }
         }
     }

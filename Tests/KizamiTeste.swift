@@ -16,7 +16,7 @@ import Foundation
     typealias E = Painel.Entrada
     let calmo = Painel(E())
     conferir("dia calmo: só o cartão do dia", calmo.fileiras, [.larga(.dia(eventos: 0))])
-    conferir("dia calmo: altura do cartão", mac.aberta(calmo), CGSize(width: 380, height: 32 + 8 + 26 + 10 + Painel.alturaDia(eventos: 0) + 14))
+    conferir("dia calmo: altura do cartão", mac.aberta(calmo), CGSize(width: 380, height: 32 + 8 + 26 + 10 + Painel.alturaDia(eventos: 0) + Painel.margem))
     conferir("dia com 5 eventos lista só 3", Painel(E(eventosHoje: 5)).fileiras, [.larga(.dia(eventos: 3))])
     conferir("música em destaque, o resto aos pares",
              Painel(E(sessoes: 2, tocando: true, tempo: true, agenda: true, mac: true)).fileiras,
@@ -25,6 +25,9 @@ import Foundation
              Painel(E(precisaDeVoce: true, sessoes: 3, tocando: true)).fileiras, [.larga(.claude(outras: true)), .dupla(.musica, .timer)])
     conferir("reunião em destaque esconde o widget da agenda",
              Painel(E(reuniao: true, tempo: true, agenda: true)).fileiras, [.larga(.reuniao(link: false)), .dupla(.tempo, .timer)])
+    conferir("régua: margem igual dos lados e embaixo, cantos concêntricos",
+             [Painel.margem, Painel.raio + Painel.margem], [20, 34])
+    conferir("cartão largo sem botões tem a altura da música", Painel.altura(.reuniao(link: false)), Painel.altura(.musica))
     conferir("reunião sem link: sem a linha do botão", Painel.altura(.reuniao(link: false)) < Painel.altura(.reuniao(link: true)), true)
     conferir("no dia calmo, tempo e agenda estão no cartão do dia",
              Painel(E(tempo: true, agenda: true, mac: true)).fileiras, [.larga(.dia(eventos: 0)), .dupla(.mac, .timer)])
@@ -40,10 +43,10 @@ import Foundation
              Painel(E(sessoes: 1, interesse: true, mac: true)).fileiras, [.larga(.dia(eventos: 0)), .dupla(.sessoes, .interesse), .dupla(.mac, .timer)])
     conferir("bandeja no fim", Painel(E(hoje: false, bandeja: true)).fileiras, [.larga(.bandeja)])
     conferir("altura: destaque, dupla e o espaço entre eles",
-             Painel(E(tocando: true, tempo: true, agenda: true)).altura, 72 + 8 + Painel.alturaWidget)
+             Painel(E(tocando: true, tempo: true, agenda: true)).altura, Painel.altura(.musica) + Painel.espaco + Painel.alturaWidget)
     conferir("janela cabe o Início mais alto e a sombra",
              mac.janela.height - Geometria.sombra >= mac.aberta(Painel.maior).height, true)
-    conferir("aba de atalhos: cabeçalho e a fileira", mac.abertaAtalhos, CGSize(width: 380, height: 32 + 8 + 26 + 10 + 62 + 14))
+    conferir("aba de atalhos: cabeçalho e a fileira", mac.abertaAtalhos, CGSize(width: 380, height: 32 + 8 + 26 + 10 + 62 + Painel.margem))
     conferir("botão da asa: o lado direito da compacta, 20 pt com 4 de folga",
              mac.botaoDaAsa(mac.compacta), CGRect(x: 621.5 + 269 - 8 - 8 - 20 - 4, y: 950 + 6 - 4, width: 28, height: 28))
     conferir("botão da asa fica fora do notch (que abre a ilha)", mac.botaoDaAsa(mac.compacta).intersects(mac.gatilho), false)
@@ -66,7 +69,7 @@ import Foundation
     conferir("sem notch: só as asas, com altura para a capa não encostar", externo.retangulo(externo.compacta),
              CGRect(x: -1030, y: 1050, width: 140, height: 30))
     conferir("sem notch: fechada não é mais estreita que o repouso", externo.compacta.width >= externo.repouso.width, true)
-    conferir("sem notch: o conteúdo aberto começa no topo, sem faixa vazia", externo.aberta(Painel(E(tocando: true))).height, 4 + 8 + 26 + 10 + 72 + 14)
+    conferir("sem notch: o conteúdo aberto começa no topo, sem faixa vazia", externo.aberta(Painel(E(tocando: true))).height, 4 + 8 + 26 + 10 + Painel.altura(.musica) + Painel.margem)
     conferir("com notch: o conteúdo começa abaixo da câmera", mac.faixaDoTopo, 32)
     conferir("sem notch: a pílula em repouso abre", externo.gatilho.contains(CGPoint(x: -1010, y: 1070)), true)
     conferir("agenda expandida: semana sem eventos", Geometria.alturaAgenda(semanas: 1, eventos: 0), 10 + 24 + 8 + 40 + 8 + 30 + 10)

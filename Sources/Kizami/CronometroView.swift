@@ -147,24 +147,21 @@ struct WidgetTimer: View {
         if cronometro.ativo {
             Quadro(id: "timer", estado: estado, acao: { estado.aba = .timer }) {
                 Cabeca(rotulo: Text(verbatim: cronometro.modo.nome), simbolo: cronometro.modo.simbolo, cor: .orange)
-                TextoDaContagem(cronometro: cronometro, fonte: Tipo.numero, animado: false)
-                Spacer(minLength: 0)
-                Group {
+                Valor { TextoDaContagem(cronometro: cronometro, fonte: Tipo.numero, animado: false) }
+                Detalhe {
                     if cronometro.pausado {
                         Text("pausado")
                     } else if let fim = cronometro.fim {
                         Text("termina às \(fim.formatted(date: .omitted, time: .shortened))")
                     }
                 }
-                .font(Tipo.corpo).foregroundStyle(.secondary).lineLimit(1)
             }
         } else {
             let minutos = cronometro.minutosFoco
             Quadro(id: "timer", estado: estado, acao: { cronometro.iniciar(minutos: minutos, modo: .foco) }) {
                 Cabeca(rotulo: Text(verbatim: Cronometro.Modo.foco.nome), simbolo: Cronometro.Modo.foco.simbolo, cor: .orange)
-                Text(verbatim: String(format: "%d:00", minutos)).font(Tipo.numero).monospacedDigit()
-                Spacer(minLength: 0)
-                Text("clique para começar").font(Tipo.corpo).foregroundStyle(.secondary).lineLimit(1)
+                Valor { Text(verbatim: String(format: "%d:00", minutos)) }
+                Detalhe { Text("clique para começar") }
             }
         }
     }

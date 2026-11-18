@@ -14,17 +14,14 @@ struct WidgetAgenda: View {
                 Cabeca(rotulo: Text("Próximo"), ponto: corDoCalendario(evento))
                 // Por minuto: "12 min" precisa andar sozinho, sem a Agenda publicar nada.
                 TimelineView(.everyMinute) { contexto in
-                    Text(verbatim: Self.quando(evento, agora: contexto.date))
-                        .font(Tipo.numero).monospacedDigit()
-                        .lineLimit(1).minimumScaleFactor(0.6)
+                    Valor {
+                        Text(verbatim: Self.quando(evento, agora: contexto.date))
+                        Spacer(minLength: 0)
+                        if evento.link != nil { BotaoEntrar { agenda.entrar(evento) } }
+                    }
                 }
-                Spacer(minLength: 0)
-                HStack(spacing: 6) {
-                    // verbatim: o título vem do convite de qualquer pessoa e não pode virar Markdown nem chave de tradução.
-                    Text(verbatim: evento.titulo).font(Tipo.corpo).foregroundStyle(.secondary).lineLimit(1)
-                    Spacer(minLength: 0)
-                    if evento.link != nil { BotaoEntrar { agenda.entrar(evento) } }
-                }
+                // verbatim: o título vem do convite de qualquer pessoa e não pode virar Markdown nem chave de tradução.
+                Detalhe { Text(verbatim: evento.titulo) }
             }
         }
     }
@@ -47,48 +44,31 @@ struct CartaoReuniao: View {
     var body: some View {
         if let evento = agenda.emBreve {
             let cor = corDoCalendario(evento)
-            VStack(spacing: 10) {
-                HStack(spacing: 12) {
-                    Image(systemName: "calendar")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(cor)
-                        .frame(width: Painel.icone, height: Painel.icone)
-                        .background(Circle().fill(cor.opacity(0.22)))
-                        .matchedGeometryEffect(id: "reuniao", in: espaco)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Reunião").estiloRotulo(cor)
-                        Text(verbatim: evento.titulo).font(Tipo.titulo).lineLimit(1)
-                        Text(verbatim: AbaHoje.horario(evento)).font(Tipo.corpo).monospacedDigit().foregroundStyle(.secondary)
-                    }
-                    Spacer(minLength: 4)
-                    TimelineView(.everyMinute) { contexto in
-                        let minutos = Int((evento.inicio.timeIntervalSince(contexto.date) / 60).rounded(.up))
-                        VStack(alignment: .trailing, spacing: 0) {
-                            if minutos > 0 {
-                                Text(verbatim: "\(minutos)").font(Tipo.destaque).monospacedDigit().foregroundStyle(cor)
+            VStack(spacing: Painel.espaco) {
+                TimelineView(.everyMinute) { contexto in
+                    let minutos = Int((evento.inicio.timeIntervalSince(contexto.date) / 60).rounded(.up))
+                    // verbatim: o título vem do convite.
+                    LinhaDeDestaque(rotulo: Text("Reunião"), corDoRotulo: cor, titulo: Text(verbatim: evento.titulo),
+                                    detalhe: Text(verbatim: AbaHoje.horario(evento))) {
+                        IconeDeDestaque(simbolo: "calendar", cor: cor).matchedGeometryEffect(id: "reuniao", in: espaco)
+                    } fim: {
+                        if minutos > 0 {
+                            HStack(alignment: .firstTextBaseline, spacing: 3) {
+                                Text(verbatim: "\(minutos)").font(Tipo.numero).monospacedDigit().foregroundStyle(cor)
                                 Text("min").estiloRotulo()
-                            } else {
-                                Text("agora").font(Tipo.numeroPequeno).foregroundStyle(cor)
                             }
+                        } else {
+                            Text("agora").font(Tipo.titulo).foregroundStyle(cor)
                         }
                     }
                 }
                 if evento.link != nil {
-                    Button { agenda.entrar(evento) } label: {
-                        Label("Entrar na reunião", systemImage: "video.fill")
-                            .font(.system(size: 12, weight: .semibold))
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 28)
-                            .background(Capsule().fill(.green))
-                            .foregroundStyle(.black.opacity(0.85))
-                            .contentShape(.capsule)
-                    }
-                    .buttonStyle(EstiloBotao())
+                    Pilula(titulo: "Entrar na reunião", simbolo: "video.fill", cor: .green, cheio: true) { agenda.entrar(evento) }
                 }
             }
             .padding(Painel.folga)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            .cartao(cor: cor, raio: Geometria.raioDoWidget)
+            .cartao(cor: cor, raio: Painel.raio)
         }
     }
 }
@@ -197,7 +177,7 @@ struct AgendaExpandida: View {
             lista(eventos)
         }
         .padding(.vertical, 10)
-        .padding(.horizontal, 10)
+        .padding(.horizontal, Painel.folga)
         .frame(height: Geometria.alturaAgenda(semanas: dias.count / 7, eventos: eventos.count), alignment: .top)
         .cartao(raio: Geometria.raioDoWidget, id: "agenda", em: espaco)
         .padding(.horizontal, 10)

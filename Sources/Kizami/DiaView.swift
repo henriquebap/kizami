@@ -17,7 +17,7 @@ struct CartaoDia: View {
         TimelineView(.everyMinute) { contexto in conteudo(agora: contexto.date) }
             .padding(Painel.folga)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .cartao(raio: Geometria.raioDoWidget, realce: estado.cartaoSobCursor == "dia", id: "agenda", em: espaco)
+            .cartao(raio: Painel.raio, realce: estado.cartaoSobCursor == "dia", id: "agenda", em: espaco)
             .contentShape(.rect)
             .realce("dia", estado)
             .onTapGesture(perform: aoClicar)
@@ -26,19 +26,22 @@ struct CartaoDia: View {
 
     private func conteudo(agora: Date) -> some View {
         let previsao = tempo.previsao
-        return VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .top, spacing: 12) {
-                VStack(alignment: .leading, spacing: 3) {
+        return VStack(alignment: .leading, spacing: Painel.espaco) {
+            // A cabeça tem a altura da linha de destaque dos outros cartões largos: a data e a temperatura no tamanho
+            // dos números da grade, e uma linha de texto embaixo de cada uma.
+            HStack(alignment: .top, spacing: Painel.folga) {
+                VStack(alignment: .leading, spacing: 2) {
                     Text(verbatim: Self.data(agora)).font(Tipo.numero).lineLimit(1).minimumScaleFactor(0.7)
                     Text(verbatim: frase(agora: agora, previsao: previsao))
                         .font(Tipo.corpo).foregroundStyle(.secondary).monospacedDigit().lineLimit(1)
                 }
-                Spacer(minLength: 8)
+                Spacer(minLength: 0)
                 if let previsao {
                     HStack(alignment: .top, spacing: 8) {
-                        Image(systemName: previsao.simbolo).symbolRenderingMode(.multicolor).font(.system(size: 22))
-                        VStack(alignment: .trailing, spacing: 1) {
-                            Text(verbatim: Previsao.graus(previsao.temperatura)).font(Tipo.destaque)
+                        Image(systemName: previsao.simbolo).symbolRenderingMode(.multicolor).font(.system(size: 20))
+                            .frame(height: 29)
+                        VStack(alignment: .trailing, spacing: 2) {
+                            Text(verbatim: Previsao.graus(previsao.temperatura)).font(Tipo.numero)
                             Text(verbatim: "↑\(Previsao.graus(previsao.maxima)) ↓\(Previsao.graus(previsao.minima))")
                                 .font(Tipo.corpo).foregroundStyle(.secondary)
                         }
@@ -48,7 +51,7 @@ struct CartaoDia: View {
                     .help(Text(verbatim: [previsao.descricao, tempo.local].compactMap { $0 }.joined(separator: "\n")))
                 }
             }
-            .frame(height: Painel.cabecaDoDia, alignment: .top)
+            .frame(height: Painel.linhaDeDestaque, alignment: .top)
             ReguaDoDia(eventos: agenda.hoje,
                        chuva: previsao.map { Previsao.faixasDeChuva($0.horas, dia: agora, calendario: .current) } ?? [],
                        agora: agora)
@@ -108,7 +111,7 @@ private struct ReguaDoDia: View {
                     if h < Self.primeira + Self.horas { Spacer(minLength: 0) }
                 }
             }
-            .font(.system(size: 9.5, weight: .medium)).monospacedDigit().foregroundStyle(.tertiary)
+            .font(Tipo.legenda).monospacedDigit().foregroundStyle(.tertiary)
             GeometryReader { caixa in
                 let largura = caixa.size.width
                 let x = { (data: Date) in CGFloat(min(max(data.timeIntervalSince(inicio) / duracao, 0), 1)) * largura }
@@ -152,11 +155,11 @@ private struct LinhaDoDia: View {
             Circle().fill(corDoCalendario(evento)).frame(width: 7, height: 7)
             Text(verbatim: evento.diaInteiro ? String(localized: "Dia inteiro")
                  : evento.inicio.formatted(date: .omitted, time: .shortened))
-                .font(.system(size: 11.5)).monospacedDigit().foregroundStyle(.secondary)
-                .frame(minWidth: 42, alignment: .leading)
+                .font(Tipo.corpo).monospacedDigit().foregroundStyle(.secondary)
+                .frame(minWidth: 40, alignment: .leading)
                 .fixedSize()
             // verbatim: o título vem do convite de qualquer pessoa.
-            Text(verbatim: evento.titulo).font(.system(size: 12.5, weight: .medium)).lineLimit(1)
+            Text(verbatim: evento.titulo).font(Tipo.titulo).lineLimit(1)
             Spacer(minLength: 4)
             if evento.link != nil { BotaoEntrar(acao: entrar) }
         }

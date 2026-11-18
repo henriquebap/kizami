@@ -10,7 +10,7 @@ private enum Forma: Equatable {
         case .repouso: 12
         case .compacta: 14
         case .aviso: 20
-        case .aberta: 30
+        case .aberta: 34  // concêntrico com os cartões: 14 de canto + 20 de margem
         }
     }
 }
@@ -565,8 +565,8 @@ struct FileiraDaBandeja: View {
                     .foregroundStyle(alvo ? .primary : .secondary)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .background {
-                        RoundedRectangle(cornerRadius: 16)
-                            .strokeBorder(style: StrokeStyle(lineWidth: 1.5, dash: [5, 4]))
+                        RoundedRectangle(cornerRadius: Painel.raio, style: .continuous)
+                            .strokeBorder(style: StrokeStyle(lineWidth: 1.5, dash: [5, 4]))  // raio da régua: `Painel.raio`
                             .foregroundStyle(.white.opacity(alvo ? 0.8 : 0.3))
                     }
             } else {
@@ -591,7 +591,7 @@ struct FileiraDaBandeja: View {
                     .foregroundStyle(.secondary)
                 }
                 .background {
-                    RoundedRectangle(cornerRadius: 16).fill(.white.opacity(alvo ? 0.14 : 0.06))
+                    RoundedRectangle(cornerRadius: Painel.raio, style: .continuous).fill(.white.opacity(alvo ? 0.14 : 0.06))
                 }
             }
         }
@@ -661,14 +661,14 @@ struct Lista: View {
     var body: some View {
         let atividades = mural.atividades.filter { !ocultos.contains($0.id) }
         let visiveis = atividades.count > Geometria.maximoLinhas ? Geometria.maximoLinhas - 1 : Geometria.maximoLinhas
-        VStack(alignment: .leading, spacing: Geometria.espacoLinha) {
+        VStack(alignment: .leading, spacing: Painel.espaco) {
             ForEach(atividades.prefix(visiveis)) { atividade in
                 HStack(spacing: 10) {
                     Icone(atividade: atividade).frame(width: 22)
-                    VStack(alignment: .leading, spacing: 0) {
-                        Text(verbatim: atividade.titulo).font(.callout.weight(.semibold))
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(verbatim: atividade.titulo).font(Tipo.titulo)
                         if let detalhe = atividade.detalhe {
-                            Text(verbatim: detalhe).font(.caption).foregroundStyle(.secondary)
+                            Text(verbatim: detalhe).font(Tipo.corpo).foregroundStyle(.secondary)
                         }
                     }
                     .lineLimit(1)
@@ -677,21 +677,21 @@ struct Lista: View {
                     if atividade.peso >= 2 || estado.linhaSobCursor == atividade.id {
                         Button("Tirar da ilha", systemImage: "xmark.circle.fill") { mural.remover(id: atividade.id) }
                             .labelStyle(.iconOnly)
-                            .buttonStyle(.plain)
+                            .buttonStyle(EstiloBotao())
                             .font(.system(size: 14))
                             .foregroundStyle(.secondary)
                             .help(Text("Tirar da ilha"))
                     } else if let chegada = atividade.chegada {
-                        Text(chegada, style: .relative).font(.caption2).monospacedDigit().foregroundStyle(.tertiary)
+                        Text(chegada, style: .relative).font(Tipo.legenda).monospacedDigit().foregroundStyle(.tertiary)
                     }
                 }
                 .onHover { dentro in
                     if dentro { estado.linhaSobCursor = atividade.id }
                     else if estado.linhaSobCursor == atividade.id { estado.linhaSobCursor = nil }
                 }
-                .frame(height: Geometria.alturaLinha)
-                .padding(.horizontal, 6)
-                .cartao(raio: 10)  // um cartão por atividade, como as notificações empilhadas do iPhone
+                .padding(.horizontal, Painel.folga)
+                .frame(height: Painel.alturaAviso)
+                .cartao(raio: Painel.raio)  // um cartão por atividade, como as notificações empilhadas do iPhone
                 .contentShape(.rect)
                 // Só as do próprio Kizami abrem algo (a sessão do Claude, o jogo, a reunião, o app do emblema).
                 .onTapGesture { mural.abrir(atividade.id) }
@@ -699,12 +699,11 @@ struct Lista: View {
             }
             if atividades.count > visiveis {
                 Text(String(localized: "mais \(atividades.count - visiveis)"))
-                    .font(.caption).foregroundStyle(.secondary)
-                    .frame(height: Geometria.alturaLinha)
-                    .padding(.leading, 38)  // alinhado com os títulos, depois da coluna dos ícones e da folga do cartão
+                    .font(Tipo.corpo).foregroundStyle(.secondary)
+                    .frame(height: Painel.alturaAviso)
+                    .padding(.leading, Painel.folga + 22 + 10)  // alinhado com os títulos
             }
         }
-        .padding(.horizontal, 8)
         .frame(maxWidth: .infinity, alignment: .topLeading)
     }
 }

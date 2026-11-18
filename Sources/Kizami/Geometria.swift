@@ -16,11 +16,11 @@ struct Geometria: Equatable {
     static let maximoLinhas = 3
     /// A fileira de arquivos da bandeja, abaixo da lista.
     static let alturaBandeja: CGFloat = 64
-    static let espacoSecao: CGFloat = 10
+    static let espacoSecao: CGFloat = Painel.espaco
     /// O canto das linhas (avisos, eventos) dentro da ilha aberta.
     static let raioDoCartao: CGFloat = 12
-    /// O canto dos widgets e do cartão de destaque: concêntrico com o canto de 30 pt da ilha aberta, menos a folga.
-    static let raioDoWidget: CGFloat = 20
+    /// O canto dos widgets e dos cartões largos (`Painel.raio`).
+    static let raioDoWidget: CGFloat = Painel.raio
     /// O topo da ilha aberta: as abas (Início, Atalhos) e a engrenagem dos Ajustes.
     static let alturaCabecalho: CGFloat = 26
     /// A fileira de atalhos: ícone, nome e teclas.
@@ -119,7 +119,7 @@ struct Geometria: Equatable {
     /// Uma aba que não é o Início: o cabeçalho e o conteúdo dela (atalhos, Kanji).
     func abertaComAba(_ conteudo: CGFloat) -> CGSize {
         CGSize(width: max(Self.larguraAberta, compacta.width),
-               height: faixaDoTopo + 8 + Self.alturaCabecalho + Self.espacoSecao + conteudo + 14)
+               height: faixaDoTopo + 8 + Self.alturaCabecalho + Self.espacoSecao + conteudo + Painel.margem)
     }
 
     /// O quadradinho do lado direito da asa fechada (o "pausado" da música), com 4 pt de folga para o cursor. É a
@@ -257,7 +257,32 @@ struct Painel: Equatable, Sendable {
         fileiras = f
     }
 
-    static let espaco: CGFloat = 8
+    // A régua do Início. Todo espaço sai daqui: com cada cartão medindo o seu, a ilha parecia jogada.
+    /// Da borda da ilha até os cartões, dos lados e embaixo.
+    static let margem: CGFloat = 20
+    /// Entre quaisquer dois blocos: as abas e a grade, as fileiras, as colunas, os avisos.
+    static let espaco: CGFloat = 10
+    /// Dentro de todo cartão.
+    static let folga: CGFloat = 12
+    /// O canto dos cartões, concêntrico com o da ilha aberta (34 − 20 de margem), como pede o HIG: o espaço no canto
+    /// fica igual ao das laterais.
+    static let raio: CGFloat = 14
+    /// O ícone (ou a capa) à esquerda dos cartões largos.
+    static let icone: CGFloat = 40
+    /// A linha principal dos cartões largos: rótulo, título e detalhe ao lado do ícone.
+    static let linhaDeDestaque: CGFloat = 46
+    /// Os botões e pílulas dos cartões largos (Entrar na reunião, Abrir, as outras sessões).
+    static let botao: CGFloat = 26
+    /// Os trilhos de um widget: o rótulo, o valor e o detalhe ficam na mesma altura em todos, e a fileira alinha.
+    static let alturaRotulo: CGFloat = 12
+    static let alturaValor: CGFloat = 30
+    static let alturaDetalhe: CGFloat = 16
+    static let alturaRodape: CGFloat = 14
+    static let alturaWidget: CGFloat = folga + alturaRotulo + 4 + alturaValor + alturaDetalhe + 4 + alturaRodape + folga
+    /// Um aviso na grade: título e detalhe em duas linhas.
+    static let alturaAviso: CGFloat = 36
+    static let reguaDoDia: CGFloat = 34
+    static let linhaDoDia: CGFloat = 22
 
     /// A altura da grade, sem o cabeçalho.
     var altura: CGFloat {
@@ -270,30 +295,23 @@ struct Painel: Equatable, Sendable {
         return alturas.reduce(0, +) + CGFloat(max(alturas.count - 1, 0)) * Self.espaco
     }
 
-    /// Rótulo, número de 24 pt e uma linha de detalhe com o botão Entrar, e 12 pt de folga em volta.
-    static let alturaWidget: CGFloat = 92
-    /// A folga dentro dos cartões largos e o círculo do ícone deles (Claude, reunião).
-    static let folga: CGFloat = 12
-    static let icone: CGFloat = 36
-    /// O cartão de destaque: a folga, a linha principal e a de baixo (pílulas, botões).
+    /// O cartão largo: a folga, a linha de destaque e, quando há, a fileira dos botões.
     static func altura(_ largo: Largo) -> CGFloat {
-        switch largo {
-        case .claude(let outras): outras ? folga + icone + 10 + 24 + folga : folga + icone + folga
-        case .reuniao(let link): link ? folga + icone + 10 + 28 + folga : folga + icone + folga
-        case .musica: folga + capaDoCartao + folga
+        let base = folga + linhaDeDestaque + folga
+        return switch largo {
+        case .claude(let outras): outras ? base + espaco + botao : base
+        case .reuniao(let link): link ? base + espaco + botao : base
+        case .musica: base
         case .dia(let eventos): alturaDia(eventos: eventos)
-        case .atividades(let n): Geometria.alturaLinhas(n)
+        case .atividades(let n): CGFloat(n) * alturaAviso + CGFloat(max(n - 1, 0)) * espaco
         case .bandeja: Geometria.alturaBandeja
         }
     }
 
-    static let capaDoCartao: CGFloat = 48
-    static let cabecaDoDia: CGFloat = 44
-    static let reguaDoDia: CGFloat = 34
-    static let linhaDoDia: CGFloat = 22
-    /// Cabeça (data e temperatura), a régua e uma linha por evento que falta.
+    /// Cabeça (data e temperatura, da altura da linha de destaque), a régua e uma linha por evento que falta.
     static func alturaDia(eventos: Int) -> CGFloat {
-        folga + cabecaDoDia + 8 + reguaDoDia + (eventos > 0 ? 6 + CGFloat(min(eventos, 3)) * linhaDoDia : 0) + folga
+        folga + linhaDeDestaque + espaco + reguaDoDia
+            + (eventos > 0 ? espaco + CGFloat(min(eventos, 3)) * linhaDoDia : 0) + folga
     }
 
     /// O Início mais alto possível, para a janela caber qualquer estado.

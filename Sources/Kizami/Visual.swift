@@ -18,24 +18,22 @@ enum Movimento {
     }
 }
 
-/// A escala de tipo da ilha (v0.16). Antes quase tudo ia de 10 a 13 pt e nada saltava aos olhos; agora o número que
-/// importa (a temperatura, a hora, os minutos que faltam) é grande e arredondado, o título é médio e o resto recua.
+/// A escala de tipo da ilha (v0.16): cinco tamanhos e nada fora deles. Antes quase tudo ia de 10 a 13 pt e nada
+/// saltava aos olhos; depois cada cartão ganhou o seu tamanho e a ilha pareceu jogada. Agora o número que importa
+/// (a temperatura, a hora, os minutos) é 24 arredondado, o título 13, o resto 12, e os detalhes miúdos 10,5.
 enum Tipo {
-    // Um degrau abaixo do primeiro desenho (34/28/20/15): na ilha de verdade, perto do notch, tudo parecia grande.
-    static let destaque = Font.system(size: 28, weight: .semibold, design: .rounded)
     static let numero = Font.system(size: 24, weight: .semibold, design: .rounded)
-    static let numeroMedio = Font.system(size: 18, weight: .semibold, design: .rounded)
-    static let numeroPequeno = Font.system(size: 15, weight: .semibold, design: .rounded)
-    static let titulo = Font.system(size: 13.5, weight: .semibold)
+    static let titulo = Font.system(size: 13, weight: .semibold)
     static let corpo = Font.system(size: 12)
-    static let rotulo = Font.system(size: 9.5, weight: .semibold)
+    static let legenda = Font.system(size: 10.5, weight: .medium)
+    static let rotulo = Font.system(size: 10, weight: .semibold)
 }
 
 extension View {
     /// O rótulo pequeno em caixa alta em cima de cada widget ("AGORA", "PRÓXIMO").
     /// Com `cor`, o rótulo leva a cor do assunto (a capa, o calendário).
     func estiloRotulo(_ cor: Color? = nil) -> some View {
-        font(Tipo.rotulo).tracking(0.7).textCase(.uppercase).lineLimit(1)
+        font(Tipo.rotulo).tracking(0.6).textCase(.uppercase).lineLimit(1)
             .foregroundStyle(cor.map(AnyShapeStyle.init) ?? AnyShapeStyle(.secondary))
     }
 

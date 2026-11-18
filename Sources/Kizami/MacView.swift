@@ -28,10 +28,9 @@ struct WidgetMac: View {
     var body: some View {
         Quadro(id: "mac", estado: estado) {
             Cabeca(rotulo: Text(verbatim: "Mac"))
-            Spacer(minLength: 0)
-            HStack(spacing: 12) {
+            Valor {
                 if let bateria = mac.bateria { AnelDaBateria(bateria: bateria) }
-                ForEach(mac.emblemas.prefix(mac.bateria == nil ? 4 : 3)) { emblema in  // mais que isso não cabe no quadrado
+                ForEach(mac.emblemas.prefix(mac.bateria == nil ? 4 : 3)) { emblema in  // mais que isso não cabe no quadro
                     Button { Mac.ativar(emblema.bundle) } label: {
                         Self.icone(emblema.bundle)
                             .frame(width: 22, height: 22)
@@ -51,6 +50,12 @@ struct WidgetMac: View {
                 }
                 Spacer(minLength: 0)
                 privacidade
+            }
+            if let bateria = mac.bateria {
+                Detalhe {
+                    Text(verbatim: "\(bateria.porcento)%")
+                    Text(bateria.carregando ? "carregando" : bateria.ligadaNaTomada ? "na tomada" : "bateria")
+                }
             }
         }
     }
@@ -114,14 +119,14 @@ private struct AnelDaBateria: View {
         let cor: Color = bateria.carregando || bateria.ligadaNaTomada ? .green
             : bateria.porcento <= 20 ? .red : .white
         ZStack {
-            Circle().stroke(.white.opacity(0.12), lineWidth: 3.5)
+            Circle().stroke(.white.opacity(0.12), lineWidth: 3)
             Circle()
                 .trim(from: 0, to: CGFloat(min(max(bateria.porcento, 0), 100)) / 100)
-                .stroke(cor, style: StrokeStyle(lineWidth: 3.5, lineCap: .round))
+                .stroke(cor, style: StrokeStyle(lineWidth: 3, lineCap: .round))
                 .rotationEffect(.degrees(-90))
-            Text(verbatim: "\(bateria.porcento)").font(.system(size: 11, weight: .semibold, design: .rounded)).monospacedDigit()
+            Text(verbatim: "\(bateria.porcento)").font(.system(size: 10, weight: .semibold, design: .rounded)).monospacedDigit()
         }
-        .frame(width: 34, height: 34)
+        .frame(width: Painel.alturaValor, height: Painel.alturaValor)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(verbatim: "\(bateria.porcento)%"))
     }

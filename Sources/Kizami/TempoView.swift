@@ -14,15 +14,13 @@ struct WidgetTempo: View {
             Quadro(id: "tempo", estado: estado) {
                 // verbatim: a cidade é a que a pessoa digitou.
                 Cabeca(rotulo: tempo.local.map { Text(verbatim: $0) } ?? Text("Agora"))
-                HStack(alignment: .center) {
-                    Text(verbatim: Previsao.graus(previsao.temperatura)).font(Tipo.numero).monospacedDigit()
+                Valor {
+                    Text(verbatim: Previsao.graus(previsao.temperatura))
                     Spacer(minLength: 0)
-                    Image(systemName: previsao.simbolo).symbolRenderingMode(.multicolor).font(.system(size: 24))
+                    Image(systemName: previsao.simbolo).symbolRenderingMode(.multicolor).font(.system(size: 20))
                 }
-                Spacer(minLength: 0)
                 // Por minuto: o guarda-chuva com a hora sai quando ela passa, sem esperar a próxima previsão.
-                TimelineView(.everyMinute) { _ in detalhe(previsao) }
-                    .font(Tipo.corpo).foregroundStyle(.secondary).monospacedDigit().lineLimit(1)
+                TimelineView(.everyMinute) { _ in Detalhe { detalhe(previsao) } }
             }
             .help(dica(previsao))
         }
@@ -35,22 +33,13 @@ struct WidgetTempo: View {
 
     @ViewBuilder private func detalhe(_ previsao: Previsao) -> some View {
         if let chega = chuvaChegando(previsao) {
-            HStack(spacing: 2) {
-                Image(systemName: "umbrella.fill")
-                Text(chega, format: .dateTime.hour().minute())
-            }
+            Image(systemName: "umbrella.fill")
+            Text(chega, format: .dateTime.hour().minute())
         } else if let chuva = previsao.chuva, chuva >= Self.chuvaProvavel {
-            HStack(spacing: 2) {
-                Image(systemName: "drop.fill")
-                Text(verbatim: "\(chuva)%")
-            }
+            Image(systemName: "drop.fill")
+            Text(verbatim: "\(chuva)%")
         } else {
-            HStack(spacing: 1) {
-                Image(systemName: "arrow.up")
-                Text(verbatim: Previsao.graus(previsao.maxima))
-                Image(systemName: "arrow.down").padding(.leading, 3)
-                Text(verbatim: Previsao.graus(previsao.minima))
-            }
+            Text(verbatim: "↑\(Previsao.graus(previsao.maxima)) ↓\(Previsao.graus(previsao.minima))")
         }
     }
 

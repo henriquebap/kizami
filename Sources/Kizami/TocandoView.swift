@@ -29,23 +29,18 @@ struct CartaoMusica: View {
 
     var body: some View {
         let cor = tocando.corDeDestaque
-        HStack(spacing: 12) {
-            Miniatura(tocando: tocando, lado: Painel.capaDoCartao, raio: 11)
-                .matchedGeometryEffect(id: "capa", in: espaco)
-            VStack(alignment: .leading, spacing: 2) {
-                // verbatim: título, artista e o nome do app vêm do player e não podem virar Markdown nem chave de tradução.
-                Text(verbatim: tocando.nomeDoApp).estiloRotulo(cor)
-                Text(verbatim: tocando.metadados?.titulo ?? tocando.nomeDoApp).font(Tipo.titulo)
-                Text(verbatim: tocando.subtitulo).font(Tipo.corpo).foregroundStyle(.secondary)
-            }
-            .lineLimit(1)
-            .contentTransition(.opacity)
-            Spacer(minLength: 4)
+        // verbatim: título, artista e o nome do app vêm do player e não podem virar Markdown nem chave de tradução.
+        LinhaDeDestaque(rotulo: Text(verbatim: tocando.nomeDoApp), corDoRotulo: cor,
+                        titulo: Text(verbatim: tocando.metadados?.titulo ?? tocando.nomeDoApp),
+                        detalhe: Text(verbatim: tocando.subtitulo)) {
+            Miniatura(tocando: tocando, lado: Painel.icone, raio: 9).matchedGeometryEffect(id: "capa", in: espaco)
+        } fim: {
             ControlesDoPlayer(tocando: tocando, grande: true)
         }
+        .contentTransition(.opacity)
         .padding(Painel.folga)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .cartao(cor: cor, raio: Geometria.raioDoWidget, realce: estado.cartaoSobCursor == "musica", id: "musica", em: espaco)
+        .cartao(cor: cor, raio: Painel.raio, realce: estado.cartaoSobCursor == "musica", id: "musica", em: espaco)
         .contentShape(.rect)
         .realce("musica", estado)
         .onTapGesture(perform: aoClicar)
@@ -62,17 +57,18 @@ struct WidgetMusica: View {
 
     var body: some View {
         Quadro(id: "musica", estado: estado, cor: tocando.corDeDestaque, acao: aoClicar, espaco: espaco) {
-            HStack(spacing: 6) {
-                Miniatura(tocando: tocando, lado: 30, raio: 7).matchedGeometryEffect(id: "capa", in: espaco)
+            // verbatim: o nome do app, o título e o artista vêm do player.
+            Cabeca(rotulo: Text(verbatim: tocando.nomeDoApp))
+            Valor {
+                Miniatura(tocando: tocando, lado: 26, raio: 6).matchedGeometryEffect(id: "capa", in: espaco)
                 Spacer(minLength: 0)
                 ControlesDoPlayer(tocando: tocando)
             }
+            Detalhe { Text(verbatim: tocando.metadados?.titulo ?? tocando.nomeDoApp).foregroundStyle(.primary) }
             Spacer(minLength: 0)
-            Group {
-                Text(verbatim: tocando.metadados?.titulo ?? tocando.nomeDoApp).font(.system(size: 13, weight: .semibold))
-                Text(verbatim: tocando.subtitulo).font(Tipo.corpo).foregroundStyle(.secondary)
+            if let artista = tocando.metadados?.artista {
+                Rodape { Text(verbatim: artista).foregroundStyle(.secondary) }
             }
-            .lineLimit(1)
         }
     }
 }

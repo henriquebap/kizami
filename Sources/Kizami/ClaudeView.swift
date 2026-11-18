@@ -34,34 +34,15 @@ struct CartaoClaude: View {
     var body: some View {
         if let sessao = sessoes.sessoes.first(where: { $0.estado == .precisaDeVoce }) {
             let outras = sessoes.sessoes.filter { $0.id != sessao.id }.prefix(3)
-            VStack(alignment: .leading, spacing: 10) {
-                HStack(spacing: 12) {
-                    Image(systemName: EstadoClaude.precisaDeVoce.simbolo)
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(.orange)
+            VStack(alignment: .leading, spacing: Painel.espaco) {
+                // verbatim: o nome da pasta vem de fora.
+                LinhaDeDestaque(rotulo: Text(verbatim: "Claude Code"), corDoRotulo: .orange,
+                                titulo: Text(verbatim: String(localized: "\(sessao.pasta) precisa de você")),
+                                detalhe: Text("esperando há \(Text(sessao.desde, style: .relative))")) {
+                    IconeDeDestaque(simbolo: EstadoClaude.precisaDeVoce.simbolo, cor: .orange)
                         .symbolEffect(.bounce, value: sessao.desde)  // uma vez, quando passa a pedir; nada animando parado
-                        .frame(width: Painel.icone, height: Painel.icone)
-                        .background(Circle().fill(.orange.opacity(0.22)))
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(verbatim: "Claude Code").estiloRotulo(.orange)
-                        // verbatim: o nome da pasta vem de fora.
-                        Text(verbatim: String(localized: "\(sessao.pasta) precisa de você")).font(Tipo.titulo)
-                        Text("esperando há \(Text(sessao.desde, style: .relative))")
-                            .font(Tipo.corpo).monospacedDigit().foregroundStyle(.secondary)
-                    }
-                    .lineLimit(1)
-                    Spacer(minLength: 4)
-                    Button { sessoes.focar(sessao) } label: {
-                        Label("Abrir", systemImage: "arrow.up.right")
-                            .font(.system(size: 12, weight: .semibold))
-                            .padding(.horizontal, 12)
-                            .frame(height: 26)
-                            .background(Capsule().fill(.orange))
-                            .foregroundStyle(.black.opacity(0.85))
-                            .contentShape(.capsule)
-                    }
-                    .buttonStyle(EstiloBotao())
-                    .fixedSize()
+                } fim: {
+                    Pilula(titulo: "Abrir", simbolo: "arrow.up.right", cor: .orange) { sessoes.focar(sessao) }
                 }
                 if !outras.isEmpty {
                     HStack(spacing: 6) {
@@ -74,7 +55,7 @@ struct CartaoClaude: View {
             }
             .padding(Painel.folga)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .cartao(cor: .orange, raio: Geometria.raioDoWidget)
+            .cartao(cor: .orange, raio: Painel.raio)
             .contentShape(.rect)
             .onTapGesture { sessoes.focar(sessao) }
         }
@@ -87,12 +68,13 @@ private struct PilulaDeSessao: View {
     var body: some View {
         HStack(spacing: 6) {
             Circle().fill(sessao.estado.cor).frame(width: 7, height: 7)
-            Text(verbatim: sessao.pasta).font(.system(size: 11.5, weight: .medium))  // nome de pasta é dado de fora
-            Text(verbatim: sessao.estado.rotulo).font(.system(size: 11.5)).foregroundStyle(.secondary)
+            Text(verbatim: sessao.pasta)  // nome de pasta é dado de fora
+            Text(verbatim: sessao.estado.rotulo).foregroundStyle(.secondary)
         }
+        .font(Tipo.legenda)
         .lineLimit(1)
         .padding(.horizontal, 10)
-        .frame(height: 24)
+        .frame(height: Painel.botao)
         .background(Capsule().fill(.white.opacity(0.08)))
     }
 }
@@ -106,18 +88,18 @@ struct WidgetSessoes: View {
         let lista = sessoes.sessoes
         Quadro(id: "sessoes", estado: estado, acao: lista.first.map { primeira in { sessoes.focar(primeira) } }) {
             Cabeca(rotulo: Text(verbatim: "Claude"), simbolo: "sparkles", cor: .orange)
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Text(verbatim: "\(lista.count)").font(Tipo.numero).monospacedDigit()
-                Text(lista.count == 1 ? "sessão" : "sessões").font(Tipo.corpo).foregroundStyle(.secondary)
+            Valor {
+                HStack(alignment: .firstTextBaseline, spacing: 5) {
+                    Text(verbatim: "\(lista.count)")
+                    Text(lista.count == 1 ? "sessão" : "sessões").font(Tipo.corpo).foregroundStyle(.secondary)
+                }
             }
-            Spacer(minLength: 0)
-            HStack(spacing: 5) {
+            Detalhe {
                 ForEach(lista.prefix(4)) { sessao in
                     Circle().fill(sessao.estado.cor).frame(width: 7, height: 7)
                         .help(Text(verbatim: "\(sessao.pasta): \(sessao.estado.rotulo)"))
                 }
                 Text(verbatim: lista.map(\.pasta).joined(separator: ", "))
-                    .font(Tipo.corpo).foregroundStyle(.secondary).lineLimit(1)
             }
         }
     }
