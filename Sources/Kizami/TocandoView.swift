@@ -1,5 +1,12 @@
 import SwiftUI
 
+extension Controle {
+    /// Tocar ou pausar o que está tocando: pelo AppleScript no Music e no Spotify, pela tecla de mídia num navegador.
+    @MainActor static func tocarOuPausar(_ tocando: TocandoAgora) {
+        if let app = tocando.app, sabeControlar(app) { enviar(.alternar, app: app) } else { TeclaDeMidia.tocarOuPausar() }
+    }
+}
+
 extension TocandoAgora {
     /// A cor da capa, já ajustada para o preto (`Capa.destaque`). Sem capa ou com capa cinza, nada.
     var corDeDestaque: Color? { cor?.cor }

@@ -17,7 +17,6 @@ struct WidgetInteresse: View {
                     Text(verbatim: placar.texto).font(Tipo.numeroMedio).monospacedDigit()
                         .lineLimit(1).minimumScaleFactor(0.6)
                         .contentTransition(.numericText())
-                    Spacer(minLength: 0)
                     Text(verbatim: placar.situacao.isEmpty ? evento.titulo : placar.situacao)
                         .font(Tipo.corpo).foregroundStyle(.secondary).lineLimit(1)
                 } else {
@@ -26,8 +25,20 @@ struct WidgetInteresse: View {
                         Text(verbatim: EventoInteresse.quando(evento, agora: contexto.date))
                             .font(Tipo.numeroMedio).monospacedDigit().lineLimit(1).minimumScaleFactor(0.6)
                     }
-                    Spacer(minLength: 0)
                     Text(verbatim: evento.titulo).font(Tipo.corpo).foregroundStyle(.secondary).lineLimit(1)
+                }
+                Spacer(minLength: 0)
+                // O próximo de outra fonte seguida, em pequeno (a F1 em cima, os Bills embaixo): os dois que a pessoa
+                // segue de relance, sem um esconder o outro.
+                if let outro = interesses.proximos.first(where: { $0.fonte != evento.fonte }) {
+                    TimelineView(.everyMinute) { contexto in
+                        HStack(spacing: 4) {
+                            Image(systemName: outro.fonte.simbolo).foregroundStyle(Self.cor(outro.fonte))
+                            Text(verbatim: "\(outro.titulo) · \(EventoInteresse.quando(outro, agora: contexto.date))")
+                                .foregroundStyle(.secondary)
+                        }
+                        .font(.system(size: 11)).monospacedDigit().lineLimit(1)
+                    }
                 }
             }
             .help(evento.link == nil ? "" : String(localized: "Abrir na ESPN"))

@@ -188,6 +188,11 @@ final class Janela {
         }
     }
 
+    /// A asa mostra a música pausada agora (nada de aviso, volume ou outra coisa na frente).
+    private var musicaPausadaNaAsa: Bool {
+        fontes.mural.avisos.isEmpty && !fontes.volume.naAsa && fontes.tocando.pausado && asaAtual(fontes) == .tocando
+    }
+
     /// Abre ou fecha conforme o cursor e devolve quanto esperar até a próxima consulta.
     /// Também chamada a cada movimento de um arraste de arquivo (`Arrasto`).
     @discardableResult func conferir() -> Duration {
@@ -238,6 +243,12 @@ final class Janela {
             } else {
                 recolher()
             }
+        }
+        // Fechada com a música pausada, o "pausado" da asa vira botão de tocar: só ali o clique fica na ilha. Fora dele
+        // (e em qualquer outro estado fechado) a ilha ignora o mouse, e a barra de menus continua recebendo tudo.
+        if !estado.aberta {
+            let noBotao = !oculta && musicaPausadaNaAsa && g.botaoDaAsa(desenhada).contains(cursor)
+            if painel.ignoresMouseEvents == noBotao { painel.ignoresMouseEvents = !noBotao }
         }
         acertarCamera()  // entrou ou saiu da aba Espelho com a ilha aberta
         acertarProgresso()  // expandiu ou recolheu a música

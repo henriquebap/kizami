@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 
 /// O que a linha de comando pediu.
@@ -137,6 +138,13 @@ enum Correio {
     /// No caminho, o terminal de controle do primeiro processo que tem um, que é o da aba: o `claude`, o shell e o
     /// login herdam o pty que o Terminal abriu para ela; se o hook rodar numa sessão própria, sem terminal, o `claude`
     /// ainda tem. O app (Terminal, iTerm2) não tem terminal de controle, então o tty nunca vem de cima dele.
+    /// Só um app que a pessoa vê e que dá para trazer para frente. O Claude Code do app Claude roda de dentro de um
+    /// `claude.app` próprio (em `Application Support/Claude/claude-code/<versão>/…`), que não é um app aberto: parar
+    /// nele dava um bundle que o clique na ilha não achava, e nada abria. Subindo mais, chega no Claude.app.
+    private static func appAberto(_ bundle: String) -> Bool {
+        NSRunningApplication.runningApplications(withBundleIdentifier: bundle).contains { $0.activationPolicy == .regular }
+    }
+
     private static func ancestrais() -> (app: String?, tty: String?) {
         var pid = getppid()
         var tty: String?
@@ -150,7 +158,8 @@ enum Correio {
             var caminho = [CChar](repeating: 0, count: 4096)
             if proc_pidpath(pid, &caminho, UInt32(caminho.count)) > 0,
                let app = Som.caminhoDoApp(String(decoding: caminho.prefix { $0 != 0 }.map { UInt8(bitPattern: $0) }, as: UTF8.self)),
-               let bundle = Bundle(path: app)?.bundleIdentifier {
+               let bundle = Bundle(path: app)?.bundleIdentifier,
+               Self.appAberto(bundle) {
                 return (bundle, tty)
             }
             pid = info.kp_eproc.e_ppid

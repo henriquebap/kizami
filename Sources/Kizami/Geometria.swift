@@ -122,6 +122,15 @@ struct Geometria: Equatable {
                height: faixaDoTopo + 8 + Self.alturaCabecalho + Self.espacoSecao + conteudo + 14)
     }
 
+    /// O quadradinho do lado direito da asa fechada (o "pausado" da música), com 4 pt de folga para o cursor. É a
+    /// única parte da ilha fechada que recebe clique: fora dele a barra de menus continua recebendo tudo.
+    func botaoDaAsa(_ tamanho: CGSize) -> CGRect {
+        let lado = min(20, notch.height - 12)
+        let r = retangulo(tamanho)
+        let x = r.maxX - Self.orelha - ((notch.height - lado) / 2 + 2) - lado
+        return CGRect(x: x, y: r.minY + (r.height - lado) / 2, width: lado, height: lado).insetBy(dx: -4, dy: -4)
+    }
+
     /// A janela tem o tamanho do maior estado mais a margem da sombra; a forma anima dentro dela.
     var janela: CGRect {
         let maior = aberta(Painel.maior)
@@ -196,6 +205,7 @@ struct Painel: Equatable, Sendable {
         var reuniao = false
         var reuniaoComLink = false
         var tocando = false
+        /// O timer está correndo ou pausado (vem antes na grade). Parado, ele só entra para fechar um par.
         var timer = false
         /// A faixa "Hoje" (tempo e agenda) está à vista: sem ela, também não há o cartão do dia.
         var hoje = true
@@ -234,6 +244,9 @@ struct Painel: Equatable, Sendable {
         if e.interesse { widgets.append(.interesse) }
         if e.mac { widgets.append(.mac) }
         widgets = Array(widgets.prefix(Self.maximoWidgets))
+        // Ímpar, o último ficaria sozinho na fileira toda: o timer parado entra para fechar o par (é sempre útil, um
+        // clique começa um foco). Com o timer já na grade, o último fica largo mesmo.
+        if widgets.count % 2 == 1 && !widgets.contains(.timer) { widgets.append(.timer) }
 
         var f: [Fileira] = destaque.map { [.larga($0)] } ?? []
         if e.atividades > 0 { f.append(.larga(.atividades(min(e.atividades, Geometria.maximoLinhas)))) }

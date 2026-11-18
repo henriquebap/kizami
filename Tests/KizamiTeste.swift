@@ -22,24 +22,31 @@ import Foundation
              Painel(E(sessoes: 2, tocando: true, tempo: true, agenda: true, mac: true)).fileiras,
              [.larga(.musica), .dupla(.tempo, .agenda), .dupla(.sessoes, .mac)])
     conferir("Claude precisa de você vence a música, e as sessões não repetem num widget",
-             Painel(E(precisaDeVoce: true, sessoes: 3, tocando: true)).fileiras, [.larga(.claude(outras: true)), .sozinha(.musica)])
+             Painel(E(precisaDeVoce: true, sessoes: 3, tocando: true)).fileiras, [.larga(.claude(outras: true)), .dupla(.musica, .timer)])
     conferir("reunião em destaque esconde o widget da agenda",
-             Painel(E(reuniao: true, tempo: true, agenda: true)).fileiras, [.larga(.reuniao(link: false)), .sozinha(.tempo)])
+             Painel(E(reuniao: true, tempo: true, agenda: true)).fileiras, [.larga(.reuniao(link: false)), .dupla(.tempo, .timer)])
     conferir("reunião sem link: sem a linha do botão", Painel.altura(.reuniao(link: false)) < Painel.altura(.reuniao(link: true)), true)
     conferir("no dia calmo, tempo e agenda estão no cartão do dia",
-             Painel(E(tempo: true, agenda: true, mac: true)).fileiras, [.larga(.dia(eventos: 0)), .sozinha(.mac)])
+             Painel(E(tempo: true, agenda: true, mac: true)).fileiras, [.larga(.dia(eventos: 0)), .dupla(.mac, .timer)])
     conferir("avisos logo depois do destaque, até 3",
              Painel(E(tocando: true, atividades: 7)).fileiras, [.larga(.musica), .larga(.atividades(3))])
     conferir("no máximo 6 widgets",
              Painel(E(sessoes: 1, reuniao: true, tocando: true, timer: true, tempo: true, agenda: true, lembretes: 2,
                       interesse: true, mac: true)).fileiras.count, 1 + 3)
-    conferir("Hoje escondido e nada acontecendo: sem destaque", Painel(E(hoje: false, mac: true)).fileiras, [.sozinha(.mac)])
+    conferir("Hoje escondido e nada acontecendo: sem destaque", Painel(E(hoje: false, mac: true)).fileiras, [.dupla(.mac, .timer)])
+    conferir("ímpar com o timer já correndo: o último fica largo",
+             Painel(E(timer: true, interesse: true, mac: true)).fileiras, [.larga(.dia(eventos: 0)), .dupla(.timer, .interesse), .sozinha(.mac)])
+    conferir("lembretes acabaram: o Mac ganha o timer de par, não a fileira toda",
+             Painel(E(sessoes: 1, interesse: true, mac: true)).fileiras, [.larga(.dia(eventos: 0)), .dupla(.sessoes, .interesse), .dupla(.mac, .timer)])
     conferir("bandeja no fim", Painel(E(hoje: false, bandeja: true)).fileiras, [.larga(.bandeja)])
     conferir("altura: destaque, dupla e o espaço entre eles",
              Painel(E(tocando: true, tempo: true, agenda: true)).altura, 84 + 8 + Painel.alturaWidget)
     conferir("janela cabe o Início mais alto e a sombra",
              mac.janela.height - Geometria.sombra >= mac.aberta(Painel.maior).height, true)
     conferir("aba de atalhos: cabeçalho e a fileira", mac.abertaAtalhos, CGSize(width: 420, height: 32 + 8 + 26 + 10 + 62 + 14))
+    conferir("botão da asa: o lado direito da compacta, 20 pt com 4 de folga",
+             mac.botaoDaAsa(mac.compacta), CGRect(x: 621.5 + 269 - 8 - 8 - 20 - 4, y: 950 + 6 - 4, width: 28, height: 28))
+    conferir("botão da asa fica fora do notch (que abre a ilha)", mac.botaoDaAsa(mac.compacta).intersects(mac.gatilho), false)
     conferir("cursor encostado no topo do notch abre", mac.gatilho.contains(CGPoint(x: 756, y: 982)), true)
     conferir("cursor na asa (barra de menus) não abre", mac.gatilho.contains(CGPoint(x: 650, y: 970)), false)
     conferir("aberta, a ilha inteira segura o hover", mac.zona(mac.aberta(Painel(E(atividades: 3)))).contains(CGPoint(x: 600, y: 850)), true)

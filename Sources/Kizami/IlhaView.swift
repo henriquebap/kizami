@@ -177,14 +177,19 @@ struct IlhaView: View {
             // recorte da tela à vista. Aberta, a pessoa escolhe nos Ajustes quanto de preto fica.
             let opacidade = forma == .aberta ? fontes.personalizacao.opacidade : 1
             if opacidade < 1 {
-                Color.clear.glassEffect(.regular.tint(.black.opacity(opacidade)), in: contorno)
+                // O vidro claro e, por cima, o preto na medida escolhida. Com o tint no vidro regular, 40% e 95% davam
+                // quase o mesmo cinza: o vidro regular já escurece sozinho sobre fundo escuro. Assim a escala é linear.
+                Color.clear.glassEffect(.clear, in: contorno)
+                contorno.fill(.black.opacity(opacidade))
             } else {
                 contorno.fill(.black)
             }
             if forma == .aberta {
                 // O contorno de 1 pt na cor do assunto, como a borda da Dynamic Island no modo escuro: diz de relance
                 // de quem é a ilha agora. Sem assunto, um branco quase apagado, só para separar do fundo.
-                contorno.stroke((corDoAssunto(fontes) ?? .white).opacity(corDoAssunto(fontes) == nil ? 0.1 : 0.4), lineWidth: 1)
+                // 3 pt de traço: a metade de fora some no recorte da forma, e fica 1,5 pt à vista (com 1 pt, sobrava meio).
+                let cor = corDoAssunto(fontes)
+                contorno.stroke((cor ?? .white).opacity(cor == nil ? 0.16 : 0.5), lineWidth: 3)
             }
             Group {
                 switch forma {
@@ -263,7 +268,16 @@ struct IlhaView: View {
                         } direita: {
                             IndicadorPrivacidade(mac: fontes.mac)
                             if tocando.pausado {
-                                Image(systemName: "pause.fill").font(.system(size: 10, weight: .bold)).foregroundStyle(.secondary)
+                                // O único botão da ilha fechada: a `Janela` deixa o clique passar só neste quadradinho
+                                // (`Geometria.botaoDaAsa`), e só com a música pausada.
+                                Button("Tocar", systemImage: "play.fill") { Controle.tocarOuPausar(tocando) }
+                                    .labelStyle(.iconOnly)
+                                    .buttonStyle(EstiloBotao())
+                                    .font(.system(size: 11, weight: .bold))
+                                    .foregroundStyle(.secondary)
+                                    .frame(width: lado, height: lado)
+                                    .contentShape(.rect)
+                                    .help(Text("Tocar"))
                             } else {
                                 Barras(altura: lado * 0.6, cor: tocando.corDeDestaque)
                             }
@@ -418,34 +432,38 @@ private struct Cabecalho: View {
     @Namespace private var espaco
 
     var body: some View {
+        // As abas no meio, alinhadas com o notch; o Limpar à esquerda e a engrenagem à direita, por cima.
         GlassEffectContainer(spacing: 4) {
             HStack(spacing: 4) {
                 ForEach(personalizacao.abas, id: \.self) { aba($0) }
-                Spacer(minLength: 0)
-                if estado.aba == .inicio && !mural.atividades.isEmpty {
-                    // Duas sessões do Claude terminaram e os avisos ficaram: um clique tira todos.
-                    Button { mural.limpar() } label: {
-                        Label("Limpar", systemImage: "xmark.circle.fill")
-                            .font(.caption.weight(.semibold))
-                            .padding(.horizontal, 8)
-                            .frame(height: 22)
-                            .glassEffect(.regular, in: .capsule)
-                            .contentShape(.capsule)
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(.secondary)
-                    .help(Text("Tirar todos os avisos da ilha"))
-                    .transition(.opacity)
-                }
-                Button("Ajustes", systemImage: "gearshape.fill") { Kizami.shared.abrirAjustes() }
-                    .labelStyle(.iconOnly)
-                    .buttonStyle(.plain)
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(.secondary)
-                    .frame(width: 26, height: 26)
-                    .contentShape(.rect)
-                    .help(Text("Ajustes"))
             }
+        }
+        .frame(maxWidth: .infinity)
+        .overlay(alignment: .leading) {
+            if estado.aba == .inicio && !mural.atividades.isEmpty {
+                // Duas sessões do Claude terminaram e os avisos ficaram: um clique tira todos.
+                Button { mural.limpar() } label: {
+                    Label("Limpar", systemImage: "xmark.circle.fill")
+                        .labelStyle(.iconOnly)
+                        .font(.system(size: 13, weight: .semibold))
+                        .frame(width: 26, height: 26)
+                        .contentShape(.rect)
+                }
+                .buttonStyle(EstiloBotao())
+                .foregroundStyle(.secondary)
+                .help(Text("Tirar todos os avisos da ilha"))
+                .transition(.opacity)
+            }
+        }
+        .overlay(alignment: .trailing) {
+            Button("Ajustes", systemImage: "gearshape.fill") { Kizami.shared.abrirAjustes() }
+                .labelStyle(.iconOnly)
+                .buttonStyle(EstiloBotao())
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(.secondary)
+                .frame(width: 26, height: 26)
+                .contentShape(.rect)
+                .help(Text("Ajustes"))
         }
         .padding(.horizontal, 10)
         .frame(height: Geometria.alturaCabecalho)
