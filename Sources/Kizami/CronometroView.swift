@@ -96,6 +96,13 @@ struct AjustesTimer: View {
             Text("Ao fim do foco, clique no aviso para começar a pausa; ao fim da pausa, para voltar ao foco. Até 3 timers livres, de 1 a 240 minutos.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
+            Toggle("Ligar o Não Perturbe durante o foco", isOn: $cronometro.naoPerturbe)
+            if cronometro.naoPerturbe {
+                Text("No app Atalhos, crie “\(Cronometro.atalhoLigar)” com a ação Definir Foco (Não Perturbe, ligado) e “\(Cronometro.atalhoDesligar)” com a mesma ação desligando. O foco roda o primeiro; a pausa, o fim ou parar rodam o segundo.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Link("Abrir o app Atalhos", destination: URL(string: "shortcuts://")!)
+            }
         }
     }
 }

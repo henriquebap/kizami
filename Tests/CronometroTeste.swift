@@ -112,7 +112,58 @@ import Foundation
     conferir("timer livre: aviso sem clique", [mural.atividades.count == 1, mural.podeAbrir(Cronometro.idAviso)], [true, false])
     cronometro.parar()
 
+    cronometro.iniciar(minutos: 25, modo: .foco, agora: t0)
+    conferir("Não Perturbe desligado nos Ajustes: nada ligado", cronometro.naoPerturbeLigado, false)
+    cronometro.parar()
+    mural.remover(id: Cronometro.idAviso)
+    testarNaoPerturbe(padroes)
+
     testarEstadoSalvo(padroes)
+}
+
+/// Não Perturbe: só a troca de foco para fora (ou de volta) roda um atalho, e o "ligado" sobrevive a reiniciar.
+/// O atalho é falso: nada roda no app Atalhos; aqui conta o estado que o Kizami acha que deixou.
+@MainActor private func testarNaoPerturbe(_ padroes: UserDefaults) {
+    padroes.removeObject(forKey: Cronometro.chaveEstado)
+    let falso: @Sendable (String) async -> Int32 = { _ in 0 }
+    let t0 = Date.now
+    let c = Cronometro(mural: Mural(), padroes: padroes, executarAtalho: falso)
+    c.naoPerturbe = true
+    c.iniciar(minutos: 25, modo: .foco, agora: t0)
+    conferir("foco liga", c.naoPerturbeLigado, true)
+    c.pausar(agora: t0 + 10)
+    conferir("foco pausado continua ligado", c.naoPerturbeLigado, true)
+    c.iniciar(minutos: 5, modo: .pausa, agora: t0)
+    conferir("pausa do pomodoro desliga", c.naoPerturbeLigado, false)
+    c.iniciar(minutos: 25, modo: .foco, agora: t0)
+    c.iniciar(minutos: 10, modo: .livre, agora: t0)
+    conferir("timer livre desliga", c.naoPerturbeLigado, false)
+    c.iniciar(minutos: 25, modo: .foco, agora: t0)
+    c.terminar()
+    conferir("fim do foco desliga", c.naoPerturbeLigado, false)
+    c.iniciar(minutos: 25, modo: .foco, agora: t0)
+    c.parar()
+    conferir("parar desliga", c.naoPerturbeLigado, false)
+    c.iniciar(minutos: 25, modo: .foco, agora: t0)
+    c.naoPerturbe = false
+    conferir("desligar a opção no meio do foco desliga", c.naoPerturbeLigado, false)
+    c.naoPerturbe = true
+    conferir("ligar a opção no meio do foco liga", c.naoPerturbeLigado, true)
+
+    // O app fecha no meio do foco e reabre: foco ainda correndo continua ligado, sem rodar de novo.
+    conferir("reabriu no foco: ligado", Cronometro(mural: Mural(), padroes: padroes, executarAtalho: falso).naoPerturbeLigado, true)
+    // Reabre muito depois do fim: o estado é velho demais para avisar, mas o Não Perturbe desliga.
+    padroes.set(Cronometro.codificar(.init(modo: .foco, fim: t0 - 5 * 3600)), forKey: Cronometro.chaveEstado)
+    let tarde = Cronometro(mural: Mural(), padroes: padroes, executarAtalho: falso)
+    conferir("reabriu horas depois: desligado", [tarde.ativo, tarde.naoPerturbeLigado], [false, false])
+    // Fecha com o foco pausado e reabre: parar ainda desliga.
+    tarde.iniciar(minutos: 25, modo: .foco, agora: t0)
+    tarde.pausar(agora: t0 + 10)
+    let pausado = Cronometro(mural: Mural(), padroes: padroes, executarAtalho: falso)
+    conferir("reabriu pausado: ligado", [pausado.pausado, pausado.naoPerturbeLigado], [true, true])
+    pausado.parar()
+    conferir("parar depois de reabrir desliga", pausado.naoPerturbeLigado, false)
+    padroes.removeObject(forKey: Cronometro.chaveNaoPerturbe)
 }
 
 /// O timer sobrevive a reiniciar o app: a regra pura sobre o que veio do disco e o ciclo guardar → reabrir.

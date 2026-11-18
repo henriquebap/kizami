@@ -109,7 +109,7 @@
 "Calendário (link ICS ou webcal)" = "Calendar (ICS or webcal link)";
 "Adicionar" = "Add";
 "Use um link https ou webcal." = "Use an https or webcal link.";
-"Lembra na semana do evento, na véspera e 1 hora antes. Jogos e corridas vêm da ESPN." = "Reminds you during the event's week, the day before and 1 hour before. Games and races come from ESPN.";
+"Lembra na semana do evento, na véspera e 1 hora antes. Jogos e corridas vêm da ESPN; F2, WEC e IMSA, de calendários públicos." = "Reminds you during the event's week, the day before and 1 hour before. Games and races come from ESPN; F2, WEC and IMSA from public calendars.";
 
 /* Cabeçalho da ilha aberta e atalhos */
 "Início" = "Home";
@@ -289,3 +289,23 @@
 "mais %lld hoje" = "%lld more today";
 "Sem som" = "Muted";
 "clique para começar" = "click to start";
+
+/* v0.17: Não Perturbe no foco */
+"Ligar o Não Perturbe durante o foco" = "Turn on Do Not Disturb during focus";
+"No app Atalhos, crie “%@” com a ação Definir Foco (Não Perturbe, ligado) e “%@” com a mesma ação desligando. O foco roda o primeiro; a pausa, o fim ou parar rodam o segundo." = "In the Shortcuts app, create “%@” with the Set Focus action (Do Not Disturb, on) and “%@” with the same action turning it off. Focus runs the first; the break, the end or stopping run the second.";
+"Abrir o app Atalhos" = "Open Shortcuts";
+"O Não Perturbe não mudou" = "Do Not Disturb didn't change";
+"Crie o atalho “%@” no app Atalhos" = "Create the “%@” shortcut in the Shortcuts app";
+
+/* v0.17: sessões da F1 e a box de esportes em páginas */
+"Treino 1" = "Practice 1";
+"Treino 2" = "Practice 2";
+"Treino 3" = "Practice 3";
+"Classificação" = "Qualifying";
+"Sprint" = "Sprint";
+"Corrida" = "Race";
+
+/* v0.17: F2, WEC e IMSA por calendários públicos */
+"Fórmula 2" = "Formula 2";
+"Treino" = "Practice";
+"Teste" = "Test";

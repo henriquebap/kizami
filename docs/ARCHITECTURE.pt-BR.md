@@ -71,7 +71,8 @@ O macOS desenha um painel no nível da ilha até num espaço de tela cheia, ent�
 | Próximo evento | Calendários |
 | Emblemas do Dock, aba Atalhos, aba Kanji | Acessibilidade |
 | Tempo | rede: Open-Meteo |
-| Interesses, placar ao vivo | rede: o JSON público da ESPN e os links ICS que a pessoa cola |
+| Interesses, placar ao vivo | rede: o JSON público da ESPN, os ICS fixos da F2 (`files-f2.motorsportcalendars.com`), do WEC e da IMSA (`calendar.google.com`) e os links ICS que a pessoa cola |
+| Não Perturbe no foco (opt-in) | dois atalhos que a pessoa cria, rodados com `shortcuts run` |
 | Play/pause do navegador, colar dos Copiados | Acessibilidade |
 | Espelho da câmera | Câmera |
 | Downloads | a pasta Downloads |

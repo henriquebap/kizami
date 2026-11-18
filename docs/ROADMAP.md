@@ -152,6 +152,15 @@ Events the person follows but doesn't keep in their calendar (Buffalo Bills, F1,
 - **Reminders** (off by default, Settings › Reminders): up to 3 from the Reminders app through EventKit, overdue and due today first (by due date), then undated (by priority); tomorrow onward stays in the Reminders app. Clicking marks one completed, the only thing Kizami writes there. Refreshed on `EKEventStoreChanged` and at the day change, no polling.
 - **Headphones connected** (off by default, Settings › Headphones): when AirPods or other Bluetooth headphones connect, the island shows the name and battery ("L 80% · R 78% · case 55%", or the single battery). The connection comes from IOBluetooth's connect notifications, and the battery from one `system_profiler -json SPBluetoothDataType` run (fixed arguments, timeout, size cap). Asks for Bluetooth. Only listens: never connects, disconnects or touches the audio output.
 
+### v0.17
+
+- **Do Not Disturb during focus** (off by default, Settings › Timer): entering the pomodoro's focus runs the “Kizami Foco” shortcut, leaving it (end, stop, break or a free timer) runs “Kizami Fim do Foco”. The person builds both in the Shortcuts app with the Set Focus action, so which Focus turns on is theirs to pick. Pausing the focus keeps it on. A missing shortcut shows a notice on the island saying which one to create.
+- **Sports box in pages:** one page per followed source (up to 5), a horizontal paging `ScrollView` (two-finger swipe) plus clickable dots; the time is the big number of each page, so it is never the part cut off.
+- **Every F1 session:** ESPN's F1 scoreboard already lists FP1–FP3, qualifying, sprint and race. The box shows the next session with the race in its footer. Sessions get ids `f1s-…`, so the live score and the "Race over" notice stay on the race, and only the race sends reminders.
+- Not on ESPN (checked 18/11/2026, `racing/imsa`, `wec`, `f2`, `motogp` answer 400): IMSA, WEC, F2, MotoGP. IndyCar (`irl`) and NASCAR (`nascar-premier`) are there.
+- **F2, WEC and IMSA** (a Settings toggle each, `Categoria`): a new network decision (rule 8). Three fixed ICS addresses, read by the same ICS reader and `RedeInteresses.baixar` as a pasted calendar: F2 from `files-f2.motorsportcalendars.com` (the open-source `sportstimes/f1` project behind f1calendar.com), WEC and IMSA from public Google calendars kept by fans (`calendar.google.com`, the WEC one by Radio Le Mans), the ones sync2cal.com points to. Practice, qualifying and test titles become sessions: in the box, no reminders. Third-party calendars may stop being updated; the page then just leaves the box.
+- **Porsche Cup Brasil:** no public calendar found (no ICS on the official site, ESPN, sync2cal or racingcalendar.net). Following it needs someone's ICS pasted in Settings.
+
 ### Next
 
 Later: Kanji's live mic level (it needs Kanji, which would post a level, never text, on the existing protocol), new screenshots in `docs/`, and focusing a session in VS Code or the Claude app if a link that picks the right window gets documented.

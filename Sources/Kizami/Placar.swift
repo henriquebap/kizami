@@ -184,7 +184,7 @@ struct Placar: Equatable, Sendable {
         switch e.fonte {
         case .espnTime: prefixo = "espn"
         case .f1: prefixo = "f1"
-        case .ics: return nil
+        case .ics, .categoria: return nil
         }
         let partes = e.id.split(separator: "-")
         guard partes.count == 3, partes[0] == prefixo, partes[1].allSatisfy(\.isNumber) else { return nil }
@@ -216,7 +216,7 @@ struct Placar: Equatable, Sendable {
 
     /// A linha da ilha com os ao vivo no lugar do próximo da mesma fonte: `proximos` só tem o que não começou.
     static func comAoVivo(_ proximos: [EventoInteresse], eventos: [EventoInteresse], aoVivo: [Placar],
-                          maximo: Int = 3) -> [EventoInteresse] {
+                          maximo: Int = 5) -> [EventoInteresse] {
         let jogos = aoVivo.compactMap { p in eventos.first(where: p.eDo) }
         return Array((jogos + proximos.filter { e in !jogos.contains { $0.fonte == e.fonte || $0.id == e.id } }).prefix(maximo))
     }

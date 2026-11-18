@@ -71,7 +71,8 @@ macOS draws a panel at the island's level even on a full-screen Space, so Kizami
 | Next event | Calendars |
 | Dock badges, Shortcuts tab, Kanji tab | Accessibility |
 | Weather | network: Open-Meteo |
-| Interests, live score | network: ESPN's public JSON, plus the ICS links the person pastes |
+| Interests, live score | network: ESPN's public JSON, the fixed ICS feeds of F2 (`files-f2.motorsportcalendars.com`), WEC and IMSA (`calendar.google.com`), plus the ICS links the person pastes |
+| Do Not Disturb during focus (opt-in) | two shortcuts the person creates, run with `shortcuts run` |
 | Browser play/pause, pasting from Copied | Accessibility |
 | Camera mirror | Camera |
 | Downloads | the Downloads folder |
