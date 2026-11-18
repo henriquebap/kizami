@@ -225,7 +225,8 @@ import Foundation
 
     let longe = EventoInteresse(id: "l", titulo: "l", inicio: utc("2026-12-06T21:25Z"), fonte: .bills)
     conferir("próximo: o de dentro de 7 dias", EventoInteresse.proximo([longe, jogo], agora: utc("2026-11-16T12:00Z"))?.id, "espn-1")
-    conferir("próximo: mais de 7 dias fica fora", EventoInteresse.proximo([longe], agora: utc("2026-11-16T12:00Z")), nil)
+    conferir("próximo: a 20 dias ainda entra na box", EventoInteresse.proximo([longe], agora: utc("2026-11-16T12:00Z"))?.id, "l")
+    conferir("próximo: mais de 30 dias fica fora", EventoInteresse.proximo([longe], agora: utc("2026-11-05T12:00Z")), nil)
     conferir("próximo: o que começou não conta", EventoInteresse.proximo([jogo], agora: utc("2026-11-22T18:01Z")), nil)
     let corrida = EventoInteresse(id: "f1-1", titulo: "Las Vegas", inicio: utc("2026-11-22T04:00Z"), fonte: .f1)
     let outroJogo = EventoInteresse(id: "espn-2", titulo: "Bills @ Jets", inicio: utc("2026-11-29T18:00Z"), fonte: .bills)
@@ -237,6 +238,7 @@ import Foundation
     conferir("quando: hoje", quando("2026-11-22T12:00Z"), "hoje 15:00")
     conferir("quando: amanhã", quando("2026-11-21T20:00Z"), "amanhã 15:00")
     conferir("quando: dia da semana", quando("2026-11-16T12:00Z"), "dom. 15:00")
+    conferir("quando: mais de 7 dias, dia e mês", quando("2026-11-10T12:00Z"), "22 de nov. 15:00")
     conferir("quando: começou", quando("2026-11-22T18:00Z"), "agora")
     conferir("quando: dia inteiro amanhã", quando("2026-11-21T12:00Z", diaInteiro), "amanhã")
 

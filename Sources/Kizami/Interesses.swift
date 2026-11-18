@@ -140,8 +140,10 @@ struct EventoInteresse: Equatable, Identifiable, Sendable {
     var sessao: String? = nil
 
     static let horizonte: TimeInterval = 7 * 24 * 3600
+    /// A box mostra o próximo de cada fonte até 30 dias à frente: com 7, a F2 a 9 dias e o WEC fora de temporada
+    /// deixavam a box vazia, e parecia que o app não tinha atualizado. Os lembretes não mudam.
+    static let horizonteDaBox: TimeInterval = 30 * 24 * 3600
 
-    /// O da linha da ilha: o primeiro que ainda não começou, nos próximos 7 dias.
     /// Os da linha da ilha: o próximo de cada fonte seguida, lado a lado, o mais perto primeiro. Um só "próximo"
     /// escondia o jogo dos Bills atrás da corrida da F1 da véspera (pedido da pessoa: ver os dois).
     static func proximos(_ eventos: [EventoInteresse], agora: Date, maximo: Int = 5) -> [EventoInteresse] {
@@ -151,7 +153,7 @@ struct EventoInteresse: Equatable, Identifiable, Sendable {
 
     static func proximo(_ eventos: [EventoInteresse], agora: Date) -> EventoInteresse? {
         eventos
-            .filter { $0.inicio > agora && $0.inicio.timeIntervalSince(agora) <= horizonte }
+            .filter { $0.inicio > agora && $0.inicio.timeIntervalSince(agora) <= horizonteDaBox }
             .min { ($0.inicio, $0.titulo) < ($1.inicio, $1.titulo) }  // título desempata: a escolha não pisca
     }
 
@@ -163,7 +165,8 @@ struct EventoInteresse: Equatable, Identifiable, Sendable {
             : String(localized: "amanhã \(hora)")
     }
 
-    /// "em 45 min", "hoje 20:15", "amanhã 14:00", "dom. 14:00". Contagem na última hora, quando "quanto falta"
+    /// "em 45 min", "hoje 20:15", "amanhã 14:00", "dom. 14:00", "27 de nov. 06:00". O dia da semana só na semana:
+    /// depois "sex." seria esta ou a outra sexta. Contagem na última hora, quando "quanto falta"
     /// importa mais que "a que horas".
     static func quando(_ e: EventoInteresse, agora: Date, calendario: Calendar = .current) -> String {
         let falta = e.inicio.timeIntervalSince(agora)
@@ -179,8 +182,9 @@ struct EventoInteresse: Equatable, Identifiable, Sendable {
         if let amanha = calendario.date(byAdding: .day, value: 1, to: agora), calendario.isDate(e.inicio, inSameDayAs: amanha) {
             return hora.map { String(localized: "amanhã \($0)") } ?? String(localized: "amanhã")
         }
-        let dia = e.inicio.formatted(Date.FormatStyle(locale: locale, calendar: calendario, timeZone: calendario.timeZone)
-            .weekday(.abbreviated))
+        let formato = Date.FormatStyle(locale: locale, calendar: calendario, timeZone: calendario.timeZone)
+        let dia = falta < horizonte ? e.inicio.formatted(formato.weekday(.abbreviated))
+            : e.inicio.formatted(formato.day().month(.abbreviated))
         return [dia, hora].compactMap { $0 }.joined(separator: " ")
     }
 }
