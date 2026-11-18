@@ -503,6 +503,19 @@ enum ICS {
         return (data, diaInteiro)
     }
 
+    /// O nome que o calendário se dá (`X-WR-CALNAME`, o do Google e do Calendário da Apple), limpo como um título:
+    /// é o que os Ajustes e a box mostram no lugar do host. Dado de fora: `Text(verbatim:)`, nunca no log.
+    static func nome(de texto: String) -> String? {
+        for linha in texto.split(whereSeparator: \.isNewline).prefix(50) {  // fica no cabeçalho, antes dos eventos
+            let (nome, _, valor) = propriedade(String(linha))
+            if nome == "BEGIN" && valor.uppercased() == "VEVENT" { return nil }
+            guard nome == "X-WR-CALNAME" else { continue }
+            let limpo = Atividade.limpo(Self.texto(valor), ate: 40)
+            return limpo.isEmpty ? nil : limpo
+        }
+        return nil
+    }
+
     /// Escapes de TEXT (RFC 5545 3.3.11): `\,` `\;` `\\` e `\n`.
     static func texto(_ bruto: String) -> String {
         var saida = ""
@@ -571,31 +584,33 @@ enum RedeInteresses {
     }
 
     /// Os eventos de uma fonte, ou nil se a rede falhou (aí os de antes continuam valendo).
-    static func eventos(de seguido: Seguido) async -> [EventoInteresse]? {
+    /// Os eventos e, num calendário colado, o nome que ele mesmo se dá (`X-WR-CALNAME`).
+    static func ler(_ seguido: Seguido) async -> (eventos: [EventoInteresse], nome: String?)? {
         switch seguido {
         case let .espnTime(esporte, liga, time, _):
             guard let url = ESPN.urlAgenda(esporte: esporte, liga: liga, time: time), url.host() == ESPN.host,
                   let dados = await baixar(url, teto: ESPN.tamanhoMaximo) else { return nil }
-            return ESPN.jogos(de: dados, time: time, fonte: seguido)
+            return ESPN.jogos(de: dados, time: time, fonte: seguido).map { ($0, nil) }
         case .f1:
             guard let url = ESPN.urlF1, let dados = await baixar(url, teto: ESPN.tamanhoMaximo) else { return nil }
-            return ESPN.corridas(de: dados)
+            return ESPN.corridas(de: dados).map { ($0, nil) }
         case .ics(let url):
             guard seguido.valido, let dados = await baixar(url, teto: ICS.tamanhoMaximo) else { return nil }
             // ponytail: o endereço (que pode ter token) fica no UserDefaults em texto puro; Keychain se virar problema.
-            return ICS.eventos(de: String(decoding: dados, as: UTF8.self), fonte: seguido)
+            let texto = String(decoding: dados, as: UTF8.self)
+            return ICS.eventos(de: texto, fonte: seguido).map { ($0, ICS.nome(de: texto)) }
         case .categoria(let c) where c.ligaESPN != nil:
             guard let url = c.ligaESPN.flatMap(ESPN.urlCorridas), let dados = await baixar(url, teto: ESPN.tamanhoMaximo)
             else { return nil }
-            return ESPN.corridas(de: dados, fonte: seguido)
+            return ESPN.corridas(de: dados, fonte: seguido).map { ($0, nil) }
         case .categoria(let c):
             guard let url = c.ics, let dados = await baixar(url, teto: ICS.tamanhoMaximo),
                   let eventos = ICS.eventos(de: String(decoding: dados, as: UTF8.self), fonte: seguido) else { return nil }
-            return eventos.map { e in
+            return (eventos.map { e in
                 var marcado = e
                 marcado.sessao = Categoria.sessao(e.titulo)
                 return marcado
-            }
+            }, nil)
         }
     }
 }
@@ -616,6 +631,9 @@ final class Interesses {
     private(set) var proximos: [EventoInteresse] = []
     /// O próximo de cada fonte sem contar treinos e classificação: na página da F1 com um treino, a corrida no pé.
     private(set) var principais: [EventoInteresse] = []
+    /// O nome que cada calendário colado se dá: "Porsche Cup 2027" em vez de "calendar.google.com". Só da sessão:
+    /// volta na primeira leitura depois de abrir o app.
+    private(set) var nomes: [Seguido: String] = [:]
     /// A página que a box mostra. Só da sessão: ao abrir o app, a box começa no que vem primeiro.
     var fonteNaBox: Seguido?
     /// Os placares dos jogos e corridas seguidos que estão acontecendo agora, até dois, o que começou antes
@@ -681,6 +699,9 @@ final class Interesses {
         }
     }
 
+    /// O nome para os Ajustes e a box: o do calendário quando ele tem um, senão o de `Seguido.nome`.
+    func nome(de seguido: Seguido) -> String { nomes[seguido] ?? seguido.nome }
+
     /// Um por um: um item que não decodifica (versão mais nova do app, categoria que saiu) cai sozinho, sem levar
     /// os times seguidos junto no próximo `salvar()`.
     static func lerSeguidos(_ dados: Data) -> [Seguido] {
@@ -701,6 +722,7 @@ final class Interesses {
     func remover(_ seguido: Seguido) {
         seguidos.removeAll { $0 == seguido }
         porFonte[seguido] = nil
+        nomes[seguido] = nil
         if fonteNaBox == seguido { fonteNaBox = nil }
         let restantes = seguidos.flatMap { porFonte[$0] ?? [] }
         aoVivo.removeAll { p in !restantes.contains(where: p.eDo) }
@@ -758,9 +780,11 @@ final class Interesses {
         let inicio = ContinuousClock.now
         var falharam = 0
         for seguido in seguidos {
-            guard let lista = await RedeInteresses.eventos(de: seguido) else { falharam += 1; continue }
+            guard let lido = await RedeInteresses.ler(seguido) else { falharam += 1; continue }
             // A pessoa pode ter tirado a fonte enquanto a resposta vinha.
-            if seguidos.contains(seguido) { porFonte[seguido] = lista }
+            guard seguidos.contains(seguido) else { continue }
+            porFonte[seguido] = lido.eventos
+            if nomes[seguido] != lido.nome { nomes[seguido] = lido.nome }
         }
         let total = porFonte.values.reduce(0) { $0 + $1.count }
         registro.info("interesses: \(total) eventos de \(self.seguidos.count) fontes, \(falharam) sem rede (\(ContinuousClock.now - inicio, privacy: .public))")

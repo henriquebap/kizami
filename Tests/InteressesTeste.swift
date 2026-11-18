@@ -123,6 +123,11 @@ import Foundation
     conferir("usuário no endereço não", Seguido.calendario("https://exemplo.com@evil.example/a.ics"), nil)
     conferir("ICS colado é válido", Seguido.calendario("https://exemplo.com/a.ics")?.valido, true)
 
+    conferir("nome do calendário", ICS.nome(de: "BEGIN:VCALENDAR\r\nX-WR-CALNAME:Porsche Cup\\, 2027\r\nBEGIN:VEVENT\r\nEND:VEVENT\r\nEND:VCALENDAR"),
+             "Porsche Cup, 2027")
+    conferir("nome do calendário: só no cabeçalho", ICS.nome(de: "BEGIN:VCALENDAR\nBEGIN:VEVENT\nX-WR-CALNAME:Evento\nEND:VEVENT"), nil)
+    conferir("nome do calendário: vazio não vale", ICS.nome(de: "BEGIN:VCALENDAR\nX-WR-CALNAME:   \nEND:VCALENDAR"), nil)
+
     // MARK: Categorias (F2, WEC, IMSA)
 
     let salvas = try? JSONEncoder().encode([Seguido.f1, .categoria(.wec)])

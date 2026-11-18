@@ -83,7 +83,7 @@ struct WidgetInteresse: View {
                         .contentShape(.rect)
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel(Text(verbatim: evento.fonte.nome))
+                .accessibilityLabel(Text(verbatim: interesses.nome(de: evento.fonte)))
             }
         }
     }
@@ -120,7 +120,7 @@ struct AjustesInteresses: View {
             ForEach(interesses.seguidos, id: \.self) { seguido in
                 HStack {
                     Image(systemName: seguido.simbolo).frame(width: 20)
-                    Text(verbatim: seguido.nome).lineLimit(1).truncationMode(.middle)  // verbatim: nome da ESPN ou host do usuário
+                    Text(verbatim: interesses.nome(de: seguido)).lineLimit(1).truncationMode(.middle)  // verbatim: nome da ESPN, do calendário ou host
                     Spacer()
                     Button("Remover", systemImage: "minus.circle.fill") { interesses.remover(seguido) }
                         .labelStyle(.iconOnly)
@@ -166,6 +166,8 @@ struct AjustesInteresses: View {
             if formulario.calendarioInvalido {
                 Text("Use um link https ou webcal.").font(.caption).foregroundStyle(.secondary)
             }
+            Text("Categoria sem calendário público (Porsche Cup Brasil, Stock Car): crie um no Google Agenda com as etapas, deixe-o público e cole o endereço ICS. A box mostra o nome do calendário.")
+                .font(.caption).foregroundStyle(.secondary)
             Text("Lembra na semana do evento, na véspera e 1 hora antes. Jogos e corridas vêm da ESPN; F2, WEC e IMSA, de calendários públicos.")
                 .font(.caption).foregroundStyle(.secondary)
         }
