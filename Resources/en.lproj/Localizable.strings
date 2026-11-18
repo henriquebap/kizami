@@ -247,3 +247,45 @@
 "Abrir Itens de Início" = "Open Login Items";
 "Não deu para mudar. Abra o Kizami de /Applications e tente de novo." = "Couldn't change it. Open Kizami from /Applications and try again.";
 "Imagem · %lld×%lld" = "Image · %lld×%lld";
+
+/* v0.16: lembretes */
+"Lembretes" = "Reminders";
+"Mostrar os lembretes de hoje" = "Show today's reminders";
+"Sem acesso aos Lembretes. Libere o Kizami nos Ajustes do Sistema e ligue de novo." = "No access to Reminders. Allow Kizami in System Settings, then turn this on again.";
+"Os atrasados e os de hoje primeiro, depois os sem data. O Kizami só marca um lembrete como concluído quando você clica." = "Overdue and today's first, then the ones without a date. Kizami only marks a reminder as completed when you click.";
+"atrasado" = "overdue";
+"hoje" = "today";
+/* Fones */
+"Fones" = "Headphones";
+"Conectado" = "Connected";
+"E %@" = "L %@";
+"D %@" = "R %@";
+"estojo %@" = "case %@";
+"Avisar quando um fone Bluetooth conectar" = "Notify when Bluetooth headphones connect";
+"AirPods, Beats e outros fones: o nome e a bateria aparecem na ilha por alguns segundos. O macOS pede acesso ao Bluetooth." = "AirPods, Beats and other headphones: the name and battery show on the island for a few seconds. macOS asks for Bluetooth access.";
+
+/* v0.16: Início em grade */
+"carregando" = "charging";
+"na tomada" = "plugged in";
+"bateria" = "battery";
+"Agora" = "Now";
+"Próximo" = "Next";
+"Reunião" = "Meeting";
+"min" = "min";
+"Entrar na reunião" = "Join meeting";
+"esperando há %@" = "waiting for %@";
+"%@ precisa de você" = "%@ needs you";
+"sessão" = "session";
+"sessões" = "sessions";
+"A seguir" = "Up next";
+"pausado" = "paused";
+"termina às %@" = "ends at %@";
+"Marcar como feito" = "Mark as done";
+"Em %@ até %@" = "In %1$@ until %2$@";
+"%@ em %lld min, depois livre até %@" = "%1$@ in %2$lld min, then free until %3$@";
+"%@ em %lld min" = "%1$@ in %2$lld min";
+"Livre até %@" = "Free until %@";
+"Livre o resto do dia" = "Free for the rest of the day";
+"mais %lld hoje" = "%lld more today";
+"Sem som" = "Muted";
+"clique para começar" = "click to start";

@@ -8,25 +8,23 @@ struct Geometria: Equatable {
     /// A curva côncava no topo que funde a ilha com a borda da tela, como no notch de verdade.
     static let orelha: CGFloat = 8
     static let larguraAviso: CGFloat = 300
-    static let larguraAberta: CGFloat = 340
+    /// A grade de duas colunas pede mais que os 340 pt da lista de antes; com 20 pt de margem dos lados, cada widget
+    /// fica com 166 pt, o bastante para o rótulo e o número sem reticências. Com 420 tudo parecia grande demais.
+    static let larguraAberta: CGFloat = 380
     static let alturaLinha: CGFloat = 30
     static let espacoLinha: CGFloat = 4
     static let maximoLinhas = 3
     /// A fileira de arquivos da bandeja, abaixo da lista.
     static let alturaBandeja: CGFloat = 64
-    /// A linha do que está tocando: miniatura, título e artista.
-    static let alturaTocando: CGFloat = 52
-    static let espacoSecao: CGFloat = 10
-    /// O canto dos cartões de vidro dentro da ilha aberta.
+    static let espacoSecao: CGFloat = Painel.espaco
+    /// O canto das linhas (avisos, eventos) dentro da ilha aberta.
     static let raioDoCartao: CGFloat = 12
-    /// A faixa de cima da ilha aberta: o próximo evento à esquerda, o tempo à direita.
-    static let alturaHoje: CGFloat = 40
+    /// O canto dos widgets e dos cartões largos (`Painel.raio`).
+    static let raioDoWidget: CGFloat = Painel.raio
     /// O topo da ilha aberta: as abas (Início, Atalhos) e a engrenagem dos Ajustes.
     static let alturaCabecalho: CGFloat = 26
     /// A fileira de atalhos: ícone, nome e teclas.
     static let alturaAtalhos: CGFloat = 62
-    /// Sessões do Claude na ilha aberta, uma por linha (`alturaLinha`), as que mais pedem atenção primeiro.
-    static let maximoSessoes = 3
     /// Altura mínima da ilha em tela sem notch. Com a altura da barra de menus (22 pt), a capa de 20 pt ficava
     /// encostada em cima e embaixo; lá não há câmera nem barra para respeitar no meio do topo.
     static let alturaSemNotch: CGFloat = 30
@@ -80,21 +78,9 @@ struct Geometria: Equatable {
                       height: faixaDoTopo + n * Self.alturaLinha + (n - 1) * Self.espacoLinha + 6)
     }
 
-    /// Com o cursor em cima: as seções que existem, uma embaixo da outra.
-    func aberta(_ secoes: Secoes) -> CGSize {
-        let linhas = Self.alturaLinhas
-        let blocos = [
-            Self.alturaCabecalho,
-            secoes.hoje ? Self.alturaHoje : 0,
-            secoes.interesse ? Self.alturaLinha + 4 : 0,
-            linhas(secoes.sessoes),
-            secoes.tocando ? Self.alturaTocando : 0,
-            linhas(secoes.linhas),
-            secoes.apps ? Self.alturaLinha : 0,
-            secoes.bandeja ? Self.alturaBandeja : 0,
-        ].filter { $0 > 0 }
-        let conteudo = blocos.reduce(0, +) + CGFloat(max(blocos.count - 1, 0)) * Self.espacoSecao
-        return CGSize(width: max(Self.larguraAberta, compacta.width), height: faixaDoTopo + 8 + conteudo + 14)
+    /// Com o cursor em cima: o Início em grade, uma fileira embaixo da outra.
+    func aberta(_ painel: Painel) -> CGSize {
+        abertaComAba(painel.altura)
     }
 
     /// A aba de atalhos: o cabeçalho e a fileira.
@@ -133,13 +119,21 @@ struct Geometria: Equatable {
     /// Uma aba que não é o Início: o cabeçalho e o conteúdo dela (atalhos, Kanji).
     func abertaComAba(_ conteudo: CGFloat) -> CGSize {
         CGSize(width: max(Self.larguraAberta, compacta.width),
-               height: faixaDoTopo + 8 + Self.alturaCabecalho + Self.espacoSecao + conteudo + 14)
+               height: faixaDoTopo + 8 + Self.alturaCabecalho + Self.espacoSecao + conteudo + Painel.margem)
+    }
+
+    /// O quadradinho do lado direito da asa fechada (o "pausado" da música), com 4 pt de folga para o cursor. É a
+    /// única parte da ilha fechada que recebe clique: fora dele a barra de menus continua recebendo tudo.
+    func botaoDaAsa(_ tamanho: CGSize) -> CGRect {
+        let lado = min(20, notch.height - 12)
+        let r = retangulo(tamanho)
+        let x = r.maxX - Self.orelha - ((notch.height - lado) / 2 + 2) - lado
+        return CGRect(x: x, y: r.minY + (r.height - lado) / 2, width: lado, height: lado).insetBy(dx: -4, dy: -4)
     }
 
     /// A janela tem o tamanho do maior estado mais a margem da sombra; a forma anima dentro dela.
     var janela: CGRect {
-        let maior = aberta(Secoes(tocando: true, atividades: Self.maximoLinhas, arquivos: 1, arrastando: false,
-                                  sessoes: Self.maximoSessoes, hoje: true, apps: true, interesse: true))
+        let maior = aberta(Painel.maior)
         // A fechada com três ícones passa da aberta num notch mais largo que ~204 pt.
         let largura = max(maior.width, compacta(icones: 3).width, aviso(linhas: 3).width)
         // O mês de seis semanas com a lista cheia: hoje cabe na maior do Início, mas não depende disso.
@@ -175,29 +169,154 @@ struct Geometria: Equatable {
     }
 }
 
-/// O que a ilha aberta mostra, de cima para baixo. A janela (área do hover) e a view medem com a mesma regra.
-struct Secoes: Equatable {
-    let hoje: Bool
-    /// O próximo jogo ou corrida que a pessoa segue, nos próximos 7 dias.
-    let interesse: Bool
-    let sessoes: Int
-    let tocando: Bool
-    let linhas: Int
-    /// Emblemas do Dock, microfone, câmera e bateria numa linha.
-    let apps: Bool
-    let bandeja: Bool
+/// O Início em grade (v0.16): o destaque e as faixas largas ocupam as duas colunas; os widgets, uma cada, aos pares.
+/// A janela (área do hover) e a view medem com a mesma regra, como antes.
+struct Painel: Equatable, Sendable {
+    /// O que ocupa as duas colunas.
+    enum Largo: Hashable, Sendable {
+        /// Uma sessão do Claude precisa de você; `outras`: há mais sessões, que viram pílulas embaixo.
+        case claude(outras: Bool)
+        /// Uma reunião prestes a começar (`Agenda.emBreve`: de 10 min antes a 5 min depois); `link`: tem o botão de
+        /// entrar, que pede uma linha a mais.
+        case reuniao(link: Bool)
+        case musica
+        /// O dia calmo: a data, a temperatura, a régua das 8h às 20h e até três eventos que faltam hoje.
+        case dia(eventos: Int)
+        /// Os avisos que chegaram, até três linhas.
+        case atividades(Int)
+        /// Os arquivos guardados, ou a área de soltar durante um arraste.
+        case bandeja
+    }
 
-    /// `semBandejaVazia`: a pessoa escondeu a bandeja; ela só aparece durante um arraste (é onde se solta).
-    init(tocando: Bool, atividades: Int, arquivos: Int, arrastando: Bool, sessoes: Int = 0, hoje: Bool = false,
-         apps: Bool = false, interesse: Bool = false, semBandejaVazia: Bool = false) {
-        self.hoje = hoje
-        self.interesse = interesse
-        self.sessoes = min(sessoes, Geometria.maximoSessoes)
-        self.tocando = tocando
-        linhas = min(atividades, Geometria.maximoLinhas)
-        self.apps = apps
-        // Sem nada para mostrar, a ilha aberta oferece a bandeja vazia: é o que dá para fazer com ela.
-        bandeja = arquivos > 0 || arrastando
-            || (!semBandejaVazia && atividades == 0 && !tocando && sessoes == 0 && !hoje && !apps && !interesse)
+    /// Um quadrado da grade.
+    enum Widget: String, CaseIterable, Hashable, Sendable { case tempo, agenda, sessoes, musica, timer, lembretes, interesse, mac }
+
+    enum Fileira: Hashable, Sendable {
+        case larga(Largo)
+        case dupla(Widget, Widget)
+        /// Um widget sem par ocupa a fileira toda: um quadrado sozinho deixaria um buraco ao lado.
+        case sozinha(Widget)
+    }
+
+    /// O que existe agora, já com o que a pessoa escondeu nos Ajustes fora.
+    struct Entrada: Equatable, Sendable {
+        var precisaDeVoce = false
+        var sessoes = 0
+        var reuniao = false
+        var reuniaoComLink = false
+        var tocando = false
+        /// O timer está correndo ou pausado (vem antes na grade). Parado, ele só entra para fechar um par.
+        var timer = false
+        /// A faixa "Hoje" (tempo e agenda) está à vista: sem ela, também não há o cartão do dia.
+        var hoje = true
+        var tempo = false
+        var agenda = false
+        /// Os eventos que ainda faltam hoje, para a lista do cartão do dia.
+        var eventosHoje = 0
+        var lembretes = 0
+        var interesse = false
+        var mac = false
+        var atividades = 0
+        var bandeja = false
+    }
+
+    /// Seis widgets no máximo: três fileiras. Mais que isso a ilha passaria da metade da tela de um MacBook.
+    static let maximoWidgets = 6
+
+    let fileiras: [Fileira]
+
+    init(_ e: Entrada) {
+        // O destaque: quem pede ação primeiro (o Claude parado esperando), depois o que tem hora (a reunião), depois
+        // o que está acontecendo (a música). Sem nada disso, o dia.
+        let destaque: Largo? = e.precisaDeVoce ? .claude(outras: e.sessoes > 1)
+            : e.reuniao ? .reuniao(link: e.reuniaoComLink)
+            : e.tocando ? .musica
+            : e.hoje ? .dia(eventos: min(e.eventosHoje, 3))
+            : nil
+        let dia = destaque.map { if case .dia = $0 { true } else { false } } ?? false
+        var widgets: [Widget] = []
+        if e.hoje && e.tempo && !dia { widgets.append(.tempo) }
+        if e.hoje && e.agenda && !dia && !e.reuniao { widgets.append(.agenda) }
+        if e.sessoes > 0 && !e.precisaDeVoce { widgets.append(.sessoes) }
+        if e.tocando && destaque != .musica { widgets.append(.musica) }
+        if e.timer { widgets.append(.timer) }
+        if e.lembretes > 0 { widgets.append(.lembretes) }
+        if e.interesse { widgets.append(.interesse) }
+        if e.mac { widgets.append(.mac) }
+        widgets = Array(widgets.prefix(Self.maximoWidgets))
+        // Ímpar, o último ficaria sozinho na fileira toda: o timer parado entra para fechar o par (é sempre útil, um
+        // clique começa um foco). Com o timer já na grade, o último fica largo mesmo.
+        if widgets.count % 2 == 1 && !widgets.contains(.timer) { widgets.append(.timer) }
+
+        var f: [Fileira] = destaque.map { [.larga($0)] } ?? []
+        if e.atividades > 0 { f.append(.larga(.atividades(min(e.atividades, Geometria.maximoLinhas)))) }
+        f += stride(from: 0, to: widgets.count, by: 2).map { i in
+            i + 1 < widgets.count ? .dupla(widgets[i], widgets[i + 1]) : .sozinha(widgets[i])
+        }
+        if e.bandeja { f.append(.larga(.bandeja)) }
+        fileiras = f
+    }
+
+    // A régua do Início. Todo espaço sai daqui: com cada cartão medindo o seu, a ilha parecia jogada.
+    /// Da borda da ilha até os cartões, dos lados e embaixo.
+    static let margem: CGFloat = 20
+    /// Entre quaisquer dois blocos: as abas e a grade, as fileiras, as colunas, os avisos.
+    static let espaco: CGFloat = 10
+    /// Dentro de todo cartão.
+    static let folga: CGFloat = 12
+    /// O canto dos cartões, concêntrico com o da ilha aberta (34 − 20 de margem), como pede o HIG: o espaço no canto
+    /// fica igual ao das laterais.
+    static let raio: CGFloat = 14
+    /// O ícone (ou a capa) à esquerda dos cartões largos.
+    static let icone: CGFloat = 40
+    /// A linha principal dos cartões largos: rótulo, título e detalhe ao lado do ícone.
+    static let linhaDeDestaque: CGFloat = 46
+    /// Os botões e pílulas dos cartões largos (Entrar na reunião, Abrir, as outras sessões).
+    static let botao: CGFloat = 26
+    /// Os trilhos de um widget: o rótulo, o valor e o detalhe ficam na mesma altura em todos, e a fileira alinha.
+    static let alturaRotulo: CGFloat = 12
+    static let alturaValor: CGFloat = 30
+    static let alturaDetalhe: CGFloat = 16
+    static let alturaRodape: CGFloat = 14
+    static let alturaWidget: CGFloat = folga + alturaRotulo + 4 + alturaValor + alturaDetalhe + 4 + alturaRodape + folga
+    /// Um aviso na grade: título e detalhe em duas linhas.
+    static let alturaAviso: CGFloat = 36
+    static let reguaDoDia: CGFloat = 34
+    static let linhaDoDia: CGFloat = 22
+
+    /// A altura da grade, sem o cabeçalho.
+    var altura: CGFloat {
+        let alturas = fileiras.map { fileira -> CGFloat in
+            switch fileira {
+            case .dupla, .sozinha: Self.alturaWidget
+            case .larga(let largo): Self.altura(largo)
+            }
+        }
+        return alturas.reduce(0, +) + CGFloat(max(alturas.count - 1, 0)) * Self.espaco
+    }
+
+    /// O cartão largo: a folga, a linha de destaque e, quando há, a fileira dos botões.
+    static func altura(_ largo: Largo) -> CGFloat {
+        let base = folga + linhaDeDestaque + folga
+        return switch largo {
+        case .claude(let outras): outras ? base + espaco + botao : base
+        case .reuniao(let link): link ? base + espaco + botao : base
+        case .musica: base
+        case .dia(let eventos): alturaDia(eventos: eventos)
+        case .atividades(let n): CGFloat(n) * alturaAviso + CGFloat(max(n - 1, 0)) * espaco
+        case .bandeja: Geometria.alturaBandeja
+        }
+    }
+
+    /// Cabeça (data e temperatura, da altura da linha de destaque), a régua e uma linha por evento que falta.
+    static func alturaDia(eventos: Int) -> CGFloat {
+        folga + linhaDeDestaque + espaco + reguaDoDia
+            + (eventos > 0 ? espaco + CGFloat(min(eventos, 3)) * linhaDoDia : 0) + folga
+    }
+
+    /// O Início mais alto possível, para a janela caber qualquer estado.
+    static var maior: Painel {
+        Painel(Entrada(sessoes: 3, timer: true, eventosHoje: 3, lembretes: 3, interesse: true, mac: true,
+                       atividades: Geometria.maximoLinhas, bandeja: true))
     }
 }

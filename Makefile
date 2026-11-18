@@ -30,7 +30,7 @@ teste:
 	mkdir -p build
 	$(SWIFTC) Tests/*.swift Sources/Kizami/Geometria.swift Sources/Kizami/Atividades.swift Sources/Kizami/Correio.swift Sources/Kizami/Bandeja.swift Sources/Kizami/Som.swift Sources/Kizami/Player.swift \
 		Sources/Kizami/Agenda.swift Sources/Kizami/Tempo.swift Sources/Kizami/Claude.swift Sources/Kizami/Mac.swift \
-		Sources/Kizami/Interesses.swift Sources/Kizami/Kanji.swift Sources/Kizami/Placar.swift Sources/Kizami/Cronometro.swift Sources/Kizami/Copiados.swift Sources/Kizami/Espelho.swift Sources/Kizami/Downloads.swift Sources/Kizami/GitHub.swift Sources/Kizami/Personalizacao.swift Sources/Kizami/AtalhosApple.swift -o build/teste
+		Sources/Kizami/Interesses.swift Sources/Kizami/Kanji.swift Sources/Kizami/Placar.swift Sources/Kizami/Cronometro.swift Sources/Kizami/Copiados.swift Sources/Kizami/Espelho.swift Sources/Kizami/Downloads.swift Sources/Kizami/GitHub.swift Sources/Kizami/Personalizacao.swift Sources/Kizami/AtalhosApple.swift Sources/Kizami/Lembretes.swift Sources/Kizami/Volume.swift Sources/Kizami/FonesBateria.swift -o build/teste
 	./build/teste
 
 clean:

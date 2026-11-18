@@ -30,7 +30,7 @@ struct FileiraAtalhosApple: View {
                         }
                         .padding(.horizontal, 10)
                         .frame(minWidth: 72, maxHeight: .infinity, alignment: .leading)
-                        .vidro(raio: 10)
+                        .vidroDeControle(raio: 10)
                         .contentShape(.rect)
                     }
                     .buttonStyle(.plain)

@@ -46,7 +46,7 @@ Any local process can post, so everything that arrives is data:
 
 ## The island's shapes
 
-The person's choices (`Personalizacao`: tabs, Home sections, the order of the wings) are read where each decision already lives (`Cabecalho`, `secoesAtuais`, `asaAtual`), never as `if`s spread across views.
+The person's choices (`Personalizacao`: tabs, Home sections, the order of the wings) are read where each decision already lives (`Cabecalho`, `painelAtual`, `asaAtual`), never as `if`s spread across views.
 
 `Geometria` is pure. It is tested with real screen measurements and decides every size:
 
@@ -75,6 +75,8 @@ macOS draws a panel at the island's level even on a full-screen Space, so Kizami
 | Browser play/pause, pasting from Copied | Accessibility |
 | Camera mirror | Camera |
 | Downloads | the Downloads folder |
+| Reminders | Reminders |
+| Headphones connected | Bluetooth |
 | GitHub | the `gh` CLI the person logged in (Kizami never sees the token) |
 
 Each one is optional, and the rest keeps working without it. Network calls use:
@@ -84,7 +86,7 @@ Each one is optional, and the rest keeps working without it. Network calls use:
 
 Content never goes to the log: titles, folder names, the city, teams, app names and badge counts. Only counts and timings do.
 
-Copied text stays in memory only. Copied, Downloads, GitHub and urgent-over-full-screen are off until the person turns them on.
+Copied text stays in memory only. Copied, Downloads, GitHub, Reminders, Headphones and urgent-over-full-screen are off until the person turns them on.
 
 ## Energy
 
@@ -92,11 +94,12 @@ SwiftUI draws the island on the CPU, and every animation frame redraws all of it
 - nothing animates forever while the island is closed: a continuous decoration (the equalizer) is a Core Animation layer, which runs in the window server;
 - what changes every second (the timer in the wings) changes without an animation;
 - a source only writes an observed property when something on screen changes (`SessoesClaude.mesmasNaTela`).
+- the open content is laid out once at its final size and the shape only reveals it as it grows; content transitions fade instead of blurring. Letting the grid follow the spring's width relaid it every frame, and `.blurReplace` blurred the whole island: together they were about half the CPU of opening.
 
 - what is read from outside only while it's on screen: the player position once a second only while the music is expanded (`Janela.acertarProgresso`), the visible month only while the calendar is expanded (`Agenda.mostrar`);
 - an important notice leads the wings for its first 2 minutes only, flipped by one scheduled Task (`Mural.importante`), not by polling.
 
-Glass (`Visual.swift`: `.vidro`, `Movimento`) is drawn by the window server; the springs live in one place. An expanded item (`EstadoIlha.expandido`, `expansaoAtual`) feeds `tamanhoAberto`, so the drawing and the hover zone still come from the same function.
+Home is a grid decided by one pure rule, `Painel` (in `Geometria.swift`): the hero card, the notices, widget pairs and the tray, with the height of each row. `painelAtual` builds it from the sources, and both `tamanhoAberto` and `InicioEmGrade` read it, so the drawing and the hover zone still agree. Cards are plain fills, not glass: following the HIG, Liquid Glass is for controls (the tab pill, the shortcut buttons); over pure black the glass had nothing to reflect and read as flat grey, and over the glass island it would be glass on glass. Glass and the springs (`Visual.swift`: `Movimento`, `Tipo`, `.cartao`, `.vidroDeControle`) live in one place. An expanded item (`EstadoIlha.expandido`, `expansaoAtual`) feeds `tamanhoAberto`, so the drawing and the hover zone still come from the same function.
 
 Measure with `top -l 7 -s 10 -pid $(pgrep -x Kizami) -stats pid,cpu,idlew,power` and `sample`. With music and a timer on: ~0.7% CPU.
 

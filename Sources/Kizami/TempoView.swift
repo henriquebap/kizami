@@ -1,49 +1,27 @@
 import SwiftUI
 
-/// O tempo à direita da faixa "Hoje": o símbolo, a data e a temperatura agora e, embaixo, uma informação só.
-/// Embaixo cabe pouco (~60 pt em caption2): com chuva provável, a chance de chuva, que é o que muda o que a
-/// pessoa faz (levar guarda-chuva); sem, a máxima e a mínima, que dizem como vai ser o resto do dia.
-/// Com chuva chegando na próxima hora, a hora dela vence as duas: é a única coisa que pede ação agora.
-/// O resto (descrição, as duas coisas, a cidade) fica na dica.
-struct ChipTempo: View {
+/// O widget do tempo: a cidade, a temperatura grande com o símbolo e, embaixo, uma informação só. Com chuva provável,
+/// a chance de chuva, que é o que muda o que a pessoa faz (levar guarda-chuva); sem, a máxima e a mínima. Com chuva
+/// chegando na próxima hora, a hora dela vence as duas: é a única coisa que pede ação agora. O resto fica na dica.
+struct WidgetTempo: View {
     let tempo: Tempo
+    let estado: EstadoIlha
     /// A partir daqui a chuva toma o lugar da máxima e da mínima.
     private static let chuvaProvavel = 50
 
     var body: some View {
         if let previsao = tempo.previsao {
-            HStack(spacing: 6) {
-                Image(systemName: previsao.simbolo)
-                    .symbolRenderingMode(.multicolor)
-                    .font(.system(size: 20))
-                // Por minuto: o guarda-chuva com a hora sai quando ela passa, e a data vira à meia-noite, sem esperar
-                // a próxima previsão.
-                TimelineView(.everyMinute) { contexto in
-                    VStack(alignment: .trailing, spacing: 0) {
-                        // A data na linha da temperatura, e não na de baixo: em cima sobra largura (a temperatura é
-                        // mais curta que a máxima e a mínima), então o chip cresce menos e a agenda perde menos.
-                        HStack(alignment: .firstTextBaseline, spacing: 4) {
-                            // Do idioma do Mac: "ter., 17" ou "Tue 17". Sem o mês: com ele o chip passava de 150 pt e o
-                            // evento ao lado ficava em "Da…" e "em…" quando tinha o botão Entrar.
-                            Text(contexto.date, format: .dateTime.weekday(.abbreviated).day())
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                            Text(verbatim: "·").font(.caption).foregroundStyle(.tertiary)
-                            Text(verbatim: Previsao.graus(previsao.temperatura))
-                                .font(.system(size: 17, weight: .semibold))
-                        }
-                        detalhe(previsao)
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                    }
-                    .monospacedDigit()
+            Quadro(id: "tempo", estado: estado) {
+                // verbatim: a cidade é a que a pessoa digitou.
+                Cabeca(rotulo: tempo.local.map { Text(verbatim: $0) } ?? Text("Agora"))
+                Valor {
+                    Text(verbatim: Previsao.graus(previsao.temperatura))
+                    Spacer(minLength: 0)
+                    Image(systemName: previsao.simbolo).symbolRenderingMode(.multicolor).font(.system(size: 20))
                 }
+                // Por minuto: o guarda-chuva com a hora sai quando ela passa, sem esperar a próxima previsão.
+                TimelineView(.everyMinute) { _ in Detalhe { detalhe(previsao) } }
             }
-            .lineLimit(1)
-            .foregroundStyle(.white)
-            // Medido com `NSString.size`: 100 pt com "ter., 17 · 24°" e o símbolo, 112 com "qua., 30 · -12°".
-            // O `LinhaHoje` não deixa o tempo encolher: quem cede é a agenda, que dos 292 pt da faixa fica com ~170.
-            .frame(maxWidth: 118, maxHeight: Geometria.alturaHoje, alignment: .trailing)
             .help(dica(previsao))
         }
     }
@@ -55,22 +33,13 @@ struct ChipTempo: View {
 
     @ViewBuilder private func detalhe(_ previsao: Previsao) -> some View {
         if let chega = chuvaChegando(previsao) {
-            HStack(spacing: 2) {
-                Image(systemName: "umbrella.fill")
-                Text(chega, format: .dateTime.hour().minute())
-            }
+            Image(systemName: "umbrella.fill")
+            Text(chega, format: .dateTime.hour().minute())
         } else if let chuva = previsao.chuva, chuva >= Self.chuvaProvavel {
-            HStack(spacing: 2) {
-                Image(systemName: "drop.fill")
-                Text(verbatim: "\(chuva)%")
-            }
+            Image(systemName: "drop.fill")
+            Text(verbatim: "\(chuva)%")
         } else {
-            HStack(spacing: 1) {
-                Image(systemName: "arrow.up")
-                Text(verbatim: Previsao.graus(previsao.maxima))
-                Image(systemName: "arrow.down").padding(.leading, 3)
-                Text(verbatim: Previsao.graus(previsao.minima))
-            }
+            Text(verbatim: "↑\(Previsao.graus(previsao.maxima)) ↓\(Previsao.graus(previsao.minima))")
         }
     }
 

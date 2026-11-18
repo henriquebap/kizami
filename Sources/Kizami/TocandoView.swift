@@ -1,36 +1,75 @@
 import SwiftUI
 
-/// O que está tocando: a miniatura, o título e o artista (ou o nome do app, quando o player não conta a faixa).
-struct LinhaTocando: View {
+extension Controle {
+    /// Tocar ou pausar o que está tocando: pelo AppleScript no Music e no Spotify, pela tecla de mídia num navegador.
+    @MainActor static func tocarOuPausar(_ tocando: TocandoAgora) {
+        if let app = tocando.app, sabeControlar(app) { enviar(.alternar, app: app) } else { TeclaDeMidia.tocarOuPausar() }
+    }
+}
+
+extension TocandoAgora {
+    /// A cor da capa, já ajustada para o preto (`Capa.destaque`). Sem capa ou com capa cinza, nada.
+    var corDeDestaque: Color? { cor?.cor }
+
+    /// O artista e o app, ou "Tocando agora" quando o player não conta a faixa.
+    var subtitulo: String {
+        metadados?.titulo == nil ? String(localized: "Tocando agora")
+            : [metadados?.artista, nomeDoApp].compactMap { $0 }.joined(separator: " · ")
+    }
+}
+
+/// A música em destaque: a capa (que voou da asa), o app, o título, o artista e os botões, no fundo tingido pela capa.
+/// Clique: expande no lugar, com o tempo e a barra. A barra não fica aqui: ler a posição do player custa um
+/// AppleScript por segundo, e só vale a pena com a música expandida.
+struct CartaoMusica: View {
     let tocando: TocandoAgora
+    let estado: EstadoIlha
     let espaco: Namespace.ID
-    /// Clique na linha: a música expande no lugar. Os botões de controle continuam só botões.
     let aoClicar: () -> Void
 
     var body: some View {
-        HStack(spacing: 12) {
-            Miniatura(tocando: tocando, lado: 40, raio: 9)
-            VStack(alignment: .leading, spacing: 1) {
-                // verbatim: título e artista vêm do player e não podem virar Markdown nem chave de tradução.
-                Text(verbatim: tocando.metadados?.titulo ?? tocando.nomeDoApp)
-                    .font(.callout.weight(.semibold))
-                Text(verbatim: tocando.metadados?.titulo == nil
-                     ? String(localized: "Tocando agora")
-                     : [tocando.metadados?.artista, tocando.nomeDoApp].compactMap { $0 }.joined(separator: " · "))
-                    .font(.caption).foregroundStyle(.secondary)
-            }
-            .lineLimit(1)
-            .contentTransition(.opacity)
-            Spacer(minLength: 8)
-            ControlesDoPlayer(tocando: tocando)
+        let cor = tocando.corDeDestaque
+        // verbatim: título, artista e o nome do app vêm do player e não podem virar Markdown nem chave de tradução.
+        LinhaDeDestaque(rotulo: Text(verbatim: tocando.nomeDoApp), corDoRotulo: cor,
+                        titulo: Text(verbatim: tocando.metadados?.titulo ?? tocando.nomeDoApp),
+                        detalhe: Text(verbatim: tocando.subtitulo)) {
+            Miniatura(tocando: tocando, lado: Painel.icone, raio: 9).matchedGeometryEffect(id: "capa", in: espaco)
+        } fim: {
+            ControlesDoPlayer(tocando: tocando, grande: true)
         }
-        .padding(.horizontal, 10)
-        .frame(height: Geometria.alturaTocando)
-        .vidro(id: "musica", em: espaco)
+        .contentTransition(.opacity)
+        .padding(Painel.folga)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .cartao(cor: cor, raio: Painel.raio, realce: estado.cartaoSobCursor == "musica", id: "musica", em: espaco)
         .contentShape(.rect)
+        .realce("musica", estado)
         .onTapGesture(perform: aoClicar)
         .accessibilityAddTraits(.isButton)
-        .padding(.horizontal, 4)
+    }
+}
+
+/// A música num quadrado, quando outra coisa tem o destaque (a reunião, o Claude).
+struct WidgetMusica: View {
+    let tocando: TocandoAgora
+    let estado: EstadoIlha
+    let espaco: Namespace.ID
+    let aoClicar: () -> Void
+
+    var body: some View {
+        Quadro(id: "musica", estado: estado, cor: tocando.corDeDestaque, acao: aoClicar, espaco: espaco) {
+            // verbatim: o nome do app, o título e o artista vêm do player.
+            Cabeca(rotulo: Text(verbatim: tocando.nomeDoApp))
+            Valor {
+                Miniatura(tocando: tocando, lado: 26, raio: 6).matchedGeometryEffect(id: "capa", in: espaco)
+                Spacer(minLength: 0)
+                ControlesDoPlayer(tocando: tocando)
+            }
+            Detalhe { Text(verbatim: tocando.metadados?.titulo ?? tocando.nomeDoApp).foregroundStyle(.primary) }
+            Spacer(minLength: 0)
+            if let artista = tocando.metadados?.artista {
+                Rodape { Text(verbatim: artista).foregroundStyle(.secondary) }
+            }
+        }
     }
 }
 
@@ -39,16 +78,18 @@ struct LinhaTocando: View {
 /// ou no Safari).
 struct ControlesDoPlayer: View {
     let tocando: TocandoAgora
+    /// No cartão de destaque, o play ganha um círculo: é o botão que mais se usa.
+    var grande = false
 
     var body: some View {
         if let app = tocando.app, Controle.sabeControlar(app) {
-            Controles(app: app, pausado: tocando.pausado)
+            Controles(app: app, pausado: tocando.pausado, grande: grande)
         } else {
             HStack(spacing: 6) {
-                Barras(altura: 16)
+                Barras(altura: 16, cor: tocando.corDeDestaque)
                 Button("Tocar ou pausar", systemImage: "playpause.fill") { TeclaDeMidia.tocarOuPausar() }
                     .labelStyle(.iconOnly)
-                    .buttonStyle(.plain)
+                    .buttonStyle(EstiloBotao())
                     .font(.system(size: 16, weight: .semibold))
                     .frame(width: 30, height: 30)
                     .contentShape(.rect)
@@ -63,12 +104,14 @@ struct ControlesDoPlayer: View {
 private struct Controles: View {
     let app: String
     let pausado: Bool
+    let grande: Bool
 
     var body: some View {
         HStack(spacing: 2) {
             botao("Anterior", "backward.fill", .anterior, tamanho: 13)
             botao(pausado ? "Tocar" : "Pausar", pausado ? "play.fill" : "pause.fill", .alternar, tamanho: 18)
                 .contentTransition(.symbolEffect(.replace))
+                .background { if grande { Circle().fill(.white.opacity(0.14)).frame(width: 34, height: 34) } }
             botao("Próxima", "forward.fill", .proxima, tamanho: 13)
         }
     }
@@ -76,7 +119,7 @@ private struct Controles: View {
     private func botao(_ nome: LocalizedStringKey, _ simbolo: String, _ acao: Controle.Acao, tamanho: CGFloat) -> some View {
         Button(nome, systemImage: simbolo) { Controle.enviar(acao, app: app) }
             .labelStyle(.iconOnly)
-            .buttonStyle(.plain)
+            .buttonStyle(EstiloBotao())
             .font(.system(size: tamanho, weight: .semibold))
             .frame(width: 30, height: 30)
             .contentShape(.rect)
@@ -113,14 +156,17 @@ struct Miniatura: View {
 /// enquanto qualquer coisa tocava (medido com `top` e `sample`).
 struct Barras: View {
     let altura: CGFloat
+    /// A cor da capa: a asa lê como uma coisa só com a capa do outro lado (HIG, Live Activities).
+    var cor: Color?
 
     var body: some View {
-        CamadaDeBarras(altura: altura).frame(width: 4 * 3 + 3 * 2, height: altura)
+        CamadaDeBarras(altura: altura, cor: cor.map(NSColor.init) ?? .white).frame(width: 4 * 3 + 3 * 2, height: altura)
     }
 }
 
 private struct CamadaDeBarras: NSViewRepresentable {
     let altura: CGFloat
+    let cor: NSColor
 
     func makeNSView(context: Context) -> NSView {
         let vista = NSView()
@@ -128,7 +174,7 @@ private struct CamadaDeBarras: NSViewRepresentable {
         let parado = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
         for i in 0..<4 {
             let barra = CALayer()
-            barra.backgroundColor = NSColor.white.withAlphaComponent(0.85).cgColor
+            barra.backgroundColor = cor.withAlphaComponent(0.85).cgColor
             barra.cornerRadius = 1.5
             barra.transform = CATransform3DMakeScale(1, 0.6, 1)
             if !parado {
@@ -150,7 +196,14 @@ private struct CamadaDeBarras: NSViewRepresentable {
         return vista
     }
 
-    func updateNSView(_ vista: NSView, context: Context) { posicionar(vista) }
+    func updateNSView(_ vista: NSView, context: Context) {
+        posicionar(vista)
+        // Só a cor da layer, sem a transição implícita: a animação das barras continua sem recomeçar.
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        vista.layer?.sublayers?.forEach { $0.backgroundColor = cor.withAlphaComponent(0.85).cgColor }
+        CATransaction.commit()
+    }
 
     /// `bounds` e `position` em vez de `frame`, que não vale numa layer com `transform`. Escala a partir do meio.
     private func posicionar(_ vista: NSView) {
@@ -178,6 +231,7 @@ struct MusicaExpandida: View {
         VStack(spacing: 10) {
             HStack(alignment: .top, spacing: 12) {
                 Miniatura(tocando: tocando, lado: Geometria.capaGrande, raio: 14)
+                    .matchedGeometryEffect(id: "capa", in: espaco)
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(alignment: .top, spacing: 4) {
                         // verbatim: título e artista vêm do player.
@@ -210,8 +264,8 @@ struct MusicaExpandida: View {
         }
         .padding(12)
         .frame(height: Geometria.alturaMusica(barra: barra), alignment: .top)
-        .vidro(id: "musica", em: espaco)
-        .padding(.horizontal, 4)
+        .cartao(cor: tocando.corDeDestaque, raio: Geometria.raioDoWidget, id: "musica", em: espaco)
+        .padding(.horizontal, 10)
     }
 }
 

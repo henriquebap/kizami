@@ -13,25 +13,46 @@ import Foundation
     conferir("três ícones alargam as duas asas", mac.compacta(icones: 3), CGSize(width: 269 + 4 * 22, height: 32))
     conferir("nenhum ícone conta como um", mac.compacta(icones: 0), mac.compacta)
     conferir("repouso: um pouco maior que o notch", mac.repouso, CGSize(width: 225, height: 32))
-    func secoes(_ tocando: Bool, _ atividades: Int, _ arquivos: Int, _ arrastando: Bool = false) -> Secoes {
-        Secoes(tocando: tocando, atividades: atividades, arquivos: arquivos, arrastando: arrastando)
-    }
-    conferir("aberta com 1 linha é baixa", mac.aberta(secoes(false, 1, 0)), CGSize(width: 340, height: 120))
-    conferir("aberta com 3 linhas", mac.aberta(secoes(false, 3, 0)), CGSize(width: 340, height: 188))
-    conferir("aberta não passa de 3 linhas", mac.aberta(secoes(false, 8, 0)), mac.aberta(secoes(false, 3, 0)))
-    conferir("vazia, aberta oferece a bandeja", mac.aberta(secoes(false, 0, 0)), CGSize(width: 340, height: 154))
-    conferir("lista de 2 e bandeja", mac.aberta(secoes(false, 2, 1)), CGSize(width: 340, height: 228))
-    conferir("só tocando, sem bandeja vazia", mac.aberta(secoes(true, 0, 0)), CGSize(width: 340, height: 142))
-    conferir("arrastando, a bandeja aparece mesmo tocando", secoes(true, 0, 0, true).bandeja, true)
-    conferir("janela cabe tudo junto e a sombra", mac.janela, CGRect(x: 559.5, y: 398, width: 393, height: 584))
-    conferir("hoje e 2 sessões, sem bandeja vazia",
-             mac.aberta(Secoes(tocando: false, atividades: 0, arquivos: 0, arrastando: false, sessoes: 2, hoje: true)),
-             CGSize(width: 340, height: 32 + 8 + 26 + 10 + 40 + 10 + 64 + 14))
-    conferir("aba de atalhos: cabeçalho e a fileira", mac.abertaAtalhos, CGSize(width: 340, height: 32 + 8 + 26 + 10 + 62 + 14))
-    conferir("sessões não passam de 3", Secoes(tocando: false, atividades: 0, arquivos: 0, arrastando: false, sessoes: 9).sessoes, 3)
+    typealias E = Painel.Entrada
+    let calmo = Painel(E())
+    conferir("dia calmo: só o cartão do dia", calmo.fileiras, [.larga(.dia(eventos: 0))])
+    conferir("dia calmo: altura do cartão", mac.aberta(calmo), CGSize(width: 380, height: 32 + 8 + 26 + 10 + Painel.alturaDia(eventos: 0) + Painel.margem))
+    conferir("dia com 5 eventos lista só 3", Painel(E(eventosHoje: 5)).fileiras, [.larga(.dia(eventos: 3))])
+    conferir("música em destaque, o resto aos pares",
+             Painel(E(sessoes: 2, tocando: true, tempo: true, agenda: true, mac: true)).fileiras,
+             [.larga(.musica), .dupla(.tempo, .agenda), .dupla(.sessoes, .mac)])
+    conferir("Claude precisa de você vence a música, e as sessões não repetem num widget",
+             Painel(E(precisaDeVoce: true, sessoes: 3, tocando: true)).fileiras, [.larga(.claude(outras: true)), .dupla(.musica, .timer)])
+    conferir("reunião em destaque esconde o widget da agenda",
+             Painel(E(reuniao: true, tempo: true, agenda: true)).fileiras, [.larga(.reuniao(link: false)), .dupla(.tempo, .timer)])
+    conferir("régua: margem igual dos lados e embaixo, cantos concêntricos",
+             [Painel.margem, Painel.raio + Painel.margem], [20, 34])
+    conferir("cartão largo sem botões tem a altura da música", Painel.altura(.reuniao(link: false)), Painel.altura(.musica))
+    conferir("reunião sem link: sem a linha do botão", Painel.altura(.reuniao(link: false)) < Painel.altura(.reuniao(link: true)), true)
+    conferir("no dia calmo, tempo e agenda estão no cartão do dia",
+             Painel(E(tempo: true, agenda: true, mac: true)).fileiras, [.larga(.dia(eventos: 0)), .dupla(.mac, .timer)])
+    conferir("avisos logo depois do destaque, até 3",
+             Painel(E(tocando: true, atividades: 7)).fileiras, [.larga(.musica), .larga(.atividades(3))])
+    conferir("no máximo 6 widgets",
+             Painel(E(sessoes: 1, reuniao: true, tocando: true, timer: true, tempo: true, agenda: true, lembretes: 2,
+                      interesse: true, mac: true)).fileiras.count, 1 + 3)
+    conferir("Hoje escondido e nada acontecendo: sem destaque", Painel(E(hoje: false, mac: true)).fileiras, [.dupla(.mac, .timer)])
+    conferir("ímpar com o timer já correndo: o último fica largo",
+             Painel(E(timer: true, interesse: true, mac: true)).fileiras, [.larga(.dia(eventos: 0)), .dupla(.timer, .interesse), .sozinha(.mac)])
+    conferir("lembretes acabaram: o Mac ganha o timer de par, não a fileira toda",
+             Painel(E(sessoes: 1, interesse: true, mac: true)).fileiras, [.larga(.dia(eventos: 0)), .dupla(.sessoes, .interesse), .dupla(.mac, .timer)])
+    conferir("bandeja no fim", Painel(E(hoje: false, bandeja: true)).fileiras, [.larga(.bandeja)])
+    conferir("altura: destaque, dupla e o espaço entre eles",
+             Painel(E(tocando: true, tempo: true, agenda: true)).altura, Painel.altura(.musica) + Painel.espaco + Painel.alturaWidget)
+    conferir("janela cabe o Início mais alto e a sombra",
+             mac.janela.height - Geometria.sombra >= mac.aberta(Painel.maior).height, true)
+    conferir("aba de atalhos: cabeçalho e a fileira", mac.abertaAtalhos, CGSize(width: 380, height: 32 + 8 + 26 + 10 + 62 + Painel.margem))
+    conferir("botão da asa: o lado direito da compacta, 20 pt com 4 de folga",
+             mac.botaoDaAsa(mac.compacta), CGRect(x: 621.5 + 269 - 8 - 8 - 20 - 4, y: 950 + 6 - 4, width: 28, height: 28))
+    conferir("botão da asa fica fora do notch (que abre a ilha)", mac.botaoDaAsa(mac.compacta).intersects(mac.gatilho), false)
     conferir("cursor encostado no topo do notch abre", mac.gatilho.contains(CGPoint(x: 756, y: 982)), true)
     conferir("cursor na asa (barra de menus) não abre", mac.gatilho.contains(CGPoint(x: 650, y: 970)), false)
-    conferir("aberta, a ilha inteira segura o hover", mac.zona(mac.aberta(secoes(false, 3, 0))).contains(CGPoint(x: 600, y: 850)), true)
+    conferir("aberta, a ilha inteira segura o hover", mac.zona(mac.aberta(Painel(E(atividades: 3)))).contains(CGPoint(x: 600, y: 850)), true)
 
     // Tela cheia, com as janelas reais do fundo da mesa (MacBook 14" e um monitor de 1920x1080 à esquerda).
     let interno = CGRect(x: 0, y: 0, width: 1512, height: 982), lateral = CGRect(x: -1920, y: -98, width: 1920, height: 1080)
@@ -48,7 +69,7 @@ import Foundation
     conferir("sem notch: só as asas, com altura para a capa não encostar", externo.retangulo(externo.compacta),
              CGRect(x: -1030, y: 1050, width: 140, height: 30))
     conferir("sem notch: fechada não é mais estreita que o repouso", externo.compacta.width >= externo.repouso.width, true)
-    conferir("sem notch: o conteúdo aberto começa no topo, sem faixa vazia", externo.aberta(secoes(true, 0, 0)).height, 4 + 8 + 26 + 10 + 52 + 14)
+    conferir("sem notch: o conteúdo aberto começa no topo, sem faixa vazia", externo.aberta(Painel(E(tocando: true))).height, 4 + 8 + 26 + 10 + Painel.altura(.musica) + Painel.margem)
     conferir("com notch: o conteúdo começa abaixo da câmera", mac.faixaDoTopo, 32)
     conferir("sem notch: a pílula em repouso abre", externo.gatilho.contains(CGPoint(x: -1010, y: 1070)), true)
     conferir("agenda expandida: semana sem eventos", Geometria.alturaAgenda(semanas: 1, eventos: 0), 10 + 24 + 8 + 40 + 8 + 30 + 10)
@@ -226,6 +247,7 @@ import Foundation
     conferir("navegador não tem comando", Controle.script(.alternar, app: "com.google.Chrome"), nil)
 
     testarProgresso()
+    testarDestaque()
 
     var e = Estabilizador()
     conferir("um plim não liga", e.registrar(true), false)
@@ -294,6 +316,8 @@ import Foundation
         testarGitHub()
         testarPersonalizacao()
         testarAtalhosApple()
+        testarLembretes()
+        testarFones()
         if falhas > 0 { exit(1) }
     }
 }

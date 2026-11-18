@@ -8,7 +8,9 @@ A small island around the MacBook notch that shows what other apps and scripts a
 
 | Closed | Something arrived | Hovered |
 |---|---|---|
-| ![closed](docs/fechada.png) | ![arrived](docs/aviso.png) | ![open](docs/aberta.png) |
+| ![closed, with music playing](docs/v016-fechada.png) | ![arrived](docs/aviso.png) | ![open on a calm day](docs/v016-dia.png) |
+
+<sub>Closed and hovered: v0.16 design renders.</sub>
 
 Free and open source (Apache 2.0). No private APIs and no third-party dependencies.
 
@@ -18,6 +20,8 @@ Free and open source (Apache 2.0). No private APIs and no third-party dependenci
 - **Accessibility:** the Dock badges, the Shortcuts and Kanji tabs, browser play/pause and pasting from Copied.
 - **Camera:** the mirror, only while it is open.
 - **Downloads folder:** downloads in progress, if you turn them on.
+- **Reminders:** today's reminders, if you turn them on.
+- **Bluetooth:** the headphones-connected notice, if you turn it on.
 
 **The network goes only to services that need no key:** Open-Meteo for the weather, ESPN's public schedules and scores for the games you follow, and the calendar links you paste in Settings. If you turn GitHub on, your own logged-in `gh` asks GitHub for your PRs; Kizami never sees the token. Audio, files and what you type never leave the Mac.
 
@@ -65,12 +69,14 @@ Hovered, Music and Spotify get **previous, play/pause and next** buttons, throug
 
 Only media apps count (players and browsers): Core Audio tells which apps have their audio output open, not whether anything audible is playing, and some apps keep it open in silence.
 
-![now playing](docs/tocando.png)
+![now playing: the album-tinted card on top of the open island](docs/v016-musica.png)
+
+<sub>v0.16 design render.</sub>
 
 ## The open island
 
-Hover the notch and the island opens. The island stays black, so it blends into the notch; the cards, chips and buttons inside are Liquid Glass, and an item you expand grows out of its chip. In **Settings… › Island › Background** you can make the open island see-through: below 100%, it turns into darkened glass (closed, it stays black to blend into the notch). At the top:
-- **Home**: everything below (today, interests, Claude sessions, now playing, activities, apps, tray).
+Hover the notch and the island opens. Closed, it stays black so it blends into the notch; open, it's darkened glass by default (**Settings… › Island › Background** goes from glass to solid black). At the top:
+- **Home**: a two-column grid of widgets. The most important thing right now gets the full-width card on top: a Claude session waiting for you, then a meeting in the next 15 minutes, then the music (tinted with the album art's colour). With none of those, the calm day: the date and temperature large, "Free until 14:30", a 8 am–8 pm timeline with your events in their calendar colours and the hours rain is likely, and what's left today. Below it, the notices, then widgets in pairs (weather, next event, Claude sessions, music, timer, reminders, next game, Mac) and the tray. The open island's outline takes the colour of what's on top, and the artwork flies from the closed wing into its card.
 - **Today**: the rest of the day's calendar, one event per line, with **Join** on the ones that have a meeting link.
 - **Timer**: presets (Focus 25, Break 5, 10, 15, Focus 50). While it runs, the closed island shows the countdown around the notch. When a focus session ends, clicking the notice starts the 5-minute break, and the break's notice starts the next focus. No sound yet.
 - **Copied** (off by default, Settings › Copied): the last 10 texts you copied, click one to paste it into the app you're in. They stay in memory only, never on disk, and vanish when Kizami quits; whatever password managers mark as concealed, and anything that looks like a key or token, is left out.
@@ -81,9 +87,17 @@ Hover the notch and the island opens. The island stays black, so it blends into 
 
 Only the chosen tab shows its name; the others show their icon (hover for the name).
 
+| Meeting coming up | Claude needs you |
+|---|---|
+| ![a meeting in 8 minutes, with a Join button](docs/v016-reuniao.png) | ![a Claude Code session waiting for permission](docs/v016-claude.png) |
+
+<sub>v0.16 design renders.</sub>
+
 **Every day:**
 - **Open at login:** Settings › General (macOS may ask you to approve it in Login Items).
-- **Meeting coming up:** from 10 minutes before a meeting until 5 minutes after it starts, the closed island shows its countdown around the notch.
+- **Meeting coming up:** from 10 minutes before a meeting until 5 minutes after it starts, the closed island shows its countdown around the notch, in the calendar's colour.
+- **Paused music:** click the play glyph in the closed wing to resume, without opening the island.
+- **Volume:** when you change the volume, the closed island shows the level for 1.5 s (the system indicator still shows too).
 - **The timer survives a restart:** a running or paused timer comes back when Kizami reopens. If it ended while Kizami was closed (less than an hour ago), you get the end notice.
 - **Copied images:** Copied also keeps PNG and TIFF images (up to 10 MB each, 50 MB in all), in memory only, with a thumbnail.
 
@@ -99,6 +113,9 @@ Only the chosen tab shows its name; the others show their icon (hover for the na
 **GitHub** (off by default, Settings › GitHub): a notice when CI fails on one of your open PRs or someone requests your review, through the `gh` you already have logged in, every 5 minutes, read only. Clicking opens the PR.
 
 **Downloads** (off by default, Settings › Downloads): a file being downloaded in Chrome, Safari or Firefox shows with its size or percentage, then "Download complete"; click to show it in Finder. Asks for the Downloads folder.
+
+**Reminders** (off by default, Settings › Reminders): up to 3 reminders from the Reminders app, overdue and today's first, then the ones without a date; click to mark one completed. Asks for Reminders.
+**Headphones** (off by default, Settings › Headphones): when AirPods or other Bluetooth headphones connect, the island shows their name and battery for a few seconds (left, right and case, or the single battery). Asks for Bluetooth; Kizami only listens and never connects or disconnects anything.
 
 **Urgent over full screen** (off by default, Settings › Full screen): during a full-screen video or game the island hides; with this on, it comes back only for a meeting starting or Claude asking for permission.
 

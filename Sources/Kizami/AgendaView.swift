@@ -1,49 +1,75 @@
 import SwiftUI
 
-/// O próximo evento, à esquerda da faixa "Hoje": a cor do calendário, o título, quando começa e,
-/// se houver link de reunião, o botão de entrar. Sem evento (ou sem permissão), não ocupa nada.
-struct ChipAgenda: View {
+/// O widget do próximo evento: a hora grande (ou quanto falta, na última hora), o título e, se houver link de
+/// reunião, o botão de entrar. Clique: a agenda expande no lugar. Sem evento (ou sem permissão), não ocupa nada.
+struct WidgetAgenda: View {
     let agenda: Agenda
+    let estado: EstadoIlha
+    let espaco: Namespace.ID
+    let aoClicar: () -> Void
 
     var body: some View {
         if let evento = agenda.proximo {
-            HStack(spacing: 8) {
-                Capsule()
-                    .fill(evento.cor.map { Color(red: $0.x, green: $0.y, blue: $0.z) } ?? .red)
-                    .frame(width: 3, height: 26)
-                VStack(alignment: .leading, spacing: 1) {
-                    // verbatim: o título vem do convite de qualquer pessoa e não pode virar Markdown nem chave de tradução.
-                    Text(verbatim: evento.titulo).font(.callout.weight(.semibold))
-                    // Por minuto: "em 12 min" precisa andar sozinho, sem a Agenda publicar nada.
-                    TimelineView(.everyMinute) { contexto in
+            Quadro(id: "agenda", estado: estado, acao: aoClicar, espaco: espaco) {
+                Cabeca(rotulo: Text("Próximo"), ponto: corDoCalendario(evento))
+                // Por minuto: "12 min" precisa andar sozinho, sem a Agenda publicar nada.
+                TimelineView(.everyMinute) { contexto in
+                    Valor {
                         Text(verbatim: Self.quando(evento, agora: contexto.date))
-                            .font(.caption).monospacedDigit().foregroundStyle(.secondary)
+                        Spacer(minLength: 0)
+                        if evento.link != nil { BotaoEntrar { agenda.entrar(evento) } }
                     }
                 }
-                .lineLimit(1)
-                Spacer(minLength: 4)
-                if evento.link != nil {
-                    Button("Entrar") { agenda.entrar() }
-                        .buttonStyle(.plain)
-                        .font(.caption.weight(.semibold))
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 4)
-                        .background(Capsule().fill(.green.opacity(0.85)))
-                        .contentShape(.capsule)
-                        .fixedSize()
-                }
+                // verbatim: o título vem do convite de qualquer pessoa e não pode virar Markdown nem chave de tradução.
+                Detalhe { Text(verbatim: evento.titulo) }
             }
-            .frame(maxWidth: 200, maxHeight: Geometria.alturaHoje, alignment: .leading)  // cede espaço ao tempo, que não encolhe
-            .transition(.blurReplace)
         }
     }
 
     /// Hora exata para o que está longe; contagem na última hora, quando "quanto falta" importa mais que "a que horas".
-    private static func quando(_ evento: EventoAgenda, agora: Date) -> String {
+    static func quando(_ evento: EventoAgenda, agora: Date) -> String {
         let falta = evento.inicio.timeIntervalSince(agora)
         if falta <= 0 { return String(localized: "agora") }
-        if falta < 3600 { return String(localized: "em \(Int((falta / 60).rounded(.up))) min") }
+        if falta < 3600 { return String(localized: "\(Int((falta / 60).rounded(.up))) min") }
         return evento.inicio.formatted(date: .omitted, time: .shortened)
+    }
+}
+
+/// A reunião dos próximos 15 min em destaque, como uma Live Activity: quanto falta em número grande, na cor do
+/// calendário, e o botão de entrar largo, que é a única coisa a fazer agora.
+struct CartaoReuniao: View {
+    let agenda: Agenda
+    let espaco: Namespace.ID
+
+    var body: some View {
+        if let evento = agenda.emBreve {
+            let cor = corDoCalendario(evento)
+            VStack(spacing: Painel.espaco) {
+                TimelineView(.everyMinute) { contexto in
+                    let minutos = Int((evento.inicio.timeIntervalSince(contexto.date) / 60).rounded(.up))
+                    // verbatim: o título vem do convite.
+                    LinhaDeDestaque(rotulo: Text("Reunião"), corDoRotulo: cor, titulo: Text(verbatim: evento.titulo),
+                                    detalhe: Text(verbatim: AbaHoje.horario(evento))) {
+                        IconeDeDestaque(simbolo: "calendar", cor: cor).matchedGeometryEffect(id: "reuniao", in: espaco)
+                    } fim: {
+                        if minutos > 0 {
+                            HStack(alignment: .firstTextBaseline, spacing: 3) {
+                                Text(verbatim: "\(minutos)").font(Tipo.numero).monospacedDigit().foregroundStyle(cor)
+                                Text("min").estiloRotulo()
+                            }
+                        } else {
+                            Text("agora").font(Tipo.titulo).foregroundStyle(cor)
+                        }
+                    }
+                }
+                if evento.link != nil {
+                    Pilula(titulo: "Entrar na reunião", simbolo: "video.fill", cor: .green, cheio: true) { agenda.entrar(evento) }
+                }
+            }
+            .padding(Painel.folga)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .cartao(cor: cor, raio: Painel.raio)
+        }
     }
 }
 
@@ -123,7 +149,7 @@ struct AbaHoje: View {
     return Geometria.alturaAgenda(semanas: semanas, eventos: eventos)
 }
 
-private func corDoCalendario(_ evento: EventoAgenda?) -> Color {
+func corDoCalendario(_ evento: EventoAgenda?) -> Color {
     evento?.cor.map { Color(red: $0.x, green: $0.y, blue: $0.z) } ?? .red
 }
 
@@ -151,10 +177,10 @@ struct AgendaExpandida: View {
             lista(eventos)
         }
         .padding(.vertical, 10)
-        .padding(.horizontal, 10)
+        .padding(.horizontal, Painel.folga)
         .frame(height: Geometria.alturaAgenda(semanas: dias.count / 7, eventos: eventos.count), alignment: .top)
-        .vidro(id: "agenda", em: espaco)
-        .padding(.horizontal, 4)
+        .cartao(raio: Geometria.raioDoWidget, id: "agenda", em: espaco)
+        .padding(.horizontal, 10)
     }
 
     /// O mês e o ano (clique recolhe), Semana/Mês e a seta de recolher.

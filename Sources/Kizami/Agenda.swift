@@ -50,6 +50,37 @@ struct EventoAgenda: Equatable, Identifiable, Sendable {
         return falta <= 10 * 60 && falta > -5 * 60 ? e : nil
     }
 
+    // MARK: Resumo do dia
+
+    /// Perto o bastante para o resumo dizer "em 8 min" em vez de "livre até": com mais de uma hora, a folga importa mais.
+    static let chegandoEm: TimeInterval = 60 * 60
+
+    /// A linha do cartão do dia, a partir de `Agenda.hoje`. Dia inteiro e recusado não ocupam ninguém: não contam.
+    static func resumo(_ hoje: [EventoAgenda], agora: Date) -> ResumoDoDia {
+        let ocupam = hoje.filter { !$0.diaInteiro && !$0.recusado && $0.fim > agora }  // o que acaba agora já acabou
+        let futuros = ocupam.filter { $0.inicio > agora }.sorted { ($0.inicio, $0.titulo) < ($1.inicio, $1.titulo) }
+        // Com dois ao mesmo tempo, o que acaba primeiro: é o "até" que a pessoa vai viver antes.
+        if let atual = ocupam.filter({ $0.inicio <= agora }).min(by: { ($0.fim, $0.titulo) < ($1.fim, $1.titulo) }) {
+            return ResumoDoDia(estado: .emReuniao(titulo: atual.titulo, ate: atual.fim), depois: futuros.count)
+        }
+        guard let proximo = futuros.first else { return ResumoDoDia(estado: .livreORestoDoDia, depois: 0) }
+        let falta = proximo.inicio.timeIntervalSince(agora)
+        guard falta <= chegandoEm else { return ResumoDoDia(estado: .livreAte(proximo.inicio), depois: futuros.count) }
+        // "Depois livre até": o fim do bloco de reuniões grudadas ou sobrepostas que começa no próximo.
+        var fimDoBloco = proximo.fim
+        var livreAte: Date?
+        for e in futuros.dropFirst() {
+            if e.inicio <= fimDoBloco {
+                fimDoBloco = max(fimDoBloco, e.fim)
+            } else {
+                livreAte = e.inicio
+                break
+            }
+        }
+        return ResumoDoDia(estado: .chegando(titulo: proximo.titulo, minutos: Int((falta / 60).rounded(.up)), livreAte: livreAte),
+                           depois: futuros.count - 1)
+    }
+
     // MARK: Link da reunião
 
     /// Só serviços de videochamada conhecidos, e só https: o link vem de convites de qualquer pessoa,
@@ -112,6 +143,23 @@ struct EventoAgenda: Equatable, Identifiable, Sendable {
             return lembrete.flatMap { avisados.contains($0.chave) ? nil : $0 }
         }
     }
+}
+
+/// O que a linha do cartão do dia diz. Sem texto: a view localiza ("Em <título> até 10:15", "mais 2 hoje").
+struct ResumoDoDia: Equatable, Sendable {
+    enum Estado: Equatable, Sendable {
+        /// "Em <título> até 10:15".
+        case emReuniao(titulo: String, ate: Date)
+        /// "<título> em 8 min", e ", depois livre até 14:30" só se vier outro evento hoje depois do bloco.
+        case chegando(titulo: String, minutos: Int, livreAte: Date?)
+        /// "Livre até 14:30": o próximo está a mais de uma hora.
+        case livreAte(Date)
+        case livreORestoDoDia
+    }
+
+    let estado: Estado
+    /// "mais 2 hoje": os que ainda vão começar, sem o que a linha já nomeia pelo título. Zero: a view não mostra.
+    let depois: Int
 }
 
 extension EventoAgenda {

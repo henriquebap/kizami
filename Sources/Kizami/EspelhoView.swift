@@ -55,7 +55,7 @@ struct AbaEspelho: View {
         }
         .padding(12)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .vidro(raio: 12)
+        .cartao(raio: 12)
     }
 }
 

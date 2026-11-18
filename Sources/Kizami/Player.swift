@@ -186,6 +186,58 @@ enum Capa {
     }
 }
 
+/// A cor da capa, para a ilha tingir os detalhes da música com ela.
+extension Capa {
+    /// Abaixo disso a capa conta como cinza e não tinge: preto e branco, ou escura demais para a matiz ser
+    /// mais que ruído do JPEG.
+    static let saturacaoMinima = 0.12
+    static let cromaMinimo = 0.04
+    /// Sobre o preto da ilha: escura some, saturada demais cansa a vista.
+    static let brilhoMinimo = 0.75
+    static let faixaDeSaturacao = 0.3...0.7
+
+    /// A cor média da capa em sRGB de 0 a 1. Reduz a 8x8 com interpolação alta e tira a média: uma vez por capa.
+    static func media(_ imagem: NSImage) -> SIMD3<Double>? {
+        guard let cg = imagem.cgImage(forProposedRect: nil, context: nil, hints: nil),
+              let srgb = CGColorSpace(name: CGColorSpace.sRGB) else { return nil }
+        let lado = 8
+        var pixels = [UInt8](repeating: 0, count: lado * lado * 4)
+        let desenhou = pixels.withUnsafeMutableBytes { bytes -> Bool in
+            guard let contexto = CGContext(data: bytes.baseAddress, width: lado, height: lado, bitsPerComponent: 8,
+                                           bytesPerRow: lado * 4, space: srgb,
+                                           bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue) else { return false }
+            contexto.interpolationQuality = .high
+            contexto.draw(cg, in: CGRect(x: 0, y: 0, width: lado, height: lado))
+            return true
+        }
+        guard desenhou else { return nil }
+        let soma = stride(from: 0, to: pixels.count, by: 4).reduce(SIMD3<Double>()) { soma, i in
+            soma + SIMD3(Double(pixels[i]), Double(pixels[i + 1]), Double(pixels[i + 2]))
+        }
+        return soma / Double(lado * lado * 255)
+    }
+
+    /// A cor média pronta para destaque sobre o preto: mesma matiz, brilho de pelo menos `brilhoMinimo`,
+    /// saturação dentro de `faixaDeSaturacao`. nil para capa acinzentada: aí a ilha fica neutra.
+    static func destaque(_ cor: SIMD3<Double>) -> SIMD3<Double>? {
+        let maior = cor.max(), croma = cor.max() - cor.min()
+        let saturacao = maior > 0 ? croma / maior : 0
+        guard saturacao >= saturacaoMinima, croma >= cromaMinimo else { return nil }
+        let setor = maior == cor.x ? (cor.y - cor.z) / croma
+            : maior == cor.y ? 2 + (cor.z - cor.x) / croma
+            : 4 + (cor.x - cor.y) / croma
+        let matiz = (setor + 6).truncatingRemainder(dividingBy: 6) / 6
+        let s = min(max(saturacao, faixaDeSaturacao.lowerBound), faixaDeSaturacao.upperBound)
+        let v = max(maior, brilhoMinimo)
+        // HSB → RGB pela fórmula de cada canal (n = 5, 3, 1 para vermelho, verde, azul).
+        func canal(_ n: Double) -> Double {
+            let k = (n + matiz * 6).truncatingRemainder(dividingBy: 6)
+            return v - v * s * max(0, min(k, 4 - k, 1))
+        }
+        return SIMD3(canal(5), canal(3), canal(1))
+    }
+}
+
 /// Roda AppleScript pelo `osascript`, fora da thread principal: na primeira vez o macOS pergunta se o Kizami
 /// pode controlar o player e espera a resposta da pessoa.
 enum AppleScript {

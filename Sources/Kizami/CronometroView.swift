@@ -32,7 +32,7 @@ struct AbaTimer: View {
                         Text(verbatim: "\(preset.minutos) min").font(.system(size: 9)).foregroundStyle(.secondary)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .vidro(raio: 12)
+                    .vidroDeControle(raio: 12)
                     .contentShape(.rect)
                 }
                 .buttonStyle(.plain)
@@ -115,7 +115,7 @@ struct ContagemNaAsa: View {
 }
 
 /// A contagem que se atualiza sozinha a cada segundo.
-private struct TextoDaContagem: View {
+struct TextoDaContagem: View {
     let cronometro: Cronometro
     let fonte: Font
     /// Na asa, sem animação: o SwiftUI redesenha a ilha inteira na CPU a cada quadro de animação, e o número rolando
@@ -133,6 +133,36 @@ private struct TextoDaContagem: View {
                 .font(fonte).monospacedDigit()
                 .contentTransition(animado ? .numericText(countsDown: true) : .identity)
                 .animation(animado ? .snappy : nil, value: texto)
+        }
+    }
+}
+
+/// O timer num quadrado. Correndo ou pausado: o modo, a contagem grande e quando termina, e o clique abre a aba.
+/// Parado (entra para fechar um par na grade): o foco padrão pronto, e o clique já começa.
+struct WidgetTimer: View {
+    let cronometro: Cronometro
+    let estado: EstadoIlha
+
+    var body: some View {
+        if cronometro.ativo {
+            Quadro(id: "timer", estado: estado, acao: { estado.aba = .timer }) {
+                Cabeca(rotulo: Text(verbatim: cronometro.modo.nome), simbolo: cronometro.modo.simbolo, cor: .orange)
+                Valor { TextoDaContagem(cronometro: cronometro, fonte: Tipo.numero, animado: false) }
+                Detalhe {
+                    if cronometro.pausado {
+                        Text("pausado")
+                    } else if let fim = cronometro.fim {
+                        Text("termina às \(fim.formatted(date: .omitted, time: .shortened))")
+                    }
+                }
+            }
+        } else {
+            let minutos = cronometro.minutosFoco
+            Quadro(id: "timer", estado: estado, acao: { cronometro.iniciar(minutos: minutos, modo: .foco) }) {
+                Cabeca(rotulo: Text(verbatim: Cronometro.Modo.foco.nome), simbolo: Cronometro.Modo.foco.simbolo, cor: .orange)
+                Valor { Text(verbatim: String(format: "%d:00", minutos)) }
+                Detalhe { Text("clique para começar") }
+            }
         }
     }
 }

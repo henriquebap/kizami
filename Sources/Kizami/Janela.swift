@@ -14,6 +14,8 @@ final class EstadoIlha {
     var recolher = false
     /// A linha da lista sob o cursor: só ela mostra o ✕ (a view não tem `@State` sem as macros).
     var linhaSobCursor: String?
+    /// O cartão do Início sob o cursor: só ele clareia.
+    var cartaoSobCursor: String?
     /// O item do Início que cresceu no lugar (clique no chip da agenda ou na linha do que está tocando). Fechar a
     /// ilha recolhe (`Janela.recolher`).
     var expandido: Expansao?
@@ -129,6 +131,7 @@ final class Janela {
         // Só a ilha que tinha a agenda expandida para de ler o mês: a Agenda é a mesma em todos os monitores.
         if estado.expandido == .agenda { fontes.agenda.mostrar(nil) }
         estado.expandido = nil
+        estado.cartaoSobCursor = nil  // o fim do hover pode não chegar quando a view some ao fechar
         estado.diaEscolhido = nil
         estado.mesInteiro = false
         acertarCamera()
@@ -174,15 +177,21 @@ final class Janela {
     }
 
     // ponytail: consulta a posição do cursor em cada monitor: a cada 50 ms com o cursor perto do topo ou a ilha aberta,
-    // a cada 250 ms longe dele. É o jeito que não depende de evento chegar a
+    // a cada 100 ms longe dele (com 250 ms, o cursor jogado direto no notch esperava até 250 ms para ser visto, mais os
+    // 150 ms de permanência, e a ilha parecia lenta para responder). É o jeito que não depende de evento chegar a
     // uma janela que nunca vira key; trocar por um monitor global de .mouseMoved se o consumo de energia aparecer.
     private func vigiar() {
         vigia = Task { [weak self] in
             while !Task.isCancelled {
                 guard let intervalo = self?.conferir() else { return }
-                try? await Task.sleep(for: intervalo)
+                try? await Task.sleep(for: intervalo, tolerance: .milliseconds(10))  // deixa o macOS juntar os despertares
             }
         }
+    }
+
+    /// A asa mostra a música pausada agora (nada de aviso, volume ou outra coisa na frente).
+    private var musicaPausadaNaAsa: Bool {
+        fontes.mural.avisos.isEmpty && !fontes.volume.naAsa && fontes.tocando.pausado && asaAtual(fontes) == .tocando
     }
 
     /// Abre ou fecha conforme o cursor e devolve quanto esperar até a próxima consulta.
@@ -236,6 +245,12 @@ final class Janela {
                 recolher()
             }
         }
+        // Fechada com a música pausada, o "pausado" da asa vira botão de tocar: só ali o clique fica na ilha. Fora dele
+        // (e em qualquer outro estado fechado) a ilha ignora o mouse, e a barra de menus continua recebendo tudo.
+        if !estado.aberta {
+            let noBotao = !oculta && musicaPausadaNaAsa && g.botaoDaAsa(desenhada).contains(cursor)
+            if painel.ignoresMouseEvents == noBotao { painel.ignoresMouseEvents = !noBotao }
+        }
         acertarCamera()  // entrou ou saiu da aba Espelho com a ilha aberta
         acertarProgresso()  // expandiu ou recolheu a música
         // Trocou de aba com a agenda expandida: ela recolhe e o mês para de ser lido, que fora da tela ninguém vê.
@@ -244,6 +259,6 @@ final class Janela {
             estado.expandido = nil
         }
         let pertoDoTopo = g.tela.contains(cursor) && cursor.y > g.tela.maxY - 120
-        return .milliseconds(estado.aberta || pertoDoTopo ? 50 : 250)
+        return .milliseconds(estado.aberta || pertoDoTopo ? 50 : 100)
     }
 }

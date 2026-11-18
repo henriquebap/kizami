@@ -138,8 +138,19 @@ Events the person follows but doesn't keep in their calendar (Buffalo Bills, F1,
 - **Claude notice you can dismiss.** The ✕ is always visible. A dismissed notice only comes back when the session changes state. After 2 min the notice leaves the wing and stays only in the list.
 - **See-through open island** (Settings › Island › Background): below 100%, the open island turns into glass darkened by that much; closed, it stays black.
 - **The date next to the temperature** ("Tue 17 · 24°").
-- Not done: the artwork and the meeting dot moving from the closed wing into the open island (`matchedGeometryEffect`).
+- The artwork and the meeting dot moving from the closed wing into the open island (`matchedGeometryEffect`): done in v0.16.
 - To test by hand: iTerm2 may start the shell under `iTermServer`, outside the `.app`; if so, the click finds neither the app nor the tab.
+
+### v0.16
+
+- **Home as a widget grid** (direction B, picked from three mockups). A pure rule (`Painel`) puts the most important thing in a full-width card on top: a Claude session waiting for you, then a meeting about to start (10 min before to 5 min after), then the music, else the calm day. Notices come next, then widgets in pairs (weather, next event, Claude, music, timer, reminders, next game, Mac, at most 6) and the tray. 380 pt wide, with 20 pt of black on each side.
+- **Calm day** (the timeline from direction C in B's style): the date and temperature large, a line that answers "am I free?" ("Free until 14:30", "Daily in 8 min, then free until 14:30"), an 8 am–8 pm timeline with events in calendar colours, rain bands from Open-Meteo's hourly forecast and a now marker, and up to 3 events left today.
+- **Look:** one ruler for every space (`Painel`: 20 pt margins on the sides and bottom, 10 pt between any two blocks, 12 pt inside every card, 14 pt corners concentric with the island's 34) and five type sizes (`Tipo`: 24 pt rounded numbers, 13 pt titles, 12 pt text, 10.5 pt captions, 10 pt uppercase labels); widgets are built from fixed-height rails (`Cabeca`, `Valor`, `Detalhe`, `Rodape`) so a label, number and detail line up with the neighbour's, and the three hero cards share one row (`LinhaDeDestaque`); cards as fills instead of glass (HIG: glass is for controls); the open island is darkened glass by default (70%); hover lightens a card, buttons shrink on press, a haptic tick on expand/collapse.
+- **Colour of what's on top:** the album art's average colour (an 8×8 bitmap average, once per artwork) tints the music card, the wing's equalizer and the open island's 1 pt outline; a meeting uses its calendar colour, Claude orange.
+- **Wing → card:** the artwork and the meeting icon fly from the closed wing into their card (`matchedGeometryEffect`).
+- **Volume in the wing:** a Core Audio listener (read only) shows the level for 1.5 s when the person changes it.
+- **Reminders** (off by default, Settings › Reminders): up to 3 from the Reminders app through EventKit, overdue and due today first (by due date), then undated (by priority); tomorrow onward stays in the Reminders app. Clicking marks one completed, the only thing Kizami writes there. Refreshed on `EKEventStoreChanged` and at the day change, no polling.
+- **Headphones connected** (off by default, Settings › Headphones): when AirPods or other Bluetooth headphones connect, the island shows the name and battery ("L 80% · R 78% · case 55%", or the single battery). The connection comes from IOBluetooth's connect notifications, and the battery from one `system_profiler -json SPBluetoothDataType` run (fixed arguments, timeout, size cap). Asks for Bluetooth. Only listens: never connects, disconnects or touches the audio output.
 
 ### Next
 
@@ -157,4 +168,4 @@ Ranked by value for daily use against the work it takes.
 
 - **Other apps' notification text** (WhatsApp, Slack, Messages). macOS has no API to read another app's notifications, and macOS 26.3 moved the Notification Center data to a protected location (CVE-2026-20648). Reading the banners through Accessibility is fragile. What is possible: the unread *count* from the Dock badge (v0.8), and any app or script that wants to show up can send an activity to Kizami.
 - **Lock screen island.** Needs the private SkyLight framework.
-- **Replacing the volume / brightness HUD.** Needs to intercept media keys (Accessibility) and breaks between macOS versions.
+- **Replacing the volume / brightness HUD.** Hiding the system indicator needs to intercept media keys (Accessibility) and breaks between macOS versions. What is possible (v0.16): reading the default output's volume and mute through Core Audio listeners and showing the level in the wing for a moment after the person changes it. The system indicator still shows; brightness has no public read API on Apple displays.

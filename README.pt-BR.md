@@ -8,7 +8,9 @@ Uma pequena ilha em volta do notch do MacBook que mostra o que outros apps e scr
 
 | Fechada | Chegou uma atividade | Com o mouse em cima |
 |---|---|---|
-| ![fechada](docs/fechada.png) | ![aviso](docs/aviso.png) | ![aberta](docs/aberta.png) |
+| ![fechada, com música tocando](docs/v016-fechada.png) | ![aviso](docs/aviso.png) | ![aberta num dia calmo](docs/v016-dia.png) |
+
+<sub>Fechada e com o mouse em cima: render do design da v0.16.</sub>
 
 Gratuito e open source (Apache 2.0). Não usa API privada nem tem dependências de terceiros.
 
@@ -18,6 +20,8 @@ Gratuito e open source (Apache 2.0). Não usa API privada nem tem dependências 
 - **Acessibilidade:** os emblemas do Dock, as abas Atalhos e Kanji, o play/pause do navegador e colar dos Copiados.
 - **Câmera:** o espelho, só enquanto está aberto.
 - **Pasta Downloads:** os downloads em andamento, se você ligar.
+- **Lembretes:** os lembretes de hoje, se você ligar.
+- **Bluetooth:** o aviso de fone conectado, se você ligar.
 
 **A rede só vai a serviços que não pedem chave:** Open-Meteo para o tempo, as agendas e placares públicos da ESPN para os jogos que você segue, e os links de calendário que você cola nos Ajustes. Se você ligar o GitHub, o seu próprio `gh` logado pede ao GitHub os seus PRs; o Kizami nunca vê o token. Áudio, arquivos e o que você digita nunca saem do Mac.
 
@@ -65,12 +69,14 @@ Com o mouse em cima, o Music e o Spotify ganham os botões **anterior, tocar/pau
 
 Só apps de mídia contam (players e navegadores): o Core Audio diz quais apps estão com a saída de áudio aberta, não se algo audível está tocando, e alguns apps mantêm a saída aberta em silêncio.
 
-![tocando agora](docs/tocando.png)
+![tocando agora: o cartão tingido pela capa no topo da ilha aberta](docs/v016-musica.png)
+
+<sub>Render do design da v0.16.</sub>
 
 ## A ilha aberta
 
-Passe o mouse no notch e a ilha abre. A ilha continua preta, para se fundir ao notch; os cartões, chips e botões de dentro são Liquid Glass, e um item que você expande cresce a partir do chip dele. Em **Ajustes… › Ilha › Fundo** dá para deixar a ilha aberta transparente: abaixo de 100%, ela vira vidro escurecido (fechada, continua preta para se fundir ao notch). No topo:
-- **Início**: tudo o que está abaixo (hoje, interesses, sessões do Claude, tocando agora, atividades, apps, bandeja).
+Passe o mouse no notch e a ilha abre. Fechada, ela continua preta para se fundir ao notch; aberta, é vidro escurecido por padrão (**Ajustes… › Ilha › Fundo** vai do vidro ao preto). No topo:
+- **Início**: uma grade de widgets em duas colunas. O mais importante do momento ganha o cartão largo de cima: uma sessão do Claude esperando você, depois uma reunião nos próximos 15 minutos, depois a música (tingida com a cor da capa). Sem nada disso, o dia calmo: a data e a temperatura grandes, "Livre até 14:30", uma régua das 8h às 20h com os eventos na cor do calendário e as horas de chuva provável, e o que ainda falta hoje. Embaixo, os avisos, os widgets aos pares (tempo, próximo evento, sessões do Claude, música, timer, lembretes, próximo jogo, Mac) e a bandeja. O contorno da ilha aberta pega a cor do que está em cima, e a capa voa da asa fechada até o cartão.
 - **Hoje**: o resto da agenda do dia, um evento por linha, com **Entrar** nos que têm link de reunião.
 - **Timer**: atalhos prontos (Foco 25, Pausa 5, 10, 15, Foco 50). Enquanto corre, a ilha fechada mostra a contagem em volta do notch. No fim de um foco, clicar no aviso começa a pausa de 5 minutos, e o aviso da pausa começa o próximo foco. Ainda sem som.
 - **Copiados** (desligado por padrão, Ajustes › Copiados): os últimos 10 textos que você copiou; clique num para colar no app em que você está. Ficam só na memória, nunca em disco, e somem ao fechar o Kizami; o que os gerenciadores de senha marcam como oculto, e o que parece chave ou token, fica de fora.
@@ -81,9 +87,17 @@ Passe o mouse no notch e a ilha abre. A ilha continua preta, para se fundir ao n
 
 Só a aba escolhida mostra o nome; as outras mostram o ícone (o nome aparece com o cursor em cima).
 
+| Reunião chegando | Claude precisa de você |
+|---|---|
+| ![uma reunião em 8 minutos, com o botão Entrar](docs/v016-reuniao.png) | ![uma sessão do Claude Code esperando permissão](docs/v016-claude.png) |
+
+<sub>Render do design da v0.16.</sub>
+
 **No dia a dia:**
 - **Abrir no login:** Ajustes › Geral (o macOS pode pedir para você aprovar em Itens de Início).
-- **Reunião chegando:** de 10 minutos antes até 5 minutos depois de uma reunião começar, a ilha fechada mostra a contagem em volta do notch.
+- **Reunião chegando:** de 10 minutos antes até 5 minutos depois de uma reunião começar, a ilha fechada mostra a contagem em volta do notch, na cor do calendário.
+- **Música pausada:** clique no play da asa fechada para voltar a tocar, sem abrir a ilha.
+- **Volume:** quando você muda o volume, a ilha fechada mostra o nível por 1,5 s (o indicador do sistema continua aparecendo).
 - **O timer sobrevive ao reinício:** um timer correndo ou pausado volta quando o Kizami reabre. Se acabou com o Kizami fechado (há menos de uma hora), chega o aviso de fim.
 - **Imagens nos Copiados:** os Copiados guardam também imagens PNG e TIFF (até 10 MB cada, 50 MB no total), só na memória, com miniatura.
 
@@ -99,6 +113,9 @@ Só a aba escolhida mostra o nome; as outras mostram o ícone (o nome aparece co
 **GitHub** (desligado por padrão, Ajustes › GitHub): um aviso quando a CI falha num PR seu aberto ou pedem a sua revisão, pelo `gh` que você já tem logado, a cada 5 minutos, só leitura. O clique abre o PR.
 
 **Downloads** (desligado por padrão, Ajustes › Downloads): um arquivo sendo baixado no Chrome, Safari ou Firefox aparece com o tamanho ou a porcentagem, depois "Download concluído"; o clique mostra o arquivo no Finder. Pede a pasta Downloads.
+
+**Lembretes** (desligado por padrão, Ajustes › Lembretes): até 3 lembretes do app Lembretes, os atrasados e os de hoje primeiro, depois os sem data; o clique marca como concluído. Pede acesso aos Lembretes.
+**Fones** (desligado por padrão, Ajustes › Fones): quando AirPods ou outro fone Bluetooth conecta, a ilha mostra o nome e a bateria por alguns segundos (esquerdo, direito e estojo, ou a bateria única). Pede o Bluetooth; o Kizami só escuta, nunca conecta nem desconecta nada.
 
 **Urgente por cima da tela cheia** (desligado por padrão, Ajustes › Tela cheia): em vídeo ou jogo em tela cheia a ilha some; ligado, ela volta só para a reunião começando ou o Claude pedindo permissão.
 

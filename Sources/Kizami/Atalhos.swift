@@ -120,7 +120,7 @@ struct GradeDeAtalhos: View {
                         Text(verbatim: atalho.teclas).font(.system(size: 9)).foregroundStyle(.secondary)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .vidro(raio: 12)
+                    .vidroDeControle(raio: 12)
                     .contentShape(.rect)
                 }
                 .buttonStyle(.plain)
@@ -134,7 +134,7 @@ struct GradeDeAtalhos: View {
                     Text(verbatim: " ").font(.system(size: 9))
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .vidro(raio: 12)
+                .vidroDeControle(raio: 12)
                 .contentShape(.rect)
             }
             .buttonStyle(.plain)
