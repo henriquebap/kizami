@@ -29,8 +29,8 @@ struct CartaoMusica: View {
 
     var body: some View {
         let cor = tocando.corDeDestaque
-        HStack(spacing: 14) {
-            Miniatura(tocando: tocando, lado: 56, raio: 14)
+        HStack(spacing: 12) {
+            Miniatura(tocando: tocando, lado: Painel.capaDoCartao, raio: 11)
                 .matchedGeometryEffect(id: "capa", in: espaco)
             VStack(alignment: .leading, spacing: 2) {
                 // verbatim: título, artista e o nome do app vêm do player e não podem virar Markdown nem chave de tradução.
@@ -43,7 +43,7 @@ struct CartaoMusica: View {
             Spacer(minLength: 4)
             ControlesDoPlayer(tocando: tocando, grande: true)
         }
-        .padding(14)
+        .padding(Painel.folga)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .cartao(cor: cor, raio: Geometria.raioDoWidget, realce: estado.cartaoSobCursor == "musica", id: "musica", em: espaco)
         .contentShape(.rect)
@@ -63,7 +63,7 @@ struct WidgetMusica: View {
     var body: some View {
         Quadro(id: "musica", estado: estado, cor: tocando.corDeDestaque, acao: aoClicar, espaco: espaco) {
             HStack(spacing: 6) {
-                Miniatura(tocando: tocando, lado: 36, raio: 8).matchedGeometryEffect(id: "capa", in: espaco)
+                Miniatura(tocando: tocando, lado: 30, raio: 7).matchedGeometryEffect(id: "capa", in: espaco)
                 Spacer(minLength: 0)
                 ControlesDoPlayer(tocando: tocando)
             }
@@ -115,7 +115,7 @@ private struct Controles: View {
             botao("Anterior", "backward.fill", .anterior, tamanho: 13)
             botao(pausado ? "Tocar" : "Pausar", pausado ? "play.fill" : "pause.fill", .alternar, tamanho: 18)
                 .contentTransition(.symbolEffect(.replace))
-                .background { if grande { Circle().fill(.white.opacity(0.14)).frame(width: 38, height: 38) } }
+                .background { if grande { Circle().fill(.white.opacity(0.14)).frame(width: 34, height: 34) } }
             botao("Próxima", "forward.fill", .proxima, tamanho: 13)
         }
     }
@@ -269,7 +269,7 @@ struct MusicaExpandida: View {
         .padding(12)
         .frame(height: Geometria.alturaMusica(barra: barra), alignment: .top)
         .cartao(cor: tocando.corDeDestaque, raio: Geometria.raioDoWidget, id: "musica", em: espaco)
-        .padding(.horizontal, 4)
+        .padding(.horizontal, 10)
     }
 }
 

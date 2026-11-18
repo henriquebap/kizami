@@ -47,12 +47,12 @@ struct CartaoReuniao: View {
     var body: some View {
         if let evento = agenda.emBreve {
             let cor = corDoCalendario(evento)
-            VStack(spacing: 12) {
-                HStack(spacing: 14) {
+            VStack(spacing: 10) {
+                HStack(spacing: 12) {
                     Image(systemName: "calendar")
-                        .font(.system(size: 18, weight: .semibold))
+                        .font(.system(size: 15, weight: .semibold))
                         .foregroundStyle(cor)
-                        .frame(width: 44, height: 44)
+                        .frame(width: Painel.icone, height: Painel.icone)
                         .background(Circle().fill(cor.opacity(0.22)))
                         .matchedGeometryEffect(id: "reuniao", in: espaco)
                     VStack(alignment: .leading, spacing: 2) {
@@ -76,9 +76,9 @@ struct CartaoReuniao: View {
                 if evento.link != nil {
                     Button { agenda.entrar(evento) } label: {
                         Label("Entrar na reunião", systemImage: "video.fill")
-                            .font(.system(size: 12.5, weight: .semibold))
+                            .font(.system(size: 12, weight: .semibold))
                             .frame(maxWidth: .infinity)
-                            .frame(height: 30)
+                            .frame(height: 28)
                             .background(Capsule().fill(.green))
                             .foregroundStyle(.black.opacity(0.85))
                             .contentShape(.capsule)
@@ -86,7 +86,7 @@ struct CartaoReuniao: View {
                     .buttonStyle(EstiloBotao())
                 }
             }
-            .padding(14)
+            .padding(Painel.folga)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .cartao(cor: cor, raio: Geometria.raioDoWidget)
         }
@@ -199,8 +199,8 @@ struct AgendaExpandida: View {
         .padding(.vertical, 10)
         .padding(.horizontal, 10)
         .frame(height: Geometria.alturaAgenda(semanas: dias.count / 7, eventos: eventos.count), alignment: .top)
-        .cartao(id: "agenda", em: espaco)
-        .padding(.horizontal, 4)
+        .cartao(raio: Geometria.raioDoWidget, id: "agenda", em: espaco)
+        .padding(.horizontal, 10)
     }
 
     /// O mês e o ano (clique recolhe), Semana/Mês e a seta de recolher.

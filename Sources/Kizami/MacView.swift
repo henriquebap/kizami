@@ -34,7 +34,7 @@ struct WidgetMac: View {
                 ForEach(mac.emblemas.prefix(mac.bateria == nil ? 4 : 3)) { emblema in  // mais que isso não cabe no quadrado
                     Button { Mac.ativar(emblema.bundle) } label: {
                         Self.icone(emblema.bundle)
-                            .frame(width: 26, height: 26)
+                            .frame(width: 22, height: 22)
                             .overlay(alignment: .topTrailing) {
                                 Text(verbatim: emblema.rotulo)  // vem do Dock: dado, nunca chave de tradução
                                     .font(.system(size: 9, weight: .bold))
@@ -114,14 +114,14 @@ private struct AnelDaBateria: View {
         let cor: Color = bateria.carregando || bateria.ligadaNaTomada ? .green
             : bateria.porcento <= 20 ? .red : .white
         ZStack {
-            Circle().stroke(.white.opacity(0.12), lineWidth: 4)
+            Circle().stroke(.white.opacity(0.12), lineWidth: 3.5)
             Circle()
                 .trim(from: 0, to: CGFloat(min(max(bateria.porcento, 0), 100)) / 100)
-                .stroke(cor, style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                .stroke(cor, style: StrokeStyle(lineWidth: 3.5, lineCap: .round))
                 .rotationEffect(.degrees(-90))
-            Text(verbatim: "\(bateria.porcento)").font(.system(size: 12, weight: .semibold, design: .rounded)).monospacedDigit()
+            Text(verbatim: "\(bateria.porcento)").font(.system(size: 11, weight: .semibold, design: .rounded)).monospacedDigit()
         }
-        .frame(width: 40, height: 40)
+        .frame(width: 34, height: 34)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(verbatim: "\(bateria.porcento)%"))
     }

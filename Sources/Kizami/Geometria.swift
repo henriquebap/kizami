@@ -8,9 +8,9 @@ struct Geometria: Equatable {
     /// A curva côncava no topo que funde a ilha com a borda da tela, como no notch de verdade.
     static let orelha: CGFloat = 8
     static let larguraAviso: CGFloat = 300
-    /// A grade de duas colunas pede mais que os 340 pt da lista de antes: um widget com número grande e rótulo
-    /// precisa de ~190 pt para o rótulo não virar reticências.
-    static let larguraAberta: CGFloat = 420
+    /// A grade de duas colunas pede mais que os 340 pt da lista de antes; com 20 pt de margem dos lados, cada widget
+    /// fica com 166 pt, o bastante para o rótulo e o número sem reticências. Com 420 tudo parecia grande demais.
+    static let larguraAberta: CGFloat = 380
     static let alturaLinha: CGFloat = 30
     static let espacoLinha: CGFloat = 4
     static let maximoLinhas = 3
@@ -270,23 +270,30 @@ struct Painel: Equatable, Sendable {
         return alturas.reduce(0, +) + CGFloat(max(alturas.count - 1, 0)) * Self.espaco
     }
 
-    /// Rótulo, número de 28 pt e uma linha de detalhe com o botão Entrar, e 12 pt de folga em volta.
-    static let alturaWidget: CGFloat = 104
-    /// O cartão de destaque: 14 pt de folga, a linha principal e a de baixo (pílulas, botões).
+    /// Rótulo, número de 24 pt e uma linha de detalhe com o botão Entrar, e 12 pt de folga em volta.
+    static let alturaWidget: CGFloat = 92
+    /// A folga dentro dos cartões largos e o círculo do ícone deles (Claude, reunião).
+    static let folga: CGFloat = 12
+    static let icone: CGFloat = 36
+    /// O cartão de destaque: a folga, a linha principal e a de baixo (pílulas, botões).
     static func altura(_ largo: Largo) -> CGFloat {
         switch largo {
-        case .claude(let outras): outras ? 112 : 78
-        case .reuniao(let link): link ? 14 + 44 + 12 + 30 + 14 : 14 + 44 + 14
-        case .musica: 84
+        case .claude(let outras): outras ? folga + icone + 10 + 24 + folga : folga + icone + folga
+        case .reuniao(let link): link ? folga + icone + 10 + 28 + folga : folga + icone + folga
+        case .musica: folga + capaDoCartao + folga
         case .dia(let eventos): alturaDia(eventos: eventos)
         case .atividades(let n): Geometria.alturaLinhas(n)
         case .bandeja: Geometria.alturaBandeja
         }
     }
 
-    /// Cabeça (data e temperatura, 52), a régua (40) e uma linha de 24 por evento que falta.
+    static let capaDoCartao: CGFloat = 48
+    static let cabecaDoDia: CGFloat = 44
+    static let reguaDoDia: CGFloat = 34
+    static let linhaDoDia: CGFloat = 22
+    /// Cabeça (data e temperatura), a régua e uma linha por evento que falta.
     static func alturaDia(eventos: Int) -> CGFloat {
-        14 + 52 + 10 + 40 + (eventos > 0 ? 8 + CGFloat(min(eventos, 3)) * 24 : 0) + 14
+        folga + cabecaDoDia + 8 + reguaDoDia + (eventos > 0 ? 6 + CGFloat(min(eventos, 3)) * linhaDoDia : 0) + folga
     }
 
     /// O Início mais alto possível, para a janela caber qualquer estado.

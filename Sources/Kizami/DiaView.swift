@@ -15,7 +15,7 @@ struct CartaoDia: View {
         // Por minuto: o agora anda na régua, a frase muda quando uma reunião começa, a data vira à meia-noite.
         // Só enquanto a ilha está aberta, que é quando o cartão existe.
         TimelineView(.everyMinute) { contexto in conteudo(agora: contexto.date) }
-            .padding(14)
+            .padding(Painel.folga)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .cartao(raio: Geometria.raioDoWidget, realce: estado.cartaoSobCursor == "dia", id: "agenda", em: espaco)
             .contentShape(.rect)
@@ -26,7 +26,7 @@ struct CartaoDia: View {
 
     private func conteudo(agora: Date) -> some View {
         let previsao = tempo.previsao
-        return VStack(alignment: .leading, spacing: 10) {
+        return VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .top, spacing: 12) {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(verbatim: Self.data(agora)).font(Tipo.numero).lineLimit(1).minimumScaleFactor(0.7)
@@ -36,7 +36,7 @@ struct CartaoDia: View {
                 Spacer(minLength: 8)
                 if let previsao {
                     HStack(alignment: .top, spacing: 8) {
-                        Image(systemName: previsao.simbolo).symbolRenderingMode(.multicolor).font(.system(size: 26))
+                        Image(systemName: previsao.simbolo).symbolRenderingMode(.multicolor).font(.system(size: 22))
                         VStack(alignment: .trailing, spacing: 1) {
                             Text(verbatim: Previsao.graus(previsao.temperatura)).font(Tipo.destaque)
                             Text(verbatim: "↑\(Previsao.graus(previsao.maxima)) ↓\(Previsao.graus(previsao.minima))")
@@ -48,15 +48,15 @@ struct CartaoDia: View {
                     .help(Text(verbatim: [previsao.descricao, tempo.local].compactMap { $0 }.joined(separator: "\n")))
                 }
             }
-            .frame(height: 52, alignment: .top)
+            .frame(height: Painel.cabecaDoDia, alignment: .top)
             ReguaDoDia(eventos: agenda.hoje,
                        chuva: previsao.map { Previsao.faixasDeChuva($0.horas, dia: agora, calendario: .current) } ?? [],
                        agora: agora)
-                .frame(height: 40)
+                .frame(height: Painel.reguaDoDia)
             if !agenda.hoje.isEmpty {
                 VStack(spacing: 0) {
                     ForEach(agenda.hoje.prefix(3)) { evento in
-                        LinhaDoDia(evento: evento) { agenda.entrar(evento) }.frame(height: 24)
+                        LinhaDoDia(evento: evento) { agenda.entrar(evento) }.frame(height: Painel.linhaDoDia)
                     }
                 }
             }
@@ -101,7 +101,7 @@ private struct ReguaDoDia: View {
     var body: some View {
         let inicio = Calendar.current.date(bySettingHour: Self.primeira, minute: 0, second: 0, of: agora) ?? agora
         let duracao = TimeInterval(Self.horas * 3600)
-        VStack(spacing: 4) {
+        VStack(spacing: 3) {
             HStack(spacing: 0) {
                 ForEach(Array(stride(from: Self.primeira, through: Self.primeira + Self.horas, by: 2)), id: \.self) { h in
                     Text(verbatim: "\(h)h")
@@ -117,27 +117,27 @@ private struct ReguaDoDia: View {
                     ForEach(Array(chuva.enumerated()), id: \.offset) { _, faixa in
                         RoundedRectangle(cornerRadius: 6, style: .continuous)
                             .fill(.blue.opacity(0.28))
-                            .frame(width: max(x(faixa.fim) - x(faixa.inicio), 4), height: 22)
+                            .frame(width: max(x(faixa.fim) - x(faixa.inicio), 4), height: 18)
                             .offset(x: x(faixa.inicio))
                             .help(Text(verbatim: String(localized: "Chance de chuva: \("\(faixa.maxima)%")")))
                     }
                     ForEach(eventos.filter { !$0.diaInteiro && $0.fim > inicio && $0.inicio < inicio + duracao }) { evento in
                         RoundedRectangle(cornerRadius: 4, style: .continuous)
                             .fill(corDoCalendario(evento))
-                            .frame(width: max(x(evento.fim) - x(evento.inicio), 5), height: 14)
+                            .frame(width: max(x(evento.fim) - x(evento.inicio), 5), height: 12)
                             .offset(x: x(evento.inicio))
                             .help(Text(verbatim: evento.titulo))  // verbatim: o título vem do convite
                     }
                     if agora > inicio && agora < inicio + duracao {
                         Capsule().fill(.white)
-                            .frame(width: 2, height: 26)
+                            .frame(width: 2, height: 22)
                             .shadow(color: .black.opacity(0.8), radius: 1)
                             .offset(x: x(agora) - 1)
                     }
                 }
-                .frame(width: largura, height: 26)
+                .frame(width: largura, height: 22)
             }
-            .frame(height: 26)
+            .frame(height: 22)
         }
     }
 }
@@ -156,7 +156,7 @@ private struct LinhaDoDia: View {
                 .frame(minWidth: 42, alignment: .leading)
                 .fixedSize()
             // verbatim: o título vem do convite de qualquer pessoa.
-            Text(verbatim: evento.titulo).font(.system(size: 13, weight: .medium)).lineLimit(1)
+            Text(verbatim: evento.titulo).font(.system(size: 12.5, weight: .medium)).lineLimit(1)
             Spacer(minLength: 4)
             if evento.link != nil { BotaoEntrar(acao: entrar) }
         }

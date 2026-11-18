@@ -34,13 +34,13 @@ struct CartaoClaude: View {
     var body: some View {
         if let sessao = sessoes.sessoes.first(where: { $0.estado == .precisaDeVoce }) {
             let outras = sessoes.sessoes.filter { $0.id != sessao.id }.prefix(3)
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(spacing: 14) {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(spacing: 12) {
                     Image(systemName: EstadoClaude.precisaDeVoce.simbolo)
-                        .font(.system(size: 19, weight: .semibold))
+                        .font(.system(size: 16, weight: .semibold))
                         .foregroundStyle(.orange)
                         .symbolEffect(.bounce, value: sessao.desde)  // uma vez, quando passa a pedir; nada animando parado
-                        .frame(width: 44, height: 44)
+                        .frame(width: Painel.icone, height: Painel.icone)
                         .background(Circle().fill(.orange.opacity(0.22)))
                     VStack(alignment: .leading, spacing: 2) {
                         Text(verbatim: "Claude Code").estiloRotulo(.orange)
@@ -53,9 +53,9 @@ struct CartaoClaude: View {
                     Spacer(minLength: 4)
                     Button { sessoes.focar(sessao) } label: {
                         Label("Abrir", systemImage: "arrow.up.right")
-                            .font(.system(size: 12.5, weight: .semibold))
-                            .padding(.horizontal, 14)
-                            .frame(height: 30)
+                            .font(.system(size: 12, weight: .semibold))
+                            .padding(.horizontal, 12)
+                            .frame(height: 26)
                             .background(Capsule().fill(.orange))
                             .foregroundStyle(.black.opacity(0.85))
                             .contentShape(.capsule)
@@ -72,7 +72,7 @@ struct CartaoClaude: View {
                     }
                 }
             }
-            .padding(14)
+            .padding(Painel.folga)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .cartao(cor: .orange, raio: Geometria.raioDoWidget)
             .contentShape(.rect)

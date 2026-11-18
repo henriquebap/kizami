@@ -187,12 +187,11 @@ struct IlhaView: View {
             if forma == .aberta {
                 // O contorno de 1 pt na cor do assunto, como a borda da Dynamic Island no modo escuro: diz de relance
                 // de quem é a ilha agora. Sem assunto, um branco quase apagado, só para separar do fundo.
-                // 5 pt de traço: a metade de fora some no recorte da forma, e ficam 2,5 pt à vista nas laterais e embaixo
-                // (com 1 pt sobrava meio, fino demais). Sem o topo: ali é a beira da tela, e o traço viraria uma linha
-                // no alto da tela dos dois lados do notch.
+                // 3 pt de traço: a metade de fora some no recorte da forma, e fica 1,5 pt à vista nas laterais e embaixo.
+                // Sem o topo: ali é a beira da tela, e o traço viraria uma linha no alto da tela dos dois lados do notch.
                 let cor = corDoAssunto(fontes)
                 FormaIlha(orelha: forma.orelha, raio: forma.raio, semTopo: true)
-                    .stroke((cor ?? .white).opacity(cor == nil ? 0.16 : 0.5), lineWidth: 5)
+                    .stroke((cor ?? .white).opacity(cor == nil ? 0.16 : 0.5), lineWidth: 3)
             }
             Group {
                 switch forma {

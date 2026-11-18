@@ -40,17 +40,17 @@ struct WidgetLembretes: View {
             Cabeca(rotulo: Text("Lembretes"), simbolo: "checklist", cor: .yellow)
             Spacer(minLength: 0)
             TimelineView(.everyMinute) { contexto in
-                VStack(alignment: .leading, spacing: 4) {
-                    ForEach(lembretes.proximos) { lembrete in  // até 3 (`Lembrete.maximo`): cabem nos 104 pt
+                VStack(alignment: .leading, spacing: 2) {
+                    ForEach(lembretes.proximos) { lembrete in  // até 3 (`Lembrete.maximo`): cabem nos 92 pt
                         HStack(spacing: 6) {
                             Button("Marcar como feito", systemImage: "circle") { lembretes.concluir(lembrete.id) }
                                 .labelStyle(.iconOnly)
                                 .buttonStyle(EstiloBotao())
-                                .font(.system(size: 14))
+                                .font(.system(size: 13))
                                 .foregroundStyle(.secondary)
                                 .help(Text("Marcar como feito"))
                             // verbatim: o título vem do app Lembretes.
-                            Text(verbatim: lembrete.titulo).font(.system(size: 12.5, weight: .medium)).lineLimit(1)
+                            Text(verbatim: lembrete.titulo).font(.system(size: 12, weight: .medium)).lineLimit(1)
                             Spacer(minLength: 2)
                             if let quando = lembrete.quando(agora: contexto.date) {
                                 Text(verbatim: quando).font(.system(size: 11)).monospacedDigit()

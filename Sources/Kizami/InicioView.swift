@@ -25,7 +25,8 @@ struct InicioEmGrade: View {
                 .entrada(ordem)
             }
         }
-        .padding(.horizontal, 4)
+        // 20 pt de preto dos lados (10 da ilha e 10 daqui): com 14 os cartões pareciam encostados na borda.
+        .padding(.horizontal, 10)
     }
 
     private func altura(_ fileira: Painel.Fileira) -> CGFloat {
@@ -38,8 +39,8 @@ struct InicioEmGrade: View {
         case .reuniao: CartaoReuniao(agenda: fontes.agenda, espaco: espaco)
         case .musica: CartaoMusica(tocando: fontes.tocando, estado: estado, espaco: espaco) { alternar(.musica) }
         case .dia: CartaoDia(agenda: fontes.agenda, tempo: fontes.tempo, estado: estado, espaco: espaco) { alternar(.agenda) }
-        case .atividades: Lista(mural: fontes.mural, estado: estado, ocultos: avisosNoDestaque(fontes)).padding(.horizontal, -4)
-        case .bandeja: FileiraDaBandeja(bandeja: fontes.bandeja, alvo: estado.alvo).padding(.horizontal, -6)
+        case .atividades: Lista(mural: fontes.mural, estado: estado, ocultos: avisosNoDestaque(fontes)).padding(.horizontal, -8)
+        case .bandeja: FileiraDaBandeja(bandeja: fontes.bandeja, alvo: estado.alvo).padding(.horizontal, -10)
         }
     }
 
