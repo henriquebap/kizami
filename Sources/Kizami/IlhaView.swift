@@ -187,9 +187,12 @@ struct IlhaView: View {
             if forma == .aberta {
                 // O contorno de 1 pt na cor do assunto, como a borda da Dynamic Island no modo escuro: diz de relance
                 // de quem é a ilha agora. Sem assunto, um branco quase apagado, só para separar do fundo.
-                // 3 pt de traço: a metade de fora some no recorte da forma, e fica 1,5 pt à vista (com 1 pt, sobrava meio).
+                // 5 pt de traço: a metade de fora some no recorte da forma, e ficam 2,5 pt à vista nas laterais e embaixo
+                // (com 1 pt sobrava meio, fino demais). Sem o topo: ali é a beira da tela, e o traço viraria uma linha
+                // no alto da tela dos dois lados do notch.
                 let cor = corDoAssunto(fontes)
-                contorno.stroke((cor ?? .white).opacity(cor == nil ? 0.16 : 0.5), lineWidth: 3)
+                FormaIlha(orelha: forma.orelha, raio: forma.raio, semTopo: true)
+                    .stroke((cor ?? .white).opacity(cor == nil ? 0.16 : 0.5), lineWidth: 5)
             }
             Group {
                 switch forma {
@@ -402,6 +405,8 @@ extension IlhaView {
 struct FormaIlha: Shape {
     var orelha: CGFloat
     var raio: CGFloat
+    /// Para o contorno: o caminho não fecha pela beira de cima.
+    var semTopo = false
 
     var animatableData: AnimatablePair<CGFloat, CGFloat> {
         get { AnimatablePair(orelha, raio) }
@@ -418,7 +423,7 @@ struct FormaIlha: Shape {
         p.addArc(tangent1End: CGPoint(x: r.maxX - o, y: r.maxY), tangent2End: CGPoint(x: r.maxX - o, y: r.minY + o), radius: raio)
         p.addLine(to: CGPoint(x: r.maxX - o, y: r.minY + o))
         p.addQuadCurve(to: CGPoint(x: r.maxX, y: r.minY), control: CGPoint(x: r.maxX - o, y: r.minY))
-        p.closeSubpath()
+        if !semTopo { p.closeSubpath() }
         return p
     }
 }
