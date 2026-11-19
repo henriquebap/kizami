@@ -122,7 +122,8 @@ struct Placar: Equatable, Sendable {
         guard let r = try? JSONDecoder().decode(Resposta.self, from: dados) else { return nil }
         for e in r.events ?? [] {
             guard let c = e.competitions?.first(where: { $0.id == corridaId }) else { continue }
-            guard c.type?.abbreviation == "Race", let tipo = c.status?.type, let encerrado = encerrado(tipo),
+            // IndyCar e NASCAR não trazem `type`: a única competição é a corrida.
+            guard (c.type?.abbreviation ?? "Race") == "Race", let tipo = c.status?.type, let encerrado = encerrado(tipo),
                   let siglas = ponta(c.competitors ?? []) else { return nil }
             return Placar(eventoId: corridaId, lances: .corrida(siglas), situacao: Atividade.limpo(tipo.shortDetail ?? "", ate: 30),
                           encerrado: encerrado, link: ESPN.pagina(e.links))
@@ -155,7 +156,12 @@ struct Placar: Equatable, Sendable {
     static func siglaPiloto(_ nome: String?) -> String? {
         guard let nome, nome.count <= 30, let ponto = nome.firstIndex(of: "."),
               nome[..<ponto].count == 1, nome[nome.startIndex].isLetter else { return nil }
-        let sobrenome = nome[nome.index(after: ponto)...].trimmingCharacters(in: .init(charactersIn: " "))
+        var sobrenome = nome[nome.index(after: ponto)...].trimmingCharacters(in: .init(charactersIn: " "))
+        // NASCAR: "R. Stenhouse Jr." O sufixo sai antes de conferir as letras, senão o ponto derrubava o pódio todo.
+        for sufixo in [" Jr.", " Sr.", " Jr", " Sr", " II", " III"] where sobrenome.hasSuffix(sufixo) {
+            sobrenome = String(sobrenome.dropLast(sufixo.count))
+            break
+        }
         guard (2...24).contains(sobrenome.count),
               sobrenome.allSatisfy({ $0.isLetter || $0 == " " || $0 == "-" || $0 == "'" }) else { return nil }
         let letras = sobrenome.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: nil).filter(\.isLetter)
@@ -184,6 +190,7 @@ struct Placar: Equatable, Sendable {
         switch e.fonte {
         case .espnTime: prefixo = "espn"
         case .f1: prefixo = "f1"
+        case .categoria(let c) where c.ligaESPN != nil: prefixo = "corrida"
         case .ics, .categoria: return nil
         }
         let partes = e.id.split(separator: "-")
@@ -246,6 +253,7 @@ struct Placar: Equatable, Sendable {
             let endereco: URL? = switch jogo.fonte {
             case let .espnTime(esporte, liga, _, _) where jogo.fonte.valido: url(esporte: esporte, liga: liga, inicio: jogo.inicio)
             case .f1: url(esporte: "racing", liga: "f1", inicio: jogo.inicio)
+            case .categoria(let c): c.ligaESPN.flatMap { url(esporte: "racing", liga: $0, inicio: jogo.inicio) }
             default: nil
             }
             if let endereco { porURL[endereco, default: []].append(jogo) }
@@ -258,7 +266,7 @@ struct Placar: Equatable, Sendable {
             responderam += 1
             consultados.formUnion(daqui.compactMap(idESPN))
             placares += daqui.compactMap { e in
-                idESPN(e).flatMap { e.fonte == .f1 ? lerCorrida(dados, corridaId: $0) : ler(dados, eventoId: $0) }
+                idESPN(e).flatMap { e.fonte.corrida ? lerCorrida(dados, corridaId: $0) : ler(dados, eventoId: $0) }
             }
         }
         return responderam == 0 && !porURL.isEmpty ? nil : (placares, consultados)

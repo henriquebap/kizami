@@ -39,7 +39,7 @@ struct WidgetInteresse: View {
         // Página da F1 num treino: a corrida no pé, para saber quando é a que importa.
         let corrida = evento.sessao == nil ? nil : interesses.principais.first { $0.fonte == evento.fonte }
         return VStack(alignment: .leading, spacing: 0) {
-            Cabeca(rotulo: placar == nil ? Text("A seguir") : Text("Ao vivo"),
+            Cabeca(rotulo: rotulo(evento, aoVivo: placar != nil),
                    simbolo: evento.fonte.simbolo, cor: Self.cor(evento.fonte),
                    ponto: placar == nil ? nil : .red)
             // verbatim: siglas, placar, situação e título vêm da ESPN ou de um calendário de fora.
@@ -70,6 +70,13 @@ struct WidgetInteresse: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
+    /// "A seguir"; num calendário colado, o nome dele ("Porsche Cup 2027"), porque o título do evento não diz de onde é.
+    private func rotulo(_ evento: EventoInteresse, aoVivo: Bool) -> Text {
+        if aoVivo { return Text("Ao vivo") }
+        if case .ics = evento.fonte { return Text(verbatim: interesses.nome(de: evento.fonte)) }
+        return Text("A seguir")
+    }
+
     /// Um ponto por página; clicar num vai para ela. Área de 12 pt: o ponto de 5 sozinho seria difícil de acertar.
     private func pontos(_ eventos: [EventoInteresse], atual: EventoInteresse) -> some View {
         HStack(spacing: 0) {
@@ -83,7 +90,7 @@ struct WidgetInteresse: View {
                         .contentShape(.rect)
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel(Text(verbatim: evento.fonte.nome))
+                .accessibilityLabel(Text(verbatim: interesses.nome(de: evento.fonte)))
             }
         }
     }
@@ -120,7 +127,7 @@ struct AjustesInteresses: View {
             ForEach(interesses.seguidos, id: \.self) { seguido in
                 HStack {
                     Image(systemName: seguido.simbolo).frame(width: 20)
-                    Text(verbatim: seguido.nome).lineLimit(1).truncationMode(.middle)  // verbatim: nome da ESPN ou host do usuário
+                    Text(verbatim: interesses.nome(de: seguido)).lineLimit(1).truncationMode(.middle)  // verbatim: nome da ESPN, do calendário ou host
                     Spacer()
                     Button("Remover", systemImage: "minus.circle.fill") { interesses.remover(seguido) }
                         .labelStyle(.iconOnly)
@@ -151,12 +158,16 @@ struct AjustesInteresses: View {
             if formulario.nadaAchado {
                 Text("Nenhum time encontrado, ou a rede falhou.").font(.caption).foregroundStyle(.secondary)
             }
-            Toggle("Fórmula 1", isOn: $interesses.segueF1)
+            // No teto de seguidos, o que está desligado não liga: senão o interruptor voltaria sozinho, sem dizer por quê.
+            let cheio = interesses.seguidos.count >= Interesses.maximoSeguidos
+            Toggle("Fórmula 1", isOn: $interesses.segueF1).disabled(cheio && !interesses.segueF1)
             ForEach(Categoria.allCases, id: \.self) { categoria in
-                Toggle(isOn: Binding(get: { interesses.seguidos.contains(.categoria(categoria)) },
+                let segue = interesses.seguidos.contains(.categoria(categoria))
+                Toggle(isOn: Binding(get: { segue },
                                      set: { $0 ? interesses.adicionar(.categoria(categoria)) : interesses.remover(.categoria(categoria)) })) {
                     Text(verbatim: categoria.nome)
                 }
+                .disabled(cheio && !segue)
             }
             HStack {
                 TextField("Calendário (link ICS ou webcal)", text: $formulario.calendario).onSubmit(adicionarCalendario)
@@ -166,6 +177,8 @@ struct AjustesInteresses: View {
             if formulario.calendarioInvalido {
                 Text("Use um link https ou webcal.").font(.caption).foregroundStyle(.secondary)
             }
+            Text("Categoria sem calendário público (Porsche Cup Brasil, Stock Car): crie um no Google Agenda com as etapas, deixe-o público e cole o endereço ICS. A box mostra o nome do calendário.")
+                .font(.caption).foregroundStyle(.secondary)
             Text("Lembra na semana do evento, na véspera e 1 hora antes. Jogos e corridas vêm da ESPN; F2, WEC e IMSA, de calendários públicos.")
                 .font(.caption).foregroundStyle(.secondary)
         }

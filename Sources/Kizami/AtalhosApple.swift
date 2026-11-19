@@ -12,6 +12,8 @@ final class AtalhosApple {
 
     /// Os atalhos da pessoa, na ordem da `shortcuts list`.
     private(set) var disponiveis: [String] = []
+    /// Já houve uma leitura (respondendo ou não): antes dela os Ajustes esperam em vez de dizer "não deu para conferir".
+    private(set) var leu = false
     /// A última leitura não respondeu: os Ajustes avisam em vez de mostrar uma lista vazia como se fosse real.
     private(set) var leituraFalhou = false
     /// A ordem é a dos botões na ilha. O `UserDefaults` guarda só esta lista de nomes.
@@ -30,6 +32,7 @@ final class AtalhosApple {
     /// travado ou lento não pode apagar a escolha da pessoa.
     func recarregar() async {
         let inicio = ContinuousClock.now
+        defer { leu = true }
         guard let saida = await Self.listar() else {
             leituraFalhou = true
             registro.notice("atalhos da Apple: a lista não respondeu")
@@ -43,6 +46,17 @@ final class AtalhosApple {
         let conciliados = completa ? Self.conciliar(escolhidos, disponiveis: disponiveis) : escolhidos
         if conciliados != escolhidos { escolhidos = conciliados }
         registro.info("atalhos da Apple: \(self.disponiveis.count) na lista, \(self.escolhidos.count) escolhidos (\(ContinuousClock.now - inicio, privacy: .public))")
+    }
+
+    /// Para os Ajustes do Timer: o atalho está na lista (true), não está (false) ou não dá para saber (nil): a lista
+    /// não respondeu, veio vazia (o app Atalhos sincronizando) ou cortada no teto.
+    func existe(_ nome: String) -> Bool? {
+        Self.existe(nome, disponiveis: disponiveis, leituraFalhou: leituraFalhou)
+    }
+
+    static func existe(_ nome: String, disponiveis: [String], leituraFalhou: Bool) -> Bool? {
+        if disponiveis.contains(nome) { return true }
+        return leituraFalhou || disponiveis.isEmpty || disponiveis.count >= maximoNaLista ? nil : false
     }
 
     /// Roda um escolhido. Relê a lista antes (leva ~15 ms) para só rodar o que existe agora no app Atalhos.

@@ -75,6 +75,18 @@ import Foundation
     conferir("F1: sessão não lembra, a corrida sim",
              EventoInteresse.lembretes(corridas, agora: utc("2026-11-19T23:45Z"), disparados: []).map(\.evento.sessao),
              [nil as String?])
+    // IndyCar como a ESPN manda (forma vista em 18/11/2026): uma competição, sem `type`. A terminada sai.
+    let indy = """
+        {"events":[{"id":"202609061784","name":"Grand Prix of Monterey","shortName":"Monterey","competitions":[
+        {"id":"202609061784","date":"2026-09-06T18:30Z","status":{"type":{"completed":true}}}]},
+        {"id":"202703011700","name":"Grand Prix of St. Petersburg","shortName":"St. Petersburg","competitions":[
+        {"id":"202703011700","date":"2027-03-01T17:00Z","status":{"type":{"completed":false}}}]}]}
+        """
+    let indyCar = ESPN.corridas(de: Data(indy.utf8), fonte: .categoria(.indycar)) ?? []
+    conferir("IndyCar: sem sigla é corrida, a terminada sai", indyCar.map(\.id),
+             ["corrida-202703011700-\(Int(utc("2027-03-01T17:00Z").timeIntervalSince1970))"])
+    conferir("IndyCar: placar ao vivo pela ESPN", indyCar.compactMap(Placar.idESPN), ["202703011700"])
+    conferir("IndyCar lembra", indyCar.first.map { $0.sessao == nil && $0.fonte.corrida }, true)
     conferir("sigla nova de sessão aparece como veio", ESPN.nomeDaSessao("SQ"), "SQ")
     conferir("sigla vazia: a sessão sai", ESPN.nomeDaSessao(""), nil as String?)
 
@@ -111,13 +123,20 @@ import Foundation
     conferir("usuário no endereço não", Seguido.calendario("https://exemplo.com@evil.example/a.ics"), nil)
     conferir("ICS colado é válido", Seguido.calendario("https://exemplo.com/a.ics")?.valido, true)
 
+    conferir("nome do calendário", ICS.nome(de: "BEGIN:VCALENDAR\r\nX-WR-CALNAME:Porsche Cup\\, 2027\r\nBEGIN:VEVENT\r\nEND:VEVENT\r\nEND:VCALENDAR"),
+             "Porsche Cup, 2027")
+    conferir("nome do calendário: só no cabeçalho", ICS.nome(de: "BEGIN:VCALENDAR\nBEGIN:VEVENT\nX-WR-CALNAME:Evento\nEND:VEVENT"), nil)
+    conferir("nome do calendário: vazio não vale", ICS.nome(de: "BEGIN:VCALENDAR\nX-WR-CALNAME:   \nEND:VCALENDAR"), nil)
+
     // MARK: Categorias (F2, WEC, IMSA)
 
     let salvas = try? JSONEncoder().encode([Seguido.f1, .categoria(.wec)])
     conferir("categoria sobrevive ao salvar", salvas.flatMap { try? JSONDecoder().decode([Seguido].self, from: $0) },
              [.f1, .categoria(.wec)])
-    conferir("categorias em https e com host", Categoria.allCases.allSatisfy { $0.url.scheme == "https" && $0.url.host() != nil },
-             true)
+    conferir("categorias: ICS em https ou liga da ESPN, nunca os dois",
+             Categoria.allCases.allSatisfy { c in
+                 c.ics.map { $0.scheme == "https" && $0.host() != nil && c.ligaESPN == nil } ?? (c.ligaESPN != nil)
+             }, true)
     conferir("sessões pelo título", ["F2: Practice (Qatar)", "F2: Qualifying (Qatar)", "F2: Sprint (Qatar)",
                                       "F2: Feature (Qatar)", "WTSC Race", "FIA WEC | [TEST] Prologue",
                                       "Roar Before The Rolex 24", "FIA WEC | 6 Hours of Imola", "ILMC qual : 24 Heures du Mans",
@@ -125,6 +144,14 @@ import Foundation
              ["Treino", "Classificação", nil, nil, nil, "Teste", "Teste", nil, "Classificação", "Classificação", "Teste", nil])
     let comCategoriaNova = Data(#"[{"f1":{}},{"categoria":{"_0":"motogp"}},{"espnTime":{"esporte":"football","liga":"nfl","time":"2","nome":"Buffalo Bills"}}]"#.utf8)
     conferir("item que não decodifica cai sozinho", Interesses.lerSeguidos(comCategoriaNova), [.f1, .bills])
+    let imsa = [EventoInteresse(id: "a", titulo: "Motul Petit Le Mans", inicio: utc("2026-10-01T03:00Z"), diaInteiro: true,
+                                fonte: .categoria(.imsa)),
+                EventoInteresse(id: "b", titulo: "WTSC Qualifying", inicio: utc("2026-10-02T18:20Z"), fonte: .categoria(.imsa)),
+                EventoInteresse(id: "c", titulo: "WTSC Race", inicio: utc("2026-10-03T16:10Z"), fonte: .categoria(.imsa)),
+                EventoInteresse(id: "d", titulo: "Rolex 24 at Daytona", inicio: utc("2027-01-27T03:00Z"), diaInteiro: true,
+                                fonte: .categoria(.imsa))]
+    conferir("IMSA: o dia inteiro com a corrida dentro não lembra; sem corrida com hora, lembra",
+             Categoria.marcar(imsa).map { $0.sessao ?? "corrida" }, ["Fim de semana", "Classificação", "corrida", "corrida"])
     conferir("categoria sem placar da ESPN",
              Placar.idESPN(EventoInteresse(id: "ics-1795000000-abc", titulo: "WTSC Race", inicio: .now,
                                            fonte: .categoria(.imsa))), nil)
@@ -225,7 +252,8 @@ import Foundation
 
     let longe = EventoInteresse(id: "l", titulo: "l", inicio: utc("2026-12-06T21:25Z"), fonte: .bills)
     conferir("próximo: o de dentro de 7 dias", EventoInteresse.proximo([longe, jogo], agora: utc("2026-11-16T12:00Z"))?.id, "espn-1")
-    conferir("próximo: mais de 7 dias fica fora", EventoInteresse.proximo([longe], agora: utc("2026-11-16T12:00Z")), nil)
+    conferir("próximo: a 20 dias ainda entra na box", EventoInteresse.proximo([longe], agora: utc("2026-11-16T12:00Z"))?.id, "l")
+    conferir("próximo: mais de 30 dias fica fora", EventoInteresse.proximo([longe], agora: utc("2026-11-05T12:00Z")), nil)
     conferir("próximo: o que começou não conta", EventoInteresse.proximo([jogo], agora: utc("2026-11-22T18:01Z")), nil)
     let corrida = EventoInteresse(id: "f1-1", titulo: "Las Vegas", inicio: utc("2026-11-22T04:00Z"), fonte: .f1)
     let outroJogo = EventoInteresse(id: "espn-2", titulo: "Bills @ Jets", inicio: utc("2026-11-29T18:00Z"), fonte: .bills)
@@ -237,6 +265,10 @@ import Foundation
     conferir("quando: hoje", quando("2026-11-22T12:00Z"), "hoje 15:00")
     conferir("quando: amanhã", quando("2026-11-21T20:00Z"), "amanhã 15:00")
     conferir("quando: dia da semana", quando("2026-11-16T12:00Z"), "dom. 15:00")
+    conferir("quando: mais de 7 dias, dia e mês", quando("2026-11-10T12:00Z"), "22 de nov. 15:00")
+    // Quarta 22:00 → quarta seguinte 08:00: menos de 7×24 h, mas 7 dias de calendário; "qua." pareceria hoje.
+    let quartaQueVem = EventoInteresse(id: "q", titulo: "q", inicio: utc("2026-11-25T11:00Z"), fonte: .bills)
+    conferir("quando: mesmo dia da semana que vem, com a data", quando("2026-11-19T01:00Z", quartaQueVem), "25 de nov. 8:00")
     conferir("quando: começou", quando("2026-11-22T18:00Z"), "agora")
     conferir("quando: dia inteiro amanhã", quando("2026-11-21T12:00Z", diaInteiro), "amanhã")
 
